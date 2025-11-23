@@ -1,0 +1,68 @@
+{
+  "session": {
+    "start_time": "2025-11-23T15:32:03.807999Z",
+    "end_time": "2025-11-23T15:39:43.664499Z",
+    "duration_seconds": 459,
+    "directory": "wp-navigator-pro/main",
+    "git_branch": "main",
+    "git_commit": "b9c4953f",
+    "git_status": "dirty"
+  },
+  "model": {
+    "id": "claude-sonnet-4-5-20250929",
+    "name": "Claude Sonnet 4.5"
+  },
+  "tokens": {
+    "input": 751,
+    "output": 14990,
+    "cache_create": 683602,
+    "cache_read": 3449431,
+    "total": 4148774
+  },
+  "costs": {
+    "with_cache": {
+      "usd": 3.8254,
+      "aud": 5.8912
+    },
+    "without_cache": {
+      "usd": 12.6262,
+      "aud": 19.4444
+    },
+    "savings": {
+      "usd": 8.8008,
+      "aud": 13.5532,
+      "efficiency_percent": 69.7
+    }
+  },
+  "mcp_summary": {
+    "total_calls": 0,
+    "total_tokens": 0,
+    "percentage_of_session": 0.0,
+    "top_5_servers": []
+  },
+  "builtin_tools": {
+    "total_calls": 16,
+    "total_tokens": 1731154,
+    "percentage_of_session": 41.7
+  },
+  "errors": [],
+  "warnings": [],
+  "health_status": "healthy",
+  "anomalies": {
+    "high_token_operations": [],
+    "high_call_frequency": [],
+    "high_variance": [],
+    "unusual_patterns": []
+  },
+  "session_comparison": {
+    "vs_last_session": null,
+    "vs_avg_session": null
+  },
+  "redundancy_analysis": {
+    "duplicate_calls": [],
+    "unique_calls": 16,
+    "redundant_calls": 0,
+    "redundancy_ratio": 0.0,
+    "total_tokens_wasted": 0
+  }
+}
