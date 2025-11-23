@@ -1,4 +1,4 @@
-# AI MCP Audit Tools
+# MCP Audit
 
 **Purpose**: Internal MCP efficiency measurement and token usage analysis for Claude Code and Codex CLI sessions.
 

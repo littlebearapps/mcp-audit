@@ -1,0 +1,72 @@
+{
+  "mcpServers": {
+    "backlog": {
+      "command": "backlog",
+      "args": [
+        "mcp",
+        "start"
+      ]
+    },
+    "cloudflare-docs": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://docs.mcp.cloudflare.com/mcp"
+      ]
+    },
+    "cloudflare-bindings": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://bindings.mcp.cloudflare.com/mcp"
+      ]
+    },
+    "cloudflare-observability": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://observability.mcp.cloudflare.com/mcp"
+      ]
+    },
+    "cloudflare-ai-gateway": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://ai-gateway.mcp.cloudflare.com/mcp"
+      ]
+    },
+    "cloudflare-builds": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://builds.mcp.cloudflare.com/mcp"
+      ]
+    },
+    "zen": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "source ~/bin/kc.sh && source ~/.config/kc/profiles.sh && load_mcp_secrets mcp-audit main && exec /Users/nathanschram/claude-code-tools/mcp/zen/instances/instT/venv/bin/zen-mcp-server"
+      ],
+      "cwd": "/Users/nathanschram/claude-code-tools/mcp/zen/instances/instT",
+      "env": {
+        "ZEN_INSTANCE_NAME": "zen-project-t",
+        "ZEN_PORT": "7530",
+        "DEFAULT_MODEL": "gpt-5.1",
+        "ZEN_DISABLED": "0",
+        "ZEN_MAX_OUTPUT_TOKENS": "1024",
+        "ZEN_MAX_INPUT_TOKENS": "12000",
+        "ZEN_MAX_RETRIES": "1",
+        "ZEN_ENABLE_SAFE_CONTINUATION": "1",
+        "ZEN_DAILY_SOFT_BUDGET_USD": "2.50",
+        "ZEN_MINUTES_RATE_LIMIT": "60",
+        "OPENAI_ALLOWED_MODELS": "gpt-5.1",
+        "GOOGLE_ALLOWED_MODELS": "gemini-3-pro-preview",
+        "LOG_LEVEL": "INFO",
+        "DISABLED_TOOLS": "analyze,refactor,testgen,secaudit,docgen,tracer",
+        "CONVERSATION_TIMEOUT_HOURS": "24",
+        "MAX_CONVERSATION_TURNS": "40"
+      }
+    }
+  }
+}

@@ -1,6 +1,6 @@
-# AI MCP Audit - Quick Command Reference
+# MCP Audit - Quick Command Reference
 
-**Last Updated**: 2025-11-22
+**Last Updated**: 2025-11-23
 
 ---
 

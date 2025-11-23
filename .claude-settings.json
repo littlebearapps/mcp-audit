@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "workingDirectory": "/Users/nathanschram/claude-code-tools/lba/apps/devtools/mcp-audit/main",
+  "projectName": "MCP Audit",
+  "permissions": {
+    "allow": []
+  }
+}
