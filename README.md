@@ -123,13 +123,24 @@ python3 scripts/ai-mcp-audit/analyze-mcp-efficiency.py /path/to/sessions
 - `usage-codex-wpnav.sh` - Codex usage helper
 
 ### Documentation
+
+**Context Files** (Modular Structure ✨ **New**):
+- `CLAUDE.md` - Main project context (165 lines, uses @-imports)
+- `quickref/commands.md` - npm scripts and workflows (256 lines)
+- `quickref/architecture.md` - Files, data structures, principles (309 lines)
+- `quickref/features.md` - Cross-platform, signal handling, validation (317 lines)
+- `quickref/troubleshooting.md` - Common issues and solutions (407 lines)
+- `quickref/integration.md` - ccusage, zen relationships (298 lines)
+
+**Implementation Docs**:
 - `README.md` - Original tool documentation (comprehensive)
-- `MCP-EFFICIENCY-MEASUREMENT-PLAN.md` - Implementation plan (GPT-5 validated)
-- `MCP-EFFICIENCY-CODE-ANALYSIS.md` - Code analysis
-- `MCP-EFFICIENCY-PLAN-UPDATES.md` - Plan updates
-- `ENHANCEMENTS-5-8-SUMMARY.md` - Enhancement summary
-- `docs/CODEX-CLAUDE-FORMAT-DIFFERENCES.md` - Cross-platform format comparison ✨ **New**
-- `docs/CODEX-MCP-TRACKING-IMPLEMENTATION.md` - Codex MCP tracking implementation ✨ **New**
+- `docs/MCP-EFFICIENCY-MEASUREMENT-PLAN.md` - Implementation plan (GPT-5 validated)
+- `docs/CLAUDE-MD-IMPROVEMENT-PLAN.md` - Context restructuring plan ✨ **New**
+- `docs/MCP-EFFICIENCY-CODE-ANALYSIS.md` - Code analysis
+- `docs/MCP-EFFICIENCY-PLAN-UPDATES.md` - Plan updates
+- `docs/ENHANCEMENTS-5-8-SUMMARY.md` - Enhancement summary
+- `docs/CODEX-CLAUDE-FORMAT-DIFFERENCES.md` - Cross-platform format comparison
+- `docs/CODEX-MCP-TRACKING-IMPLEMENTATION.md` - Codex MCP tracking implementation
 
 ### Data
 - `model-pricing.json` - Token pricing for cost calculations
@@ -296,6 +307,13 @@ zen__thinkdeep                                              150,234
 ---
 
 ## Recent Updates
+
+**2025-11-24**: ✅ **CLAUDE.md Modular Restructuring**
+- Restructured CLAUDE.md from 319 lines → 165 lines (48% reduction)
+- Created 5 quickref files with @-imports for modular documentation
+- Follows Anthropic best practices for Claude Code context files
+- No information loss, improved token efficiency through on-demand loading
+- All context organized: commands, architecture, features, troubleshooting, integration
 
 **2025-11-23**: ✅ **Session Recovery & Validation**
 - Fixed signal handler to write complete logs on Ctrl+C exit
