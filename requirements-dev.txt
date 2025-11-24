@@ -7,5 +7,8 @@ pytest-cov>=4.1.0  # For coverage reports
 # Type checking
 mypy>=1.5.0
 
+# Configuration
+toml>=0.10.2  # For TOML config parsing (Python 3.8-3.10; 3.11+ has built-in tomllib)
+
 # Optional: Test utilities
 pytest-mock>=3.11.0  # For advanced mocking if needed

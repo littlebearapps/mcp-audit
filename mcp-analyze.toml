@@ -1,0 +1,76 @@
+# MCP Audit Configuration File
+# Last Updated: 2025-11-24
+#
+# This file defines pricing for AI models used in your sessions.
+# All prices are in USD per million tokens.
+#
+# Pricing sources:
+# - Anthropic: https://www.anthropic.com/pricing
+# - OpenAI: https://openai.com/api/pricing/
+
+# ============================================================================
+# Claude Models (Anthropic)
+# ============================================================================
+
+[pricing.claude]
+# Claude Sonnet 4.5 (latest)
+"claude-sonnet-4-5-20250929" = { input = 3.0, output = 15.0, cache_create = 3.75, cache_read = 0.30 }
+
+# Claude Opus 4.1 (most capable)
+"claude-opus-4-1" = { input = 15.0, output = 75.0, cache_create = 18.75, cache_read = 1.50 }
+
+# Claude Haiku 4.5 (fastest)
+"claude-haiku-4-5" = { input = 1.0, output = 5.0, cache_create = 1.25, cache_read = 0.10 }
+
+# ============================================================================
+# OpenAI Models
+# ============================================================================
+
+[pricing.openai]
+# GPT-4o (flagship)
+"gpt-4o" = { input = 2.5, output = 10.0, cache_read = 1.25 }
+
+# GPT-4o Mini (cost-efficient)
+"gpt-4o-mini" = { input = 0.15, output = 0.6, cache_read = 0.075 }
+
+# O1 Preview (reasoning model)
+"o1-preview" = { input = 15.0, output = 60.0, cache_read = 7.5 }
+
+# O1 Mini (reasoning model - cost-efficient)
+"o1-mini" = { input = 3.0, output = 12.0, cache_read = 1.5 }
+
+# O3 Mini (latest reasoning model)
+"o3-mini" = { input = 1.1, output = 4.4, cache_read = 0.55 }
+
+# ============================================================================
+# Custom Models
+# ============================================================================
+
+[pricing.custom]
+# Add your custom models here. Examples:
+#
+# Local models (no API cost):
+# "llama-3-70b" = { input = 0.0, output = 0.0, cache_create = 0.0, cache_read = 0.0 }
+#
+# Custom API models:
+# "my-fine-tuned-gpt4" = { input = 5.0, output = 20.0, cache_read = 2.5 }
+#
+# Format:
+# "model-name" = { input = X.X, output = Y.Y, cache_create = Z.Z, cache_read = W.W }
+#
+# Note: cache_create and cache_read are optional if your model doesn't support caching
+
+# ============================================================================
+# Configuration Metadata
+# ============================================================================
+
+[metadata]
+currency = "USD"
+pricing_unit = "per_million_tokens"
+last_updated = "2025-11-24"
+
+# Exchange rates (optional - for display purposes only)
+[metadata.exchange_rates]
+USD_to_AUD = 1.54
+USD_to_EUR = 0.92
+USD_to_GBP = 0.79
