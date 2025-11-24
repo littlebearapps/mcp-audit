@@ -81,7 +81,7 @@ exclude_lines = [
 ]
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.13"
 strict = true
 warn_return_any = true
 warn_unused_configs = true
