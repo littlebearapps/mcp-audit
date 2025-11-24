@@ -21,7 +21,7 @@ class CodexCLIAdapter(BaseTracker):
     for MCP tool usage events. Uses process wrapper approach.
     """
 
-    def __init__(self, project: str, codex_args: list = None):
+    def __init__(self, project: str, codex_args: list[str] | None = None):
         """
         Initialize Codex CLI adapter.
 
@@ -34,7 +34,7 @@ class CodexCLIAdapter(BaseTracker):
         self.codex_args = codex_args or []
         self.detected_model: Optional[str] = None
         self.model_name: str = "Unknown Model"
-        self.process: Optional[subprocess.Popen] = None
+        self.process: Optional[subprocess.Popen[str]] = None
 
     # ========================================================================
     # Abstract Method Implementations
@@ -63,6 +63,7 @@ class CodexCLIAdapter(BaseTracker):
 
         # Monitor output
         try:
+            assert self.process.stdout is not None, "Process stdout is None"
             while True:
                 # Read from stdout
                 line = self.process.stdout.readline()
@@ -82,7 +83,7 @@ class CodexCLIAdapter(BaseTracker):
                 self.process.terminate()
                 self.process.wait(timeout=5)
 
-    def parse_event(self, event_data: Any) -> Optional[Tuple[str, dict]]:
+    def parse_event(self, event_data: Any) -> Optional[Tuple[str, Dict[str, Any]]]:
         """
         Parse Codex CLI output event.
 
@@ -164,7 +165,7 @@ class CodexCLIAdapter(BaseTracker):
     # Helper Methods
     # ========================================================================
 
-    def _process_tool_call(self, tool_name: str, usage: dict) -> None:
+    def _process_tool_call(self, tool_name: str, usage: Dict[str, Any]) -> None:
         """
         Process a single tool call using BaseTracker.
 

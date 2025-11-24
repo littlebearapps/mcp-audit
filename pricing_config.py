@@ -91,16 +91,16 @@ class PricingConfig:
 
         # Search specific vendor if provided
         if vendor:
-            vendor_pricing: Dict[str, Dict[str, float]] = self.pricing_data.get(vendor, {})  # type: ignore[assignment]
+            vendor_pricing: Dict[str, Dict[str, float]] = self.pricing_data.get(vendor, {})
             if model_name in vendor_pricing:
-                result: Dict[str, float] = vendor_pricing[model_name]  # type: ignore[assignment]
+                result: Dict[str, float] = vendor_pricing[model_name]
                 return result
             return None
 
         # Search all vendors
         for vendor_name, models in self.pricing_data.items():
             if model_name in models:
-                result_model: Dict[str, float] = models[model_name]  # type: ignore[assignment]
+                result_model: Dict[str, float] = models[model_name]
                 return result_model
 
         # Model not found

@@ -38,7 +38,7 @@ class Call:
     content_hash: Optional[str] = None
     platform_data: Optional[Dict[str, Any]] = None
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> Dict[str, Any]:
         """Convert to JSON-serializable dict"""
         data = asdict(self)
         data['timestamp'] = self.timestamp.isoformat()
@@ -58,7 +58,7 @@ class ToolStats:
     max_duration_ms: Optional[int] = None
     min_duration_ms: Optional[int] = None
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> Dict[str, Any]:
         """Convert to JSON-serializable dict"""
         data = asdict(self)
         data['call_history'] = [call.to_dict() for call in self.call_history]
@@ -75,7 +75,7 @@ class ServerSession:
     total_tokens: int = 0
     metadata: Optional[Dict[str, Any]] = None
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> Dict[str, Any]:
         """Convert to JSON-serializable dict"""
         data = asdict(self)
         data['tools'] = {name: stats.to_dict() for name, stats in self.tools.items()}
@@ -118,7 +118,7 @@ class Session:
     end_timestamp: Optional[datetime] = None
     duration_seconds: Optional[float] = None
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> Dict[str, Any]:
         """Convert to JSON-serializable dict"""
         data = asdict(self)
         data['timestamp'] = self.timestamp.isoformat()
@@ -194,7 +194,7 @@ class BaseTracker(ABC):
         pass
 
     @abstractmethod
-    def parse_event(self, event_data: Any) -> Optional[Tuple[str, dict]]:
+    def parse_event(self, event_data: Any) -> Optional[Tuple[str, Dict[str, Any]]]:
         """
         Parse platform-specific event into normalized format.
 
