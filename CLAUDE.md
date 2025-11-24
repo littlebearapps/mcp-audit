@@ -6,13 +6,14 @@
 
 ## Overview
 
-Internal devtools for analyzing MCP (Model Context Protocol) efficiency and token usage across AI coding sessions.
+MCP efficiency analyzer transforming from internal tool to open-source project. Tracks token usage and costs across AI coding sessions.
 
 **Purpose**: Development Tools & Analytics
 - Real-time session tracking (Claude Code + Codex CLI)
 - Cross-session pattern analysis
 - Token efficiency measurement
 - MCP tool cost optimization
+- **Target**: Universal open-source analyzer (v1.0 by Week 14)
 
 ---
 
@@ -48,18 +49,23 @@ npm run mcp:analyze
 
 ## Development Status
 
-**Week 1**: ✅ Complete (All planned features implemented)
-- Duplicate detection system
-- Cross-session analysis tool
-- Enhanced anomaly detection
-- Codex MCP tracking (full parity)
-- Session recovery from events.jsonl
+**Current**: v0.1.0-internal → Planning transformation to v1.0 (Week 14)
 
-**Week 2**: Data collection phase (5-10 sessions)
+**5 Phases, 14 Weeks**:
+- Phase 1 (Weeks 1-3): Foundation & Restructure
+- Phase 2 (Weeks 4-6): Public Beta Release
+- Phase 3 (Weeks 7-12): Platform Expansion (Gemini CLI, Ollama CLI)
+- Phase 4 (Weeks 13-14): Distribution & Polish
+- Phase 5 (Ongoing): Community Growth
 
-**Week 3**: Pattern analysis and optimization
+**v0.1.0 Complete** (2025-11-23):
+- ✅ Duplicate detection system
+- ✅ Cross-session analysis tool
+- ✅ Enhanced anomaly detection
+- ✅ Codex MCP tracking (full parity)
+- ✅ Session recovery from events.jsonl
 
-**Latest**: 2025-11-23 - Session recovery & validation complete
+**See**: `docs/ROADMAP.md` for complete 14-week plan and backlog tasks
 
 ---
 
@@ -124,6 +130,7 @@ npm run mcp:analyze
 - `COMMANDS.md` - Quick command reference
 
 **Implementation Details**:
+- `docs/ROADMAP.md` - 14-week transformation plan to v1.0 (consensus-validated)
 - `docs/MCP-EFFICIENCY-MEASUREMENT-PLAN.md` - GPT-5 validated implementation plan
 - `docs/CODEX-CLAUDE-FORMAT-DIFFERENCES.md` - Cross-platform format comparison (520 lines)
 - `docs/CODEX-MCP-TRACKING-IMPLEMENTATION.md` - Codex tracking implementation details
@@ -139,15 +146,16 @@ npm run mcp:analyze
 ## Current Focus
 
 **Date**: 2025-11-24
-**Status**: Week 1 Complete ✅ + CLAUDE.md Restructured
-**Next**: Data collection phase (Week 2) - track 5-10 typical sessions
+**Status**: Planning Phase - Roadmap to v1.0 Complete ✅
+**Next**: Begin Phase 1 (Weeks 1-3: Foundation & Restructure)
 
 **Recent Completion** (2025-11-24):
-- ✅ CLAUDE.md modular restructuring
-  - 319 lines → 105 lines (67% reduction)
-  - 5 quickref files with @-imports
-  - Follows Anthropic best practices
-  - No information loss, improved token efficiency
+- ✅ 14-week roadmap to v1.0 (consensus-validated by GPT-5.1 + Gemini)
+- ✅ 16 backlog tasks created (5 phases + 11 week/multi-week subtasks)
+- ✅ Language decision: Python 3.8+ confirmed optimal (9/10 confidence)
+- ✅ ROADMAP.md updated with language decision and implementation recommendations
+- ✅ Backlog tasks updated with MyPy, optional dependencies, pipx installation
+- ✅ CLAUDE.md modular restructuring (319 → 105 lines, 67% reduction)
 
 **Week 1 Completed** (2025-11-23):
 - ✅ Duplicate detection system
@@ -157,9 +165,9 @@ npm run mcp:analyze
 - ✅ Session recovery from events.jsonl
 - ✅ MCP file validation
 
-**Pending**:
-- ⏳ Data collection (5-10 sessions)
-- ⏳ Pattern analysis and optimization
-- ⏳ Effectiveness measurement
+**Next Steps** (Phase 1 - Weeks 1-3):
+- ⏳ Week 1: Code restructure (BaseTracker abstraction, schema lock, MyPy setup)
+- ⏳ Week 2: Repository setup (pricing config, CI/CD, public repo)
+- ⏳ Week 3: Documentation (platform-agnostic docs, data architecture)
 
-**See**: README.md for detailed status and roadmap
+**See**: `docs/ROADMAP.md` for complete plan | Backlog tasks: task-1, task-1.1, task-1.2, task-1.3
