@@ -101,6 +101,15 @@ disallow_untyped_defs = false
 [tool.ruff]
 target-version = "py38"
 line-length = 100
+exclude = [
+    "test_*.py",
+    "analyze-mcp-efficiency.py",
+    "mcp_analyze_cli.py",
+    "investigate-codex-format.py",
+    "live-cc-session-tracker.py",
+    "live-codex-session-tracker.py",
+    "session_manager.py",
+]
 select = [
     "E",   # pycodestyle errors
     "W",   # pycodestyle warnings
