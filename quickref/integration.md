@@ -57,22 +57,13 @@ npm run mcp:analyze
 # "Use @ccusage to compare this month vs last month"
 ```
 
-### Legacy Scripts
+### Modern CLI Interface
 
-**usage-wp-nav.sh** - Claude Code usage for WP Navigator
-- Legacy script for project-specific usage
-- Replaced by MCP Audit for detailed analysis
-- Kept for historical data access
-
-**usage-codex-wpnav.sh** - Codex CLI usage for WP Navigator
-- Legacy script for Codex usage
-- Replaced by live-codex-session-tracker.py
-- Kept for historical data access
-
-**Migration Path:**
-- ✅ Use MCP Audit for new session tracking
-- ✅ Keep legacy scripts for historical data queries
-- ✅ Don't create new legacy scripts (use MCP Audit instead)
+**Recommended Usage:**
+- Use `mcp-analyze collect` for real-time session tracking
+- Use `mcp-analyze report` for cross-session analysis
+- Python-based with platform auto-detection
+- Replaces all legacy project-specific scripts
 
 ---
 

@@ -1,6 +1,6 @@
 #!/bin/bash
-# Real-time session tracker for WP Navigator Pro
-# Monitors Claude Code usage ONLY for this project, starting from NOW
+# Real-time session tracker for MCP Audit
+# Wrapper script that provides colored output for Python trackers
 
 set -e
 
@@ -25,8 +25,8 @@ if [ ! -d "$CLAUDE_DIR" ]; then
   exit 1
 fi
 
-# Project path to filter
-PROJECT_PATH="wp-navigator-pro/main"
+# Project path detection (auto-detected by Python tracker)
+# No longer needed - Python trackers handle project detection
 
 # Session tracking variables
 TOTAL_INPUT=0
@@ -68,7 +68,7 @@ display_stats() {
   # Clear screen and show header
   clear
   echo -e "${BLUE}╔════════════════════════════════════════════════════════════════╗${NC}"
-  echo -e "${BLUE}║${NC} ${BOLD}WP Navigator Pro - Live Session Tracker${NC}                       ${BLUE}║${NC}"
+  echo -e "${BLUE}║${NC} ${BOLD}MCP Audit - Live Session Tracker${NC}                             ${BLUE}║${NC}"
   echo -e "${BLUE}╚════════════════════════════════════════════════════════════════╝${NC}"
   echo ""
   echo -e "${CYAN}Started:${NC} $(date -r $START_TIME '+%Y-%m-%d %H:%M:%S')"
@@ -113,14 +113,9 @@ trap 'echo -e "\n\n${GREEN}Session tracking stopped.${NC}\n"; exit 0' INT TERM
 display_stats
 
 # Find the most recent JSONL file for this project
-# Claude Code creates files like: lba-plugins-wp-navigator-pro-main-SESSIONID.jsonl
+# Claude Code creates files like: project-name-SESSIONID.jsonl
 find_project_files() {
-  find "$CLAUDE_DIR" -type f -name "*.jsonl" | while read -r file; do
-    # Check if file contains our project path
-    if grep -q "wp-navigator-pro" "$file" 2>/dev/null; then
-      echo "$file"
-    fi
-  done
+  find "$CLAUDE_DIR" -type f -name "*.jsonl" 2>/dev/null | sort -t- -k3 -r | head -20
 }
 
 # Get initial file list
@@ -128,7 +123,7 @@ PROJECT_FILES=$(find_project_files)
 
 if [ -z "$PROJECT_FILES" ]; then
   echo ""
-  echo -e "${YELLOW}Waiting for Claude Code session to start in wp-navigator-pro...${NC}"
+  echo -e "${YELLOW}Waiting for Claude Code session to start...${NC}"
   echo ""
 fi
 
@@ -142,8 +137,8 @@ while true; do
     # Use tail to get only new lines since last check
     # We'll process line-by-line looking for message objects
     tail -n 100 "$file" 2>/dev/null | while IFS= read -r line; do
-      # Check if this line contains our project path
-      if echo "$line" | grep -q "wp-navigator-pro"; then
+      # Process all lines (no project-specific filtering)
+      if echo "$line" | grep -q "usage"; then
 
         # Try to extract token usage from the line
         # Claude Code JSONL format includes usage data in message objects
