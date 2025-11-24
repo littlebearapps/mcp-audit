@@ -4,7 +4,7 @@ title: 'Week 2: Repository Setup & Core Configuration'
 status: Roadmap
 assignee: []
 created_date: '2025-11-24 06:12'
-updated_date: '2025-11-24 07:35'
+updated_date: '2025-11-24 07:37'
 labels: []
 dependencies: []
 parent_task_id: task-1
@@ -50,10 +50,10 @@ Create standalone public repository with critical pricing configuration system. 
 - [ ] #14 PR template created
 - [ ] #15 CODE_OF_CONDUCT.md added
 - [ ] #16 SECURITY.md added
-- [ ] #17 Basic CLI interface implemented: mcp-analyze collect
-- [ ] #18 Basic CLI interface implemented: mcp-analyze report
-- [ ] #19 --help documentation added for all commands
-- [ ] #20 Update this task with daily progress notes in Implementation Notes
+- [x] #17 Basic CLI interface implemented: mcp-analyze collect
+- [x] #18 Basic CLI interface implemented: mcp-analyze report
+- [x] #19 --help documentation added for all commands
+- [x] #20 Update this task with daily progress notes in Implementation Notes
 - [ ] #21 Test all deliverables: pricing config, CI/CD, CLI commands
 - [ ] #22 Update this task if any scope changes or blockers occur
 
@@ -105,4 +105,51 @@ Create standalone public repository with critical pricing configuration system. 
 - Exchange rate metadata for display
 
 **Next**: CLI interface implementation (AC #17-19)
+
+### 2025-11-24: Basic CLI Interface Complete
+
+**Status**: ✅ AC #17-19 COMPLETE (Basic CLI interface)
+
+**Deliverables**:
+- `mcp_analyze_cli.py` (540 lines) - Complete CLI application
+  - Main entry point with argparse
+  - Two subcommands: collect, report
+  - Auto-platform detection (Claude Code, Codex CLI, Gemini CLI)
+  - Comprehensive --help documentation
+  
+**collect command** (AC #17):
+- Platform auto-detection or manual selection
+- Output directory configuration
+- Project name auto-detection
+- Integration with adapters (Claude Code, Codex CLI)
+- Real-time monitoring with Ctrl+C safety
+- Session summary on completion
+
+**report command** (AC #18):
+- Multiple format support: JSON, Markdown, CSV
+- Single session or multi-session analysis
+- Configurable output (file or stdout)
+- Top-N tools display (default: 10)
+- Aggregate statistics across sessions
+
+**--help documentation** (AC #19):
+- Main help with examples and GitHub link
+- Subcommand help with detailed descriptions
+- All options documented with defaults
+- Usage examples for common workflows
+
+**Validation**:
+- ✓ Main help tested: mcp-analyze --help
+- ✓ collect help tested: mcp-analyze collect --help
+- ✓ report help tested: mcp-analyze report --help
+- ✓ All options display correctly
+
+**Features**:
+- Platform-agnostic design (works with any adapter)
+- Graceful error handling
+- Progress indicators and status messages
+- Flexible output options (file/stdout)
+- CSV export for external analysis
+
+**Next**: Repository setup tasks (AC #6-16) and CI/CD configuration
 <!-- SECTION:NOTES:END -->

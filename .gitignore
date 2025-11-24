@@ -56,3 +56,8 @@ mcp-efficiency-report.csv
 .claude/settings.local.json
 .claude/cache/
 .inst_id
+
+# Temporary files
+.coverage
+CLAUDE.md.backup
+*.backup
