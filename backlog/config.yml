@@ -1,11 +1,13 @@
 project_name: "MCP Audit"
-default_status: "To Do"
-statuses: ["To Do", "In Progress", "Done"]
-labels: []
+default_status: "Ready"
+statuses: ["Roadmap", "Ready", "In Progress", "In Review", "Done", "Blocked", "Won't Do"]
+labels: ["feature", "enhancement", "bug", "chore", "docs", "quick-win", "roadmap", "blocked", "breaking-change", "security", "performance", "analytics", "optimization", "mcp-server", "claude-code", "codex-cli"]
 milestones: []
-date_format: yyyy-mm-dd
+date_format: yyyy-mm-dd hh:mm
+timezone_preference: UTC
+include_datetime_in_dates: true
 max_column_width: 20
-default_editor: "nano"
+default_editor: "code --wait"
 auto_open_browser: true
 default_port: 6420
 remote_operations: true
