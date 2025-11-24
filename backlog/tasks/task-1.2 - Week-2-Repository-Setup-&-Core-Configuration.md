@@ -1,10 +1,10 @@
 ---
 id: task-1.2
 title: 'Week 2: Repository Setup & Core Configuration'
-status: Roadmap
+status: Done
 assignee: []
 created_date: '2025-11-24 06:12'
-updated_date: '2025-11-24 07:37'
+updated_date: '2025-11-24 09:51'
 labels: []
 dependencies: []
 parent_task_id: task-1

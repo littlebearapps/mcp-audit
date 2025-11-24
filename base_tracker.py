@@ -5,15 +5,15 @@ BaseTracker - Abstract base class for platform-specific MCP trackers
 Provides a stable adapter interface for Claude Code, Codex CLI, Gemini CLI, and future platforms.
 """
 
+import hashlib
+import json
+import warnings
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Any, Tuple
-from dataclasses import dataclass, field, asdict
+from collections import defaultdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
-from collections import defaultdict
-import json
-import hashlib
-import warnings
+from typing import Any, Dict, List, Optional, Tuple
 
 # Schema version (LOCKED - see docs/CORE-SCHEMA-SPEC.md)
 SCHEMA_VERSION = "1.0.0"
@@ -242,7 +242,7 @@ class BaseTracker(ABC):
             Normalized server name
         """
         if not tool_name.startswith("mcp__"):
-            warnings.warn(f"Tool name doesn't start with 'mcp__': {tool_name}")
+            warnings.warn(f"Tool name doesn't start with 'mcp__': {tool_name}", stacklevel=2)
             return "unknown"
 
         # Remove mcp__ prefix
@@ -425,7 +425,7 @@ class BaseTracker(ABC):
         duplicate_calls = 0
         potential_savings = 0
 
-        for content_hash, calls in self.content_hashes.items():
+        for _content_hash, calls in self.content_hashes.items():
             if len(calls) > 1:
                 duplicate_calls += len(calls) - 1
                 # Calculate savings (all calls after first could be cached)
@@ -500,7 +500,7 @@ class BaseTracker(ABC):
             line: Unrecognized event line
         """
         # Log warning but don't crash
-        warnings.warn(f"Unrecognized event format: {line[:100]}...")
+        warnings.warn(f"Unrecognized event format: {line[:100]}...", stacklevel=2)
 
     # ========================================================================
     # Utility Methods

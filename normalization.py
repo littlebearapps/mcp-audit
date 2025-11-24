@@ -34,7 +34,7 @@ def normalize_server_name(tool_name: str) -> str:
         'brave-search'
     """
     if not tool_name.startswith("mcp__"):
-        warnings.warn(f"Tool name doesn't start with 'mcp__': {tool_name}")
+        warnings.warn(f"Tool name doesn't start with 'mcp__': {tool_name}", stacklevel=2)
         return "unknown"
 
     # Remove mcp__ prefix

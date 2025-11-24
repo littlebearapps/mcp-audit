@@ -5,10 +5,10 @@ Privacy Module - Data redaction and sanitization utilities
 Provides utilities for protecting sensitive data in session logs and exports.
 """
 
-import re
 import json
-from typing import Any, Dict, List, Pattern, Union
+import re
 from pathlib import Path
+from typing import Any, Dict, List, Pattern
 
 
 class PrivacyFilter:
@@ -74,16 +74,16 @@ class PrivacyFilter:
             return text
 
         # Apply standard patterns
-        for pattern_name, pattern in self.PATTERNS.items():
+        for _pattern_name, pattern in self.PATTERNS.items():
             text = pattern.sub(placeholder, text)
 
         # Apply path patterns if enabled
         if self.redact_paths:
-            for pattern_name, pattern in self.PATH_PATTERNS.items():
+            for _pattern_name, pattern in self.PATH_PATTERNS.items():
                 text = pattern.sub(f"{placeholder}_PATH", text)
 
         # Apply custom patterns
-        for pattern_name, pattern in self.custom_patterns.items():
+        for _pattern_name, pattern in self.custom_patterns.items():
             text = pattern.sub(placeholder, text)
 
         return text
@@ -175,7 +175,7 @@ class PrivacyFilter:
             output_path: Output file path
             placeholder: Replacement string for redacted data
         """
-        with open(input_path, 'r') as f:
+        with open(input_path) as f:
             content = f.read()
 
         # Try to parse as JSON first
@@ -356,7 +356,7 @@ def sanitize_session_file(
         output_path: Output sanitized file
         redact_tool_inputs: Whether to redact tool inputs
     """
-    with open(input_path, 'r') as f:
+    with open(input_path) as f:
         session_data = json.load(f)
 
     filter = SessionPrivacyFilter(redact_tool_inputs=redact_tool_inputs)

@@ -8,7 +8,7 @@ Provides validation and warnings for missing pricing.
 
 import warnings
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Any, Dict, List, Optional
 
 # Try Python 3.11+ built-in tomllib, fall back to toml package
 try:
@@ -22,7 +22,8 @@ except ImportError:
         HAS_TOMLLIB = False
         warnings.warn(
             "TOML support not available. Install 'toml' package: pip install toml",
-            RuntimeWarning
+            RuntimeWarning,
+            stacklevel=2
         )
 
 
@@ -85,7 +86,8 @@ class PricingConfig:
         if not self.loaded:
             warnings.warn(
                 f"Pricing config not loaded. Missing file: {self.config_path}",
-                RuntimeWarning
+                RuntimeWarning,
+                stacklevel=2
             )
             return None
 
@@ -98,7 +100,7 @@ class PricingConfig:
             return None
 
         # Search all vendors
-        for vendor_name, models in self.pricing_data.items():
+        for _vendor_name, models in self.pricing_data.items():
             if model_name in models:
                 result_model: Dict[str, float] = models[model_name]
                 return result_model
@@ -107,7 +109,8 @@ class PricingConfig:
         warnings.warn(
             f"No pricing configured for model: {model_name}. "
             f"Add pricing to {self.config_path} under [pricing.custom]",
-            RuntimeWarning
+            RuntimeWarning,
+            stacklevel=2
         )
         return None
 

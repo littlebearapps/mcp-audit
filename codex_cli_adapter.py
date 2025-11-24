@@ -7,10 +7,10 @@ Implements BaseTracker for Codex CLI's output format.
 
 import json
 import subprocess
-from typing import Optional, Tuple, Dict, Any
 from pathlib import Path
+from typing import Any, Dict, Optional, Tuple
 
-from base_tracker import BaseTracker, SCHEMA_VERSION
+from base_tracker import BaseTracker
 
 
 class CodexCLIAdapter(BaseTracker):
@@ -206,7 +206,6 @@ class CodexCLIAdapter(BaseTracker):
 def main() -> int:
     """Main entry point for standalone execution"""
     import argparse
-    import sys
 
     parser = argparse.ArgumentParser(
         description="Codex CLI MCP Tracker (BaseTracker Adapter)",
@@ -241,7 +240,8 @@ def main() -> int:
         print(f"Total tokens: {session.token_usage.total_tokens:,}")
         print(f"MCP calls: {session.mcp_tool_calls.total_calls}")
         print(f"Cache efficiency: {session.token_usage.cache_efficiency:.1%}")
-        return 0
+
+    return 0
 
 
 if __name__ == "__main__":

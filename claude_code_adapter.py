@@ -8,10 +8,9 @@ Implements BaseTracker for Claude Code's debug.log format.
 import json
 import time
 from pathlib import Path
-from typing import Optional, Tuple, Dict, Any, List
-from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple
 
-from base_tracker import BaseTracker, SCHEMA_VERSION
+from base_tracker import BaseTracker
 
 
 class ClaudeCodeAdapter(BaseTracker):
@@ -126,7 +125,7 @@ class ClaudeCodeAdapter(BaseTracker):
 
                     # Read new content
                     try:
-                        with open(file_path, 'r') as f:
+                        with open(file_path) as f:
                             # Seek to last position
                             f.seek(self.file_positions[file_path])
 
@@ -299,7 +298,8 @@ def main() -> int:
         print(f"Total tokens: {session.token_usage.total_tokens:,}")
         print(f"MCP calls: {session.mcp_tool_calls.total_calls}")
         print(f"Cache efficiency: {session.token_usage.cache_efficiency:.1%}")
-        return 0
+
+    return 0
 
 
 if __name__ == "__main__":
