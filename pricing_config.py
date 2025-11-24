@@ -91,15 +91,17 @@ class PricingConfig:
 
         # Search specific vendor if provided
         if vendor:
-            vendor_pricing = self.pricing_data.get(vendor, {})
+            vendor_pricing: Dict[str, Dict[str, float]] = self.pricing_data.get(vendor, {})  # type: ignore[assignment]
             if model_name in vendor_pricing:
-                return vendor_pricing[model_name]
+                result: Dict[str, float] = vendor_pricing[model_name]  # type: ignore[assignment]
+                return result
             return None
 
         # Search all vendors
         for vendor_name, models in self.pricing_data.items():
             if model_name in models:
-                return models[model_name]
+                result_model: Dict[str, float] = models[model_name]  # type: ignore[assignment]
+                return result_model
 
         # Model not found
         warnings.warn(
@@ -173,7 +175,7 @@ class PricingConfig:
             return list(self.pricing_data.get(vendor, {}).keys())
 
         # All models from all vendors
-        models = []
+        models: list[str] = []
         for vendor_models in self.pricing_data.values():
             models.extend(vendor_models.keys())
         return models
@@ -188,7 +190,7 @@ class PricingConfig:
             - errors: List[str]
             - warnings: List[str]
         """
-        result = {
+        result: Dict[str, Any] = {
             'valid': True,
             'errors': [],
             'warnings': []

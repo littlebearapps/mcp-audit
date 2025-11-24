@@ -26,7 +26,7 @@ class PrivacyFilter:
     """
 
     # Regex patterns for common sensitive data
-    PATTERNS: Dict[str, Pattern] = {
+    PATTERNS: Dict[str, Pattern[str]] = {
         'api_key': re.compile(r'\b(?:sk-|pk-|rk-)[A-Za-z0-9_-]{6,}|[A-Za-z0-9_-]{20,}\b'),
         'email': re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'),
         'ipv4': re.compile(r'\b(?:\d{1,3}\.){3}\d{1,3}\b'),
@@ -39,7 +39,7 @@ class PrivacyFilter:
     }
 
     # Path patterns (optional redaction)
-    PATH_PATTERNS: Dict[str, Pattern] = {
+    PATH_PATTERNS: Dict[str, Pattern[str]] = {
         'home_dir': re.compile(r'/Users/[^/\s]+|/home/[^/\s]+|C:\\Users\\[^\\]+'),
         'full_path': re.compile(r'(?:/[\w.-]+)+|(?:[A-Z]:\\(?:[\w.-]+\\)*[\w.-]+)'),
     }
@@ -47,7 +47,7 @@ class PrivacyFilter:
     def __init__(
         self,
         redact_paths: bool = False,
-        custom_patterns: Dict[str, Pattern] = None
+        custom_patterns: Dict[str, Pattern[str]] | None = None
     ):
         """
         Initialize privacy filter.
@@ -91,7 +91,7 @@ class PrivacyFilter:
     def redact_dict(
         self,
         data: Dict[str, Any],
-        sensitive_keys: List[str] = None,
+        sensitive_keys: List[str] | None = None,
         placeholder: str = "[REDACTED]"
     ) -> Dict[str, Any]:
         """
@@ -139,7 +139,7 @@ class PrivacyFilter:
     def redact_json(
         self,
         json_str: str,
-        sensitive_keys: List[str] = None,
+        sensitive_keys: List[str] | None = None,
         placeholder: str = "[REDACTED]"
     ) -> str:
         """
@@ -363,7 +363,7 @@ def sanitize_session_file(
     sanitized = filter.sanitize_session(session_data)
 
     with open(output_path, 'w') as f:
-        json.dumps(sanitized, f, indent=2)
+        json.dump(sanitized, f, indent=2)
 
 
 # ============================================================================
