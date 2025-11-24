@@ -20,7 +20,7 @@ jobs:
           fetch-depth: 0  # Full history for secret scanning
 
       - name: Setup Node.js for gpm
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "20"
 
