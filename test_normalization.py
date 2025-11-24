@@ -14,7 +14,7 @@ from normalization import (
     is_builtin_tool,
     normalize_claude_code_tool,
     normalize_codex_cli_tool,
-    normalize_gemini_cli_tool
+    normalize_gemini_cli_tool,
 )
 
 
@@ -69,7 +69,10 @@ class TestToolNameNormalization:
     def test_complex_tool_names(self):
         """Test complex tool names with multiple underscores"""
         assert normalize_tool_name("mcp__zen-mcp__think_deep") == "mcp__zen__think_deep"
-        assert normalize_tool_name("mcp__brave-search__brave_web_search") == "mcp__brave-search__brave_web_search"
+        assert (
+            normalize_tool_name("mcp__brave-search__brave_web_search")
+            == "mcp__brave-search__brave_web_search"
+        )
 
 
 class TestExtractServerAndTool:
@@ -151,12 +154,7 @@ class TestCrossPlatformCompatibility:
 
     def test_server_extraction_consistency(self):
         """Test server extraction is consistent across platforms"""
-        tools = [
-            "mcp__zen__chat",
-            "mcp__zen-mcp__chat",
-            "mcp__zen__debug",
-            "mcp__zen-mcp__debug"
-        ]
+        tools = ["mcp__zen__chat", "mcp__zen-mcp__chat", "mcp__zen__debug", "mcp__zen-mcp__debug"]
 
         servers = [normalize_server_name(tool) for tool in tools]
         assert all(server == "zen" for server in servers)
@@ -166,24 +164,31 @@ class TestCrossPlatformCompatibility:
 # Parametrized Tests
 # ============================================================================
 
-@pytest.mark.parametrize("tool_name,expected_server", [
-    ("mcp__zen__chat", "zen"),
-    ("mcp__zen-mcp__chat", "zen"),
-    ("mcp__brave-search__web", "brave-search"),
-    ("mcp__brave-search-mcp__web", "brave-search"),
-    ("mcp__context7__search", "context7"),
-    ("mcp__mult-fetch__fetch", "mult-fetch"),
-])
+
+@pytest.mark.parametrize(
+    "tool_name,expected_server",
+    [
+        ("mcp__zen__chat", "zen"),
+        ("mcp__zen-mcp__chat", "zen"),
+        ("mcp__brave-search__web", "brave-search"),
+        ("mcp__brave-search-mcp__web", "brave-search"),
+        ("mcp__context7__search", "context7"),
+        ("mcp__mult-fetch__fetch", "mult-fetch"),
+    ],
+)
 def test_server_extraction_parametrized(tool_name, expected_server):
     """Parametrized test for server extraction"""
     assert normalize_server_name(tool_name) == expected_server
 
 
-@pytest.mark.parametrize("codex_tool,expected_normalized", [
-    ("mcp__zen-mcp__chat", "mcp__zen__chat"),
-    ("mcp__brave-search-mcp__web", "mcp__brave-search__web"),
-    ("mcp__zen__chat", "mcp__zen__chat"),  # Already normalized
-])
+@pytest.mark.parametrize(
+    "codex_tool,expected_normalized",
+    [
+        ("mcp__zen-mcp__chat", "mcp__zen__chat"),
+        ("mcp__brave-search-mcp__web", "mcp__brave-search__web"),
+        ("mcp__zen__chat", "mcp__zen__chat"),  # Already normalized
+    ],
+)
 def test_codex_normalization_parametrized(codex_tool, expected_normalized):
     """Parametrized test for Codex normalization"""
     assert normalize_tool_name(codex_tool) == expected_normalized
@@ -193,6 +198,7 @@ def test_codex_normalization_parametrized(codex_tool, expected_normalized):
 # Integration Tests
 # ============================================================================
 
+
 class TestNormalizationIntegration:
     """Integration tests for complete normalization workflow"""
 
@@ -200,9 +206,9 @@ class TestNormalizationIntegration:
         """Test complete normalization workflow"""
         # Simulate receiving tool names from different platforms
         tools_from_platforms = {
-            'claude_code': ["mcp__zen__chat", "mcp__brave-search__web"],
-            'codex_cli': ["mcp__zen-mcp__chat", "mcp__brave-search-mcp__web"],
-            'gemini_cli': ["mcp__zen__chat", "mcp__brave-search__web"]
+            "claude_code": ["mcp__zen__chat", "mcp__brave-search__web"],
+            "codex_cli": ["mcp__zen-mcp__chat", "mcp__brave-search-mcp__web"],
+            "gemini_cli": ["mcp__zen__chat", "mcp__brave-search__web"],
         }
 
         # Normalize all tools

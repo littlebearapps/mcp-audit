@@ -16,13 +16,14 @@ from base_tracker import (
     Call,
     TokenUsage,
     MCPToolCalls,
-    SCHEMA_VERSION
+    SCHEMA_VERSION,
 )
 
 
 # ============================================================================
 # Concrete Test Implementation of BaseTracker
 # ============================================================================
+
 
 class ConcreteTestTracker(BaseTracker):
     """Concrete implementation of BaseTracker for testing"""
@@ -48,16 +49,14 @@ class ConcreteTestTracker(BaseTracker):
 # Data Structure Tests
 # ============================================================================
 
+
 class TestDataStructures:
     """Tests for core data structures"""
 
     def test_call_creation(self):
         """Test Call dataclass creation"""
         call = Call(
-            tool_name="mcp__zen__chat",
-            input_tokens=100,
-            output_tokens=50,
-            total_tokens=150
+            tool_name="mcp__zen__chat", input_tokens=100, output_tokens=50, total_tokens=150
         )
 
         assert call.tool_name == "mcp__zen__chat"
@@ -74,22 +73,18 @@ class TestDataStructures:
             timestamp=timestamp,
             input_tokens=100,
             output_tokens=50,
-            total_tokens=150
+            total_tokens=150,
         )
 
         data = call.to_dict()
 
-        assert data['tool_name'] == "mcp__zen__chat"
-        assert data['input_tokens'] == 100
-        assert data['timestamp'] == "2025-11-24T10:30:00"
+        assert data["tool_name"] == "mcp__zen__chat"
+        assert data["input_tokens"] == 100
+        assert data["timestamp"] == "2025-11-24T10:30:00"
 
     def test_tool_stats_creation(self):
         """Test ToolStats dataclass creation"""
-        stats = ToolStats(
-            calls=5,
-            total_tokens=1000,
-            avg_tokens=200.0
-        )
+        stats = ToolStats(calls=5, total_tokens=1000, avg_tokens=200.0)
 
         assert stats.calls == 5
         assert stats.total_tokens == 1000
@@ -102,17 +97,13 @@ class TestDataStructures:
 
         data = stats.to_dict()
 
-        assert data['calls'] == 1
-        assert len(data['call_history']) == 1
-        assert data['call_history'][0]['tool_name'] == "test"
+        assert data["calls"] == 1
+        assert len(data["call_history"]) == 1
+        assert data["call_history"][0]["tool_name"] == "test"
 
     def test_server_session_creation(self):
         """Test ServerSession dataclass creation"""
-        session = ServerSession(
-            server="zen",
-            total_calls=10,
-            total_tokens=5000
-        )
+        session = ServerSession(server="zen", total_calls=10, total_tokens=5000)
 
         assert session.server == "zen"
         assert session.total_calls == 10
@@ -120,11 +111,7 @@ class TestDataStructures:
 
     def test_session_creation(self):
         """Test Session dataclass creation"""
-        session = Session(
-            project="test-project",
-            platform="test-platform",
-            session_id="test-123"
-        )
+        session = Session(project="test-project", platform="test-platform", session_id="test-123")
 
         assert session.project == "test-project"
         assert session.platform == "test-platform"
@@ -135,6 +122,7 @@ class TestDataStructures:
 # ============================================================================
 # BaseTracker Initialization Tests
 # ============================================================================
+
 
 class TestBaseTrackerInitialization:
     """Tests for BaseTracker initialization"""
@@ -175,6 +163,7 @@ class TestBaseTrackerInitialization:
 # ============================================================================
 # Normalization Tests
 # ============================================================================
+
 
 class TestNormalization:
     """Tests for tool name normalization"""
@@ -233,6 +222,7 @@ class TestNormalization:
 # Tool Call Recording Tests
 # ============================================================================
 
+
 class TestToolCallRecording:
     """Tests for recording tool calls"""
 
@@ -245,7 +235,7 @@ class TestToolCallRecording:
             input_tokens=100,
             output_tokens=50,
             cache_created_tokens=20,
-            cache_read_tokens=500
+            cache_read_tokens=500,
         )
 
         # Check session token usage
@@ -259,11 +249,7 @@ class TestToolCallRecording:
         """Test tool call creates server session"""
         tracker = ConcreteTestTracker()
 
-        tracker.record_tool_call(
-            tool_name="mcp__zen__chat",
-            input_tokens=100,
-            output_tokens=50
-        )
+        tracker.record_tool_call(tool_name="mcp__zen__chat", input_tokens=100, output_tokens=50)
 
         assert "zen" in tracker.server_sessions
         assert tracker.server_sessions["zen"].server == "zen"
@@ -272,11 +258,7 @@ class TestToolCallRecording:
         """Test tool call creates tool stats"""
         tracker = ConcreteTestTracker()
 
-        tracker.record_tool_call(
-            tool_name="mcp__zen__chat",
-            input_tokens=100,
-            output_tokens=50
-        )
+        tracker.record_tool_call(tool_name="mcp__zen__chat", input_tokens=100, output_tokens=50)
 
         zen_session = tracker.server_sessions["zen"]
         assert "mcp__zen__chat" in zen_session.tools
@@ -289,18 +271,10 @@ class TestToolCallRecording:
         tracker = ConcreteTestTracker()
 
         # First call
-        tracker.record_tool_call(
-            tool_name="mcp__zen__chat",
-            input_tokens=100,
-            output_tokens=50
-        )
+        tracker.record_tool_call(tool_name="mcp__zen__chat", input_tokens=100, output_tokens=50)
 
         # Second call
-        tracker.record_tool_call(
-            tool_name="mcp__zen__chat",
-            input_tokens=200,
-            output_tokens=100
-        )
+        tracker.record_tool_call(tool_name="mcp__zen__chat", input_tokens=200, output_tokens=100)
 
         tool_stats = tracker.server_sessions["zen"].tools["mcp__zen__chat"]
         assert tool_stats.calls == 2
@@ -312,9 +286,7 @@ class TestToolCallRecording:
         tracker = ConcreteTestTracker()
 
         tracker.record_tool_call(
-            tool_name="mcp__zen-mcp__chat",  # Codex format
-            input_tokens=100,
-            output_tokens=50
+            tool_name="mcp__zen-mcp__chat", input_tokens=100, output_tokens=50  # Codex format
         )
 
         # Should be normalized to Claude Code format
@@ -326,10 +298,7 @@ class TestToolCallRecording:
         tracker = ConcreteTestTracker()
 
         tracker.record_tool_call(
-            tool_name="mcp__zen__chat",
-            input_tokens=100,
-            output_tokens=50,
-            duration_ms=1500
+            tool_name="mcp__zen__chat", input_tokens=100, output_tokens=50, duration_ms=1500
         )
 
         tool_stats = tracker.server_sessions["zen"].tools["mcp__zen__chat"]
@@ -344,22 +313,13 @@ class TestToolCallRecording:
 
         # Three calls with different durations
         tracker.record_tool_call(
-            tool_name="mcp__zen__chat",
-            input_tokens=100,
-            output_tokens=50,
-            duration_ms=1000
+            tool_name="mcp__zen__chat", input_tokens=100, output_tokens=50, duration_ms=1000
         )
         tracker.record_tool_call(
-            tool_name="mcp__zen__chat",
-            input_tokens=100,
-            output_tokens=50,
-            duration_ms=2000
+            tool_name="mcp__zen__chat", input_tokens=100, output_tokens=50, duration_ms=2000
         )
         tracker.record_tool_call(
-            tool_name="mcp__zen__chat",
-            input_tokens=100,
-            output_tokens=50,
-            duration_ms=1500
+            tool_name="mcp__zen__chat", input_tokens=100, output_tokens=50, duration_ms=1500
         )
 
         tool_stats = tracker.server_sessions["zen"].tools["mcp__zen__chat"]
@@ -373,10 +333,7 @@ class TestToolCallRecording:
         tracker = ConcreteTestTracker()
 
         tracker.record_tool_call(
-            tool_name="mcp__zen__chat",
-            input_tokens=100,
-            output_tokens=50,
-            content_hash="abc123"
+            tool_name="mcp__zen__chat", input_tokens=100, output_tokens=50, content_hash="abc123"
         )
 
         assert "abc123" in tracker.content_hashes
@@ -391,7 +348,7 @@ class TestToolCallRecording:
             input_tokens=100,
             output_tokens=50,
             cache_created_tokens=20,
-            cache_read_tokens=500
+            cache_read_tokens=500,
         )
 
         # cache_efficiency = cache_read / total_tokens
@@ -404,6 +361,7 @@ class TestToolCallRecording:
 # Session Finalization Tests
 # ============================================================================
 
+
 class TestSessionFinalization:
     """Tests for session finalization"""
 
@@ -412,11 +370,7 @@ class TestSessionFinalization:
         tracker = ConcreteTestTracker()
 
         # Record some calls
-        tracker.record_tool_call(
-            tool_name="mcp__zen__chat",
-            input_tokens=100,
-            output_tokens=50
-        )
+        tracker.record_tool_call(tool_name="mcp__zen__chat", input_tokens=100, output_tokens=50)
 
         session = tracker.finalize_session()
 
@@ -429,21 +383,9 @@ class TestSessionFinalization:
         tracker = ConcreteTestTracker()
 
         # Record multiple calls
-        tracker.record_tool_call(
-            tool_name="mcp__zen__chat",
-            input_tokens=100,
-            output_tokens=50
-        )
-        tracker.record_tool_call(
-            tool_name="mcp__zen__chat",
-            input_tokens=100,
-            output_tokens=50
-        )
-        tracker.record_tool_call(
-            tool_name="mcp__zen__debug",
-            input_tokens=200,
-            output_tokens=100
-        )
+        tracker.record_tool_call(tool_name="mcp__zen__chat", input_tokens=100, output_tokens=50)
+        tracker.record_tool_call(tool_name="mcp__zen__chat", input_tokens=100, output_tokens=50)
+        tracker.record_tool_call(tool_name="mcp__zen__debug", input_tokens=200, output_tokens=100)
 
         session = tracker.finalize_session()
 
@@ -455,11 +397,7 @@ class TestSessionFinalization:
         """Test server sessions added to session"""
         tracker = ConcreteTestTracker()
 
-        tracker.record_tool_call(
-            tool_name="mcp__zen__chat",
-            input_tokens=100,
-            output_tokens=50
-        )
+        tracker.record_tool_call(tool_name="mcp__zen__chat", input_tokens=100, output_tokens=50)
 
         session = tracker.finalize_session()
 
@@ -472,22 +410,19 @@ class TestSessionFinalization:
 
         # Same content hash = duplicate
         tracker.record_tool_call(
-            tool_name="mcp__zen__chat",
-            input_tokens=100,
-            output_tokens=50,
-            content_hash="abc123"
+            tool_name="mcp__zen__chat", input_tokens=100, output_tokens=50, content_hash="abc123"
         )
         tracker.record_tool_call(
             tool_name="mcp__zen__chat",
             input_tokens=100,
             output_tokens=50,
-            content_hash="abc123"  # Duplicate
+            content_hash="abc123",  # Duplicate
         )
         tracker.record_tool_call(
             tool_name="mcp__zen__chat",
             input_tokens=100,
             output_tokens=50,
-            content_hash="def456"  # Different
+            content_hash="def456",  # Different
         )
 
         session = tracker.finalize_session()
@@ -502,11 +437,7 @@ class TestSessionFinalization:
 
         # 15 calls (threshold is 10)
         for _ in range(15):
-            tracker.record_tool_call(
-                tool_name="mcp__zen__chat",
-                input_tokens=100,
-                output_tokens=50
-            )
+            tracker.record_tool_call(tool_name="mcp__zen__chat", input_tokens=100, output_tokens=50)
 
         session = tracker.finalize_session()
 
@@ -523,9 +454,7 @@ class TestSessionFinalization:
 
         # 150K tokens (threshold is 100K)
         tracker.record_tool_call(
-            tool_name="mcp__zen__thinkdeep",
-            input_tokens=100000,
-            output_tokens=50000
+            tool_name="mcp__zen__thinkdeep", input_tokens=100000, output_tokens=50000
         )
 
         session = tracker.finalize_session()
@@ -542,6 +471,7 @@ class TestSessionFinalization:
 # Persistence Tests
 # ============================================================================
 
+
 class TestPersistence:
     """Tests for session persistence"""
 
@@ -549,11 +479,7 @@ class TestPersistence:
         """Test saving session to disk"""
         tracker = ConcreteTestTracker()
 
-        tracker.record_tool_call(
-            tool_name="mcp__zen__chat",
-            input_tokens=100,
-            output_tokens=50
-        )
+        tracker.record_tool_call(tool_name="mcp__zen__chat", input_tokens=100, output_tokens=50)
 
         tracker.finalize_session()
         tracker.save_session(tmp_path)
@@ -568,6 +494,7 @@ class TestPersistence:
 # ============================================================================
 # Utility Methods Tests
 # ============================================================================
+
 
 class TestUtilityMethods:
     """Tests for utility methods"""
@@ -600,6 +527,7 @@ class TestUtilityMethods:
 # Integration Tests
 # ============================================================================
 
+
 class TestBaseTrackerIntegration:
     """Integration tests for complete tracker workflow"""
 
@@ -609,22 +537,13 @@ class TestBaseTrackerIntegration:
 
         # Record multiple tools across multiple servers
         tracker.record_tool_call(
-            tool_name="mcp__zen__chat",
-            input_tokens=100,
-            output_tokens=50,
-            duration_ms=1000
+            tool_name="mcp__zen__chat", input_tokens=100, output_tokens=50, duration_ms=1000
         )
         tracker.record_tool_call(
-            tool_name="mcp__zen__debug",
-            input_tokens=200,
-            output_tokens=100,
-            duration_ms=2000
+            tool_name="mcp__zen__debug", input_tokens=200, output_tokens=100, duration_ms=2000
         )
         tracker.record_tool_call(
-            tool_name="mcp__brave-search__web",
-            input_tokens=150,
-            output_tokens=75,
-            duration_ms=500
+            tool_name="mcp__brave-search__web", input_tokens=150, output_tokens=75, duration_ms=500
         )
 
         # Finalize and save

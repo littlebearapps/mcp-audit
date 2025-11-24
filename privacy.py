@@ -27,27 +27,25 @@ class PrivacyFilter:
 
     # Regex patterns for common sensitive data
     PATTERNS: Dict[str, Pattern[str]] = {
-        'api_key': re.compile(r'\b(?:sk-|pk-|rk-)[A-Za-z0-9_-]{6,}|[A-Za-z0-9_-]{20,}\b'),
-        'email': re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'),
-        'ipv4': re.compile(r'\b(?:\d{1,3}\.){3}\d{1,3}\b'),
-        'password': re.compile(r'(?i)(password|passwd|pwd)["\s:=]+[^\s"]+'),
-        'credit_card': re.compile(r'\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b'),
-        'phone': re.compile(r'\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b'),
-        'jwt_token': re.compile(r'eyJ[A-Za-z0-9_-]*\.eyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*'),
-        'bearer_token': re.compile(r'Bearer\s+[A-Za-z0-9_-]+'),
-        'ssh_key': re.compile(r'ssh-rsa\s+[A-Za-z0-9+/=]+'),
+        "api_key": re.compile(r"\b(?:sk-|pk-|rk-)[A-Za-z0-9_-]{6,}|[A-Za-z0-9_-]{20,}\b"),
+        "email": re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"),
+        "ipv4": re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b"),
+        "password": re.compile(r'(?i)(password|passwd|pwd)["\s:=]+[^\s"]+'),
+        "credit_card": re.compile(r"\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b"),
+        "phone": re.compile(r"\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b"),
+        "jwt_token": re.compile(r"eyJ[A-Za-z0-9_-]*\.eyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*"),
+        "bearer_token": re.compile(r"Bearer\s+[A-Za-z0-9_-]+"),
+        "ssh_key": re.compile(r"ssh-rsa\s+[A-Za-z0-9+/=]+"),
     }
 
     # Path patterns (optional redaction)
     PATH_PATTERNS: Dict[str, Pattern[str]] = {
-        'home_dir': re.compile(r'/Users/[^/\s]+|/home/[^/\s]+|C:\\Users\\[^\\]+'),
-        'full_path': re.compile(r'(?:/[\w.-]+)+|(?:[A-Z]:\\(?:[\w.-]+\\)*[\w.-]+)'),
+        "home_dir": re.compile(r"/Users/[^/\s]+|/home/[^/\s]+|C:\\Users\\[^\\]+"),
+        "full_path": re.compile(r"(?:/[\w.-]+)+|(?:[A-Z]:\\(?:[\w.-]+\\)*[\w.-]+)"),
     }
 
     def __init__(
-        self,
-        redact_paths: bool = False,
-        custom_patterns: Dict[str, Pattern[str]] | None = None
+        self, redact_paths: bool = False, custom_patterns: Dict[str, Pattern[str]] | None = None
     ):
         """
         Initialize privacy filter.
@@ -92,7 +90,7 @@ class PrivacyFilter:
         self,
         data: Dict[str, Any],
         sensitive_keys: List[str] | None = None,
-        placeholder: str = "[REDACTED]"
+        placeholder: str = "[REDACTED]",
     ) -> Dict[str, Any]:
         """
         Redact sensitive data from a dictionary.
@@ -110,8 +108,17 @@ class PrivacyFilter:
 
         if sensitive_keys is None:
             sensitive_keys = [
-                'password', 'passwd', 'pwd', 'secret', 'token', 'api_key',
-                'apikey', 'auth', 'authorization', 'credential', 'private_key'
+                "password",
+                "passwd",
+                "pwd",
+                "secret",
+                "token",
+                "api_key",
+                "apikey",
+                "auth",
+                "authorization",
+                "credential",
+                "private_key",
             ]
 
         # Convert to lowercase for case-insensitive matching
@@ -140,7 +147,7 @@ class PrivacyFilter:
         self,
         json_str: str,
         sensitive_keys: List[str] | None = None,
-        placeholder: str = "[REDACTED]"
+        placeholder: str = "[REDACTED]",
     ) -> str:
         """
         Redact sensitive data from JSON string.
@@ -162,10 +169,7 @@ class PrivacyFilter:
             return self.redact_string(json_str, placeholder)
 
     def redact_file(
-        self,
-        input_path: Path,
-        output_path: Path,
-        placeholder: str = "[REDACTED]"
+        self, input_path: Path, output_path: Path, placeholder: str = "[REDACTED]"
     ) -> None:
         """
         Redact sensitive data from a file.
@@ -187,13 +191,14 @@ class PrivacyFilter:
             # Not JSON, treat as plain text
             redacted_content = self.redact_string(content, placeholder)
 
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             f.write(redacted_content)
 
 
 # ============================================================================
 # Session Data Privacy
 # ============================================================================
+
 
 class SessionPrivacyFilter:
     """
@@ -229,21 +234,17 @@ class SessionPrivacyFilter:
         sanitized = session_data.copy()
 
         # Redact platform metadata
-        if 'platform_data' in sanitized:
-            sanitized['platform_data'] = self._sanitize_platform_data(
-                sanitized['platform_data']
-            )
+        if "platform_data" in sanitized:
+            sanitized["platform_data"] = self._sanitize_platform_data(sanitized["platform_data"])
 
         # Redact git metadata
-        if 'git_metadata' in sanitized:
-            sanitized['git_metadata'] = self._sanitize_git_metadata(
-                sanitized['git_metadata']
-            )
+        if "git_metadata" in sanitized:
+            sanitized["git_metadata"] = self._sanitize_git_metadata(sanitized["git_metadata"])
 
         # Redact server sessions
-        if 'server_sessions' in sanitized:
-            sanitized['server_sessions'] = self._sanitize_server_sessions(
-                sanitized['server_sessions']
+        if "server_sessions" in sanitized:
+            sanitized["server_sessions"] = self._sanitize_server_sessions(
+                sanitized["server_sessions"]
             )
 
         return sanitized
@@ -256,7 +257,7 @@ class SessionPrivacyFilter:
         sanitized = platform_data.copy()
 
         # Redact file paths
-        for key in ['debug_log_path', 'claude_dir', 'checkpoint_path']:
+        for key in ["debug_log_path", "claude_dir", "checkpoint_path"]:
             if key in sanitized:
                 sanitized[key] = "[REDACTED_PATH]"
 
@@ -274,10 +275,7 @@ class SessionPrivacyFilter:
 
         return sanitized
 
-    def _sanitize_server_sessions(
-        self,
-        server_sessions: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _sanitize_server_sessions(self, server_sessions: Dict[str, Any]) -> Dict[str, Any]:
         """Sanitize server session data"""
         sanitized = {}
 
@@ -285,9 +283,9 @@ class SessionPrivacyFilter:
             sanitized[server_name] = server_session.copy()
 
             # Sanitize tool data
-            if 'tools' in sanitized[server_name]:
-                sanitized[server_name]['tools'] = self._sanitize_tools(
-                    sanitized[server_name]['tools']
+            if "tools" in sanitized[server_name]:
+                sanitized[server_name]["tools"] = self._sanitize_tools(
+                    sanitized[server_name]["tools"]
                 )
 
         return sanitized
@@ -300,10 +298,9 @@ class SessionPrivacyFilter:
             sanitized[tool_name] = tool_data.copy()
 
             # Redact call history if requested
-            if self.redact_tool_inputs and 'call_history' in sanitized[tool_name]:
-                sanitized[tool_name]['call_history'] = [
-                    self._sanitize_call(call)
-                    for call in sanitized[tool_name]['call_history']
+            if self.redact_tool_inputs and "call_history" in sanitized[tool_name]:
+                sanitized[tool_name]["call_history"] = [
+                    self._sanitize_call(call) for call in sanitized[tool_name]["call_history"]
                 ]
 
         return sanitized
@@ -313,11 +310,11 @@ class SessionPrivacyFilter:
         sanitized = call.copy()
 
         # Redact platform data (may contain input parameters)
-        if 'platform_data' in sanitized:
-            sanitized['platform_data'] = "[REDACTED]"
+        if "platform_data" in sanitized:
+            sanitized["platform_data"] = "[REDACTED]"
 
         # Redact content hash (derived from input parameters)
-        if 'content_hash' in sanitized:
+        if "content_hash" in sanitized:
             # Keep hash for duplicate detection, but it's anonymized anyway
             pass
 
@@ -327,6 +324,7 @@ class SessionPrivacyFilter:
 # ============================================================================
 # Convenience Functions
 # ============================================================================
+
 
 def redact_string(text: str, redact_paths: bool = False) -> str:
     """
@@ -344,9 +342,7 @@ def redact_string(text: str, redact_paths: bool = False) -> str:
 
 
 def sanitize_session_file(
-    input_path: Path,
-    output_path: Path,
-    redact_tool_inputs: bool = False
+    input_path: Path, output_path: Path, redact_tool_inputs: bool = False
 ) -> None:
     """
     Sanitize a session file for safe sharing.
@@ -362,7 +358,7 @@ def sanitize_session_file(
     filter = SessionPrivacyFilter(redact_tool_inputs=redact_tool_inputs)
     sanitized = filter.sanitize_session(session_data)
 
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         json.dump(sanitized, f, indent=2)
 
 
@@ -382,7 +378,7 @@ if __name__ == "__main__":
         "Email me at john@example.com",
         "Password: secret123",
         "Server IP: 192.168.1.100",
-        "JWT: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U"
+        "JWT: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U",
     ]
 
     print("\nString Redaction Tests:")
@@ -397,10 +393,7 @@ if __name__ == "__main__":
         "password": "secret123",
         "api_key": "sk-1234567890",
         "email": "john@example.com",
-        "metadata": {
-            "token": "bearer_xyz",
-            "public_data": "This is safe"
-        }
+        "metadata": {"token": "bearer_xyz", "public_data": "This is safe"},
     }
 
     print("\nDictionary Redaction Test:")

@@ -9,12 +9,16 @@ import pytest
 import json
 from pathlib import Path
 from datetime import datetime
-from session_manager import (
-    SessionManager,
-    save_session,
-    load_session
+from session_manager import SessionManager, save_session, load_session
+from base_tracker import (
+    Session,
+    ServerSession,
+    ToolStats,
+    Call,
+    TokenUsage,
+    MCPToolCalls,
+    SCHEMA_VERSION,
 )
-from base_tracker import Session, ServerSession, ToolStats, Call, TokenUsage, MCPToolCalls, SCHEMA_VERSION
 
 
 @pytest.fixture
@@ -37,22 +41,16 @@ def sample_session():
             cache_created_tokens=200,
             cache_read_tokens=5000,
             total_tokens=6700,
-            cache_efficiency=0.75
+            cache_efficiency=0.75,
         ),
         cost_estimate=0.05,
         mcp_tool_calls=MCPToolCalls(
-            total_calls=10,
-            unique_tools=3,
-            most_called="mcp__zen__chat (5 calls)"
-        )
+            total_calls=10, unique_tools=3, most_called="mcp__zen__chat (5 calls)"
+        ),
     )
 
     # Add server session
-    server_session = ServerSession(
-        server="zen",
-        total_calls=10,
-        total_tokens=6700
-    )
+    server_session = ServerSession(server="zen", total_calls=10, total_tokens=6700)
 
     # Add tool stats
     tool_stats = ToolStats(
@@ -65,9 +63,9 @@ def sample_session():
                 input_tokens=100,
                 output_tokens=50,
                 total_tokens=150,
-                timestamp=datetime(2025, 11, 24, 10, 31, 0)
+                timestamp=datetime(2025, 11, 24, 10, 31, 0),
             )
-        ]
+        ],
     )
 
     server_session.tools["mcp__zen__chat"] = tool_stats
@@ -113,19 +111,19 @@ class TestSessionPersistence:
         saved_files = manager.save_session(sample_session, session_dir)
 
         # Check files were created
-        assert 'summary' in saved_files
-        assert 'mcp-zen' in saved_files
-        assert saved_files['summary'].exists()
-        assert saved_files['mcp-zen'].exists()
+        assert "summary" in saved_files
+        assert "mcp-zen" in saved_files
+        assert saved_files["summary"].exists()
+        assert saved_files["mcp-zen"].exists()
 
         # Verify summary.json content
-        with open(saved_files['summary'], 'r') as f:
+        with open(saved_files["summary"], "r") as f:
             data = json.load(f)
 
-        assert data['project'] == "test-project"
-        assert data['platform'] == "test-platform"
-        assert data['session_id'] == "test-project-2025-11-24T10-30-00"
-        assert data['token_usage']['total_tokens'] == 6700
+        assert data["project"] == "test-project"
+        assert data["platform"] == "test-platform"
+        assert data["session_id"] == "test-project-2025-11-24T10-30-00"
+        assert data["token_usage"]["total_tokens"] == 6700
 
     def test_load_session(self, temp_session_dir, sample_session):
         """Test loading session from disk"""
@@ -174,7 +172,7 @@ class TestSchemaVersionValidation:
         """Test validation of compatible schema version"""
         manager = SessionManager(base_dir=temp_session_dir)
 
-        data = {'schema_version': SCHEMA_VERSION}
+        data = {"schema_version": SCHEMA_VERSION}
         assert manager._validate_schema_version(data) == True
 
     def test_validate_schema_version_missing(self, temp_session_dir):
@@ -188,7 +186,7 @@ class TestSchemaVersionValidation:
         """Test validation fails for incompatible major version"""
         manager = SessionManager(base_dir=temp_session_dir)
 
-        data = {'schema_version': '2.0.0'}  # Different major version
+        data = {"schema_version": "2.0.0"}  # Different major version
         assert manager._validate_schema_version(data) == False
 
     def test_validate_schema_version_older_minor(self, temp_session_dir):
@@ -196,7 +194,7 @@ class TestSchemaVersionValidation:
         manager = SessionManager(base_dir=temp_session_dir)
 
         # Assuming current version is 1.0.0, test with 1.0.0 (same)
-        data = {'schema_version': '1.0.0'}
+        data = {"schema_version": "1.0.0"}
         assert manager._validate_schema_version(data) == True
 
     def test_parse_version(self, temp_session_dir):
@@ -243,7 +241,7 @@ class TestSessionListing:
         session_ids = [
             "test-2025-11-20T10-00-00",
             "test-2025-11-24T10-00-00",
-            "test-2025-11-22T10-00-00"
+            "test-2025-11-22T10-00-00",
         ]
 
         for session_id in session_ids:
@@ -340,8 +338,8 @@ class TestConvenienceFunctions:
 
         saved_files = save_session(sample_session, session_dir)
 
-        assert 'summary' in saved_files
-        assert saved_files['summary'].exists()
+        assert "summary" in saved_files
+        assert saved_files["summary"].exists()
 
     def test_load_session_function(self, temp_session_dir, sample_session):
         """Test load_session convenience function"""
@@ -387,6 +385,7 @@ class TestEdgeCases:
 # ============================================================================
 # Integration Tests
 # ============================================================================
+
 
 class TestSessionManagerIntegration:
     """Integration tests for complete session lifecycle"""

@@ -13,17 +13,19 @@ from typing import Any, Dict, List, Optional
 # Try Python 3.11+ built-in tomllib, fall back to toml package
 try:
     import tomllib
+
     HAS_TOMLLIB = True
 except ImportError:
     try:
         import toml as tomllib  # type: ignore
+
         HAS_TOMLLIB = True
     except ImportError:
         HAS_TOMLLIB = False
         warnings.warn(
             "TOML support not available. Install 'toml' package: pip install toml",
             RuntimeWarning,
-            stacklevel=2
+            stacklevel=2,
         )
 
 
@@ -58,18 +60,16 @@ class PricingConfig:
                 "Install 'toml' package: pip install toml"
             )
 
-        with open(self.config_path, 'rb') as f:
+        with open(self.config_path, "rb") as f:
             config = tomllib.load(f)
 
         # Extract pricing data
-        self.pricing_data = config.get('pricing', {})
-        self.metadata = config.get('metadata', {})
+        self.pricing_data = config.get("pricing", {})
+        self.metadata = config.get("metadata", {})
         self.loaded = True
 
     def get_model_pricing(
-        self,
-        model_name: str,
-        vendor: Optional[str] = None
+        self, model_name: str, vendor: Optional[str] = None
     ) -> Optional[Dict[str, float]]:
         """
         Get pricing for a specific model.
@@ -87,7 +87,7 @@ class PricingConfig:
             warnings.warn(
                 f"Pricing config not loaded. Missing file: {self.config_path}",
                 RuntimeWarning,
-                stacklevel=2
+                stacklevel=2,
             )
             return None
 
@@ -110,7 +110,7 @@ class PricingConfig:
             f"No pricing configured for model: {model_name}. "
             f"Add pricing to {self.config_path} under [pricing.custom]",
             RuntimeWarning,
-            stacklevel=2
+            stacklevel=2,
         )
         return None
 
@@ -121,7 +121,7 @@ class PricingConfig:
         output_tokens: int = 0,
         cache_created_tokens: int = 0,
         cache_read_tokens: int = 0,
-        vendor: Optional[str] = None
+        vendor: Optional[str] = None,
     ) -> float:
         """
         Calculate cost for token usage.
@@ -144,20 +144,20 @@ class PricingConfig:
         cost = 0.0
 
         # Input tokens
-        if 'input' in pricing:
-            cost += (input_tokens / 1_000_000) * pricing['input']
+        if "input" in pricing:
+            cost += (input_tokens / 1_000_000) * pricing["input"]
 
         # Output tokens
-        if 'output' in pricing:
-            cost += (output_tokens / 1_000_000) * pricing['output']
+        if "output" in pricing:
+            cost += (output_tokens / 1_000_000) * pricing["output"]
 
         # Cache creation tokens
-        if 'cache_create' in pricing:
-            cost += (cache_created_tokens / 1_000_000) * pricing['cache_create']
+        if "cache_create" in pricing:
+            cost += (cache_created_tokens / 1_000_000) * pricing["cache_create"]
 
         # Cache read tokens
-        if 'cache_read' in pricing:
-            cost += (cache_read_tokens / 1_000_000) * pricing['cache_read']
+        if "cache_read" in pricing:
+            cost += (cache_read_tokens / 1_000_000) * pricing["cache_read"]
 
         return cost
 
@@ -193,51 +193,41 @@ class PricingConfig:
             - errors: List[str]
             - warnings: List[str]
         """
-        result: Dict[str, Any] = {
-            'valid': True,
-            'errors': [],
-            'warnings': []
-        }
+        result: Dict[str, Any] = {"valid": True, "errors": [], "warnings": []}
 
         if not self.loaded:
-            result['valid'] = False
-            result['errors'].append(f"Config file not found: {self.config_path}")
+            result["valid"] = False
+            result["errors"].append(f"Config file not found: {self.config_path}")
             return result
 
         if not self.pricing_data:
-            result['warnings'].append("No pricing data configured")
+            result["warnings"].append("No pricing data configured")
 
         # Validate each model's pricing structure
         for vendor, models in self.pricing_data.items():
             for model_name, pricing in models.items():
                 if not isinstance(pricing, dict):
-                    result['errors'].append(
-                        f"Invalid pricing format for {vendor}.{model_name}"
-                    )
-                    result['valid'] = False
+                    result["errors"].append(f"Invalid pricing format for {vendor}.{model_name}")
+                    result["valid"] = False
                     continue
 
                 # Check required fields
-                if 'input' not in pricing:
-                    result['warnings'].append(
-                        f"Missing 'input' pricing for {vendor}.{model_name}"
-                    )
+                if "input" not in pricing:
+                    result["warnings"].append(f"Missing 'input' pricing for {vendor}.{model_name}")
 
-                if 'output' not in pricing:
-                    result['warnings'].append(
-                        f"Missing 'output' pricing for {vendor}.{model_name}"
-                    )
+                if "output" not in pricing:
+                    result["warnings"].append(f"Missing 'output' pricing for {vendor}.{model_name}")
 
                 # Validate numeric values
-                for key in ['input', 'output', 'cache_create', 'cache_read']:
+                for key in ["input", "output", "cache_create", "cache_read"]:
                     if key in pricing:
                         try:
                             float(pricing[key])
                         except (ValueError, TypeError):
-                            result['errors'].append(
+                            result["errors"].append(
                                 f"Invalid numeric value for {vendor}.{model_name}.{key}"
                             )
-                            result['valid'] = False
+                            result["valid"] = False
 
         return result
 
@@ -245,6 +235,7 @@ class PricingConfig:
 # ============================================================================
 # Convenience Functions
 # ============================================================================
+
 
 def load_pricing_config(config_path: Optional[Path] = None) -> PricingConfig:
     """
@@ -265,7 +256,7 @@ def get_model_cost(
     output_tokens: int = 0,
     cache_created_tokens: int = 0,
     cache_read_tokens: int = 0,
-    config_path: Optional[Path] = None
+    config_path: Optional[Path] = None,
 ) -> float:
     """
     Convenience function to calculate model cost.
@@ -283,11 +274,7 @@ def get_model_cost(
     """
     config = PricingConfig(config_path)
     return config.calculate_cost(
-        model_name,
-        input_tokens,
-        output_tokens,
-        cache_created_tokens,
-        cache_read_tokens
+        model_name, input_tokens, output_tokens, cache_created_tokens, cache_read_tokens
     )
 
 
@@ -309,24 +296,24 @@ if __name__ == "__main__":
         validation = config.validate()
         print(f"\nValidation: {'✓ PASS' if validation['valid'] else '✗ FAIL'}")
 
-        if validation['errors']:
+        if validation["errors"]:
             print("\nErrors:")
-            for error in validation['errors']:
+            for error in validation["errors"]:
                 print(f"  - {error}")
 
-        if validation['warnings']:
+        if validation["warnings"]:
             print("\nWarnings:")
-            for warning in validation['warnings']:
+            for warning in validation["warnings"]:
                 print(f"  - {warning}")
 
         # List models
         print(f"\nConfigured models: {len(config.list_models())}")
         print("\nClaude models:")
-        for model in config.list_models('claude'):
+        for model in config.list_models("claude"):
             print(f"  - {model}")
 
         print("\nOpenAI models:")
-        for model in config.list_models('openai'):
+        for model in config.list_models("openai"):
             print(f"  - {model}")
 
         # Test pricing lookup
@@ -339,10 +326,7 @@ if __name__ == "__main__":
         # Test cost calculation
         print("\nCost calculation test:")
         cost = config.calculate_cost(
-            model,
-            input_tokens=10000,
-            output_tokens=5000,
-            cache_read_tokens=50000
+            model, input_tokens=10000, output_tokens=5000, cache_read_tokens=50000
         )
         print(f"  10K input + 5K output + 50K cache read = ${cost:.4f}")
     else:

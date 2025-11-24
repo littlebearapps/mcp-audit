@@ -58,7 +58,9 @@ class ClaudeCodeAdapter(BaseTracker):
         # Find project-specific directory
         # Format: -Users-username-path-to-project
         home_path = str(Path.home())[1:]  # Remove leading /
-        project_dir_name = f"-{home_path}-claude-code-tools-lba-{self.project_path}".replace("/", "-")
+        project_dir_name = f"-{home_path}-claude-code-tools-lba-{self.project_path}".replace(
+            "/", "-"
+        )
 
         self.claude_dir = base_dir / project_dir_name
 
@@ -79,10 +81,7 @@ class ClaudeCodeAdapter(BaseTracker):
             return []
 
         # Get all non-empty .jsonl files
-        return [
-            f for f in self.claude_dir.glob("*.jsonl")
-            if f.stat().st_size > 0
-        ]
+        return [f for f in self.claude_dir.glob("*.jsonl") if f.stat().st_size > 0]
 
     # ========================================================================
     # Abstract Method Implementations
@@ -133,7 +132,7 @@ class ClaudeCodeAdapter(BaseTracker):
                             new_content = f.read()
                             if new_content:
                                 # Process each new line
-                                for line in new_content.split('\n'):
+                                for line in new_content.split("\n"):
                                     if line.strip():
                                         result = self.parse_event(line)
                                         if result:
@@ -167,42 +166,42 @@ class ClaudeCodeAdapter(BaseTracker):
             data = json.loads(event_data)
 
             # Only process assistant messages with usage data
-            if data.get('type') != 'assistant':
+            if data.get("type") != "assistant":
                 return None
 
-            message = data.get('message', {})
+            message = data.get("message", {})
 
             # Extract model information
             if not self.detected_model:
-                model_id = message.get('model')
+                model_id = message.get("model")
                 if model_id:
                     self.detected_model = model_id
                     self.model_name = model_id
 
             # Extract token usage
-            usage = message.get('usage', {})
+            usage = message.get("usage", {})
             if not usage:
                 return None
 
             # Claude Code format field names
             usage_dict = {
-                'input_tokens': usage.get('input_tokens', 0),
-                'output_tokens': usage.get('output_tokens', 0),
-                'cache_created_tokens': usage.get('cache_creation_input_tokens', 0),
-                'cache_read_tokens': usage.get('cache_read_input_tokens', 0)
+                "input_tokens": usage.get("input_tokens", 0),
+                "output_tokens": usage.get("output_tokens", 0),
+                "cache_created_tokens": usage.get("cache_creation_input_tokens", 0),
+                "cache_read_tokens": usage.get("cache_read_input_tokens", 0),
             }
 
             # Extract tools used
-            content = message.get('content', [])
+            content = message.get("content", [])
             if isinstance(content, list):
                 for content_block in content:
-                    if isinstance(content_block, dict) and content_block.get('type') == 'tool_use':
-                        tool_name = content_block.get('name')
-                        tool_params = content_block.get('input', {})
+                    if isinstance(content_block, dict) and content_block.get("type") == "tool_use":
+                        tool_name = content_block.get("name")
+                        tool_params = content_block.get("input", {})
 
-                        if tool_name and tool_name.startswith('mcp__'):
+                        if tool_name and tool_name.startswith("mcp__"):
                             # Return MCP tool call data
-                            usage_dict['tool_params'] = tool_params
+                            usage_dict["tool_params"] = tool_params
                             return (tool_name, usage_dict)
 
             return None
@@ -219,11 +218,11 @@ class ClaudeCodeAdapter(BaseTracker):
             Dictionary with platform-specific data
         """
         return {
-            'model': self.detected_model,
-            'model_name': self.model_name,
-            'claude_dir': str(self.claude_dir),
-            'project_path': self.project_path,
-            'files_monitored': len(self.file_positions)
+            "model": self.detected_model,
+            "model_name": self.model_name,
+            "claude_dir": str(self.claude_dir),
+            "project_path": self.project_path,
+            "files_monitored": len(self.file_positions),
         }
 
     # ========================================================================
@@ -239,27 +238,24 @@ class ClaudeCodeAdapter(BaseTracker):
             usage: Token usage dictionary
         """
         # Extract tool parameters for duplicate detection
-        tool_params = usage.get('tool_params', {})
+        tool_params = usage.get("tool_params", {})
         content_hash = None
         if tool_params:
             content_hash = self.compute_content_hash(tool_params)
 
         # Get platform metadata
-        platform_data = {
-            'model': self.detected_model,
-            'model_name': self.model_name
-        }
+        platform_data = {"model": self.detected_model, "model_name": self.model_name}
 
         # Record tool call using BaseTracker
         self.record_tool_call(
             tool_name=tool_name,
-            input_tokens=usage['input_tokens'],
-            output_tokens=usage['output_tokens'],
-            cache_created_tokens=usage['cache_created_tokens'],
-            cache_read_tokens=usage['cache_read_tokens'],
+            input_tokens=usage["input_tokens"],
+            output_tokens=usage["output_tokens"],
+            cache_created_tokens=usage["cache_created_tokens"],
+            cache_read_tokens=usage["cache_read_tokens"],
             duration_ms=0,  # Claude Code doesn't provide duration
             content_hash=content_hash,
-            platform_data=platform_data
+            platform_data=platform_data,
         )
 
 
@@ -267,14 +263,17 @@ class ClaudeCodeAdapter(BaseTracker):
 # Standalone Execution
 # ============================================================================
 
+
 def main() -> int:
     """Main entry point for standalone execution"""
     import argparse
 
     parser = argparse.ArgumentParser(description="Claude Code MCP Tracker (BaseTracker Adapter)")
-    parser.add_argument('--project', default='mcp-audit', help='Project name')
-    parser.add_argument('--path', default='', help='Project path (e.g., wp-navigator-pro/main)')
-    parser.add_argument('--output', default='logs/sessions', help='Output directory for session logs')
+    parser.add_argument("--project", default="mcp-audit", help="Project name")
+    parser.add_argument("--path", default="", help="Project path (e.g., wp-navigator-pro/main)")
+    parser.add_argument(
+        "--output", default="logs/sessions", help="Output directory for session logs"
+    )
     args = parser.parse_args()
 
     # Create adapter
@@ -304,4 +303,5 @@ def main() -> int:
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(main())

@@ -73,16 +73,16 @@ class SessionManager:
 
         # Save session summary
         summary_path = session_dir / "summary.json"
-        with open(summary_path, 'w') as f:
+        with open(summary_path, "w") as f:
             json.dump(session.to_dict(), f, indent=2, default=str)
-        saved_files['summary'] = summary_path
+        saved_files["summary"] = summary_path
 
         # Save per-server sessions
         for server_name, server_session in session.server_sessions.items():
             server_path = session_dir / f"mcp-{server_name}.json"
-            with open(server_path, 'w') as f:
+            with open(server_path, "w") as f:
                 json.dump(server_session.to_dict(), f, indent=2, default=str)
-            saved_files[f'mcp-{server_name}'] = server_path
+            saved_files[f"mcp-{server_name}"] = server_path
 
         return saved_files
 
@@ -101,7 +101,7 @@ class SessionManager:
             return None
 
         try:
-            with open(summary_path, 'r') as f:
+            with open(summary_path, "r") as f:
                 data = json.load(f)
 
             # Validate schema version
@@ -134,11 +134,11 @@ class SessionManager:
         Returns:
             True if compatible, False otherwise
         """
-        if 'schema_version' not in data:
+        if "schema_version" not in data:
             print("Warning: Session data missing schema_version field")
             return False
 
-        session_version = data['schema_version']
+        session_version = data["schema_version"]
         major, minor, patch = self._parse_version(session_version)
         current_major, current_minor, _ = self._parse_version(SCHEMA_VERSION)
 
@@ -155,7 +155,7 @@ class SessionManager:
 
     def _parse_version(self, version_str: str) -> tuple:
         """Parse version string into (major, minor, patch) tuple"""
-        parts = version_str.split('.')
+        parts = version_str.split(".")
         return (int(parts[0]), int(parts[1]), int(parts[2]))
 
     def _reconstruct_session(self, data: dict) -> Session:
@@ -172,32 +172,32 @@ class SessionManager:
         from base_tracker import TokenUsage, MCPToolCalls
 
         # Reconstruct timestamp
-        timestamp = datetime.fromisoformat(data['timestamp'])
+        timestamp = datetime.fromisoformat(data["timestamp"])
         end_timestamp = None
-        if data.get('end_timestamp'):
-            end_timestamp = datetime.fromisoformat(data['end_timestamp'])
+        if data.get("end_timestamp"):
+            end_timestamp = datetime.fromisoformat(data["end_timestamp"])
 
         # Reconstruct TokenUsage
-        token_usage = TokenUsage(**data['token_usage'])
+        token_usage = TokenUsage(**data["token_usage"])
 
         # Reconstruct MCPToolCalls
-        mcp_tool_calls = MCPToolCalls(**data['mcp_tool_calls'])
+        mcp_tool_calls = MCPToolCalls(**data["mcp_tool_calls"])
 
         # Create Session object
         session = Session(
-            schema_version=data['schema_version'],
-            project=data['project'],
-            platform=data['platform'],
+            schema_version=data["schema_version"],
+            project=data["project"],
+            platform=data["platform"],
             timestamp=timestamp,
-            session_id=data['session_id'],
+            session_id=data["session_id"],
             token_usage=token_usage,
-            cost_estimate=data['cost_estimate'],
+            cost_estimate=data["cost_estimate"],
             mcp_tool_calls=mcp_tool_calls,
             server_sessions={},  # Will be loaded separately
-            redundancy_analysis=data.get('redundancy_analysis'),
-            anomalies=data.get('anomalies', []),
+            redundancy_analysis=data.get("redundancy_analysis"),
+            anomalies=data.get("anomalies", []),
             end_timestamp=end_timestamp,
-            duration_seconds=data.get('duration_seconds')
+            duration_seconds=data.get("duration_seconds"),
         )
 
         return session
@@ -213,7 +213,7 @@ class SessionManager:
             ServerSession object if successful, None otherwise
         """
         try:
-            with open(server_file, 'r') as f:
+            with open(server_file, "r") as f:
                 data = json.load(f)
 
             # Import needed for type reconstruction
@@ -221,47 +221,47 @@ class SessionManager:
 
             # Reconstruct ToolStats for each tool
             tools = {}
-            for tool_name, tool_data in data.get('tools', {}).items():
+            for tool_name, tool_data in data.get("tools", {}).items():
                 # Reconstruct Call objects
                 call_history = []
-                for call_data in tool_data.get('call_history', []):
+                for call_data in tool_data.get("call_history", []):
                     call = Call(
-                        schema_version=call_data['schema_version'],
-                        timestamp=datetime.fromisoformat(call_data['timestamp']),
-                        tool_name=call_data['tool_name'],
-                        input_tokens=call_data['input_tokens'],
-                        output_tokens=call_data['output_tokens'],
-                        cache_created_tokens=call_data['cache_created_tokens'],
-                        cache_read_tokens=call_data['cache_read_tokens'],
-                        total_tokens=call_data['total_tokens'],
-                        duration_ms=call_data['duration_ms'],
-                        content_hash=call_data.get('content_hash'),
-                        platform_data=call_data.get('platform_data')
+                        schema_version=call_data["schema_version"],
+                        timestamp=datetime.fromisoformat(call_data["timestamp"]),
+                        tool_name=call_data["tool_name"],
+                        input_tokens=call_data["input_tokens"],
+                        output_tokens=call_data["output_tokens"],
+                        cache_created_tokens=call_data["cache_created_tokens"],
+                        cache_read_tokens=call_data["cache_read_tokens"],
+                        total_tokens=call_data["total_tokens"],
+                        duration_ms=call_data["duration_ms"],
+                        content_hash=call_data.get("content_hash"),
+                        platform_data=call_data.get("platform_data"),
                     )
                     call_history.append(call)
 
                 # Create ToolStats object
                 tool_stats = ToolStats(
-                    schema_version=tool_data['schema_version'],
-                    calls=tool_data['calls'],
-                    total_tokens=tool_data['total_tokens'],
-                    avg_tokens=tool_data['avg_tokens'],
+                    schema_version=tool_data["schema_version"],
+                    calls=tool_data["calls"],
+                    total_tokens=tool_data["total_tokens"],
+                    avg_tokens=tool_data["avg_tokens"],
                     call_history=call_history,
-                    total_duration_ms=tool_data.get('total_duration_ms'),
-                    avg_duration_ms=tool_data.get('avg_duration_ms'),
-                    max_duration_ms=tool_data.get('max_duration_ms'),
-                    min_duration_ms=tool_data.get('min_duration_ms')
+                    total_duration_ms=tool_data.get("total_duration_ms"),
+                    avg_duration_ms=tool_data.get("avg_duration_ms"),
+                    max_duration_ms=tool_data.get("max_duration_ms"),
+                    min_duration_ms=tool_data.get("min_duration_ms"),
                 )
                 tools[tool_name] = tool_stats
 
             # Create ServerSession object
             server_session = ServerSession(
-                schema_version=data['schema_version'],
-                server=data['server'],
+                schema_version=data["schema_version"],
+                server=data["server"],
                 tools=tools,
-                total_calls=data['total_calls'],
-                total_tokens=data['total_tokens'],
-                metadata=data.get('metadata')
+                total_calls=data["total_calls"],
+                total_tokens=data["total_tokens"],
+                metadata=data.get("metadata"),
             )
 
             return server_session
@@ -284,10 +284,7 @@ class SessionManager:
             return []
 
         # Get all directories
-        session_dirs = [
-            d for d in self.base_dir.iterdir()
-            if d.is_dir()
-        ]
+        session_dirs = [d for d in self.base_dir.iterdir() if d.is_dir()]
 
         # Sort by name (which includes timestamp)
         session_dirs.sort(reverse=True)
@@ -358,9 +355,9 @@ class SessionManager:
             # Extract timestamp from directory name
             # Format: {project}-{YYYY-MM-DD-HHMMSS}
             try:
-                parts = session_dir.name.rsplit('-', 4)
+                parts = session_dir.name.rsplit("-", 4)
                 if len(parts) >= 4:
-                    date_str = '-'.join(parts[-4:])  # YYYY-MM-DD-HHMMSS
+                    date_str = "-".join(parts[-4:])  # YYYY-MM-DD-HHMMSS
                     session_date = datetime.strptime(date_str, "%Y-%m-%d-%H%M%S")
 
                     if session_date < cutoff_date:
@@ -376,6 +373,7 @@ class SessionManager:
 # ============================================================================
 # Convenience Functions
 # ============================================================================
+
 
 def save_session(session: Session, session_dir: Path) -> Dict[str, Path]:
     """

@@ -23,9 +23,11 @@ SCHEMA_VERSION = "1.0.0"
 # Core Data Structures (Schema v1.0.0)
 # ============================================================================
 
+
 @dataclass
 class Call:
     """Single MCP tool call record"""
+
     schema_version: str = SCHEMA_VERSION
     timestamp: datetime = field(default_factory=datetime.now)
     tool_name: str = ""
@@ -41,13 +43,14 @@ class Call:
     def to_dict(self) -> Dict[str, Any]:
         """Convert to JSON-serializable dict"""
         data = asdict(self)
-        data['timestamp'] = self.timestamp.isoformat()
+        data["timestamp"] = self.timestamp.isoformat()
         return data
 
 
 @dataclass
 class ToolStats:
     """Statistics for a single MCP tool"""
+
     schema_version: str = SCHEMA_VERSION
     calls: int = 0
     total_tokens: int = 0
@@ -61,13 +64,14 @@ class ToolStats:
     def to_dict(self) -> Dict[str, Any]:
         """Convert to JSON-serializable dict"""
         data = asdict(self)
-        data['call_history'] = [call.to_dict() for call in self.call_history]
+        data["call_history"] = [call.to_dict() for call in self.call_history]
         return data
 
 
 @dataclass
 class ServerSession:
     """Statistics for a single MCP server"""
+
     schema_version: str = SCHEMA_VERSION
     server: str = ""
     tools: Dict[str, ToolStats] = field(default_factory=dict)
@@ -78,13 +82,14 @@ class ServerSession:
     def to_dict(self) -> Dict[str, Any]:
         """Convert to JSON-serializable dict"""
         data = asdict(self)
-        data['tools'] = {name: stats.to_dict() for name, stats in self.tools.items()}
+        data["tools"] = {name: stats.to_dict() for name, stats in self.tools.items()}
         return data
 
 
 @dataclass
 class TokenUsage:
     """Token usage statistics"""
+
     input_tokens: int = 0
     output_tokens: int = 0
     cache_created_tokens: int = 0
@@ -96,6 +101,7 @@ class TokenUsage:
 @dataclass
 class MCPToolCalls:
     """MCP tool call summary"""
+
     total_calls: int = 0
     unique_tools: int = 0
     most_called: str = ""
@@ -104,6 +110,7 @@ class MCPToolCalls:
 @dataclass
 class Session:
     """Complete session data"""
+
     schema_version: str = SCHEMA_VERSION
     project: str = ""
     platform: str = ""  # "claude-code", "codex-cli", "gemini-cli"
@@ -121,18 +128,21 @@ class Session:
     def to_dict(self) -> Dict[str, Any]:
         """Convert to JSON-serializable dict"""
         data = asdict(self)
-        data['timestamp'] = self.timestamp.isoformat()
+        data["timestamp"] = self.timestamp.isoformat()
         if self.end_timestamp:
-            data['end_timestamp'] = self.end_timestamp.isoformat()
-        data['token_usage'] = asdict(self.token_usage)
-        data['mcp_tool_calls'] = asdict(self.mcp_tool_calls)
-        data['server_sessions'] = {name: sess.to_dict() for name, sess in self.server_sessions.items()}
+            data["end_timestamp"] = self.end_timestamp.isoformat()
+        data["token_usage"] = asdict(self.token_usage)
+        data["mcp_tool_calls"] = asdict(self.mcp_tool_calls)
+        data["server_sessions"] = {
+            name: sess.to_dict() for name, sess in self.server_sessions.items()
+        }
         return data
 
 
 # ============================================================================
 # BaseTracker Abstract Class
 # ============================================================================
+
 
 class BaseTracker(ABC):
     """
@@ -157,10 +167,7 @@ class BaseTracker(ABC):
 
         # Session data
         self.session = Session(
-            project=project,
-            platform=platform,
-            timestamp=self.timestamp,
-            session_id=self.session_id
+            project=project, platform=platform, timestamp=self.timestamp, session_id=self.session_id
         )
 
         # Server sessions (key: server name)
@@ -292,7 +299,7 @@ class BaseTracker(ABC):
         cache_read_tokens: int = 0,
         duration_ms: int = 0,
         content_hash: Optional[str] = None,
-        platform_data: Optional[Dict[str, Any]] = None
+        platform_data: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Record a single MCP tool call.
@@ -323,7 +330,7 @@ class BaseTracker(ABC):
             total_tokens=total_tokens,
             duration_ms=duration_ms,
             content_hash=content_hash,
-            platform_data=platform_data
+            platform_data=platform_data,
         )
 
         # Track duplicate calls
@@ -432,10 +439,7 @@ class BaseTracker(ABC):
                 for call in calls[1:]:
                     potential_savings += call.total_tokens
 
-        return {
-            "duplicate_calls": duplicate_calls,
-            "potential_savings": potential_savings
-        }
+        return {"duplicate_calls": duplicate_calls, "potential_savings": potential_savings}
 
     def _detect_anomalies(self) -> List[Dict[str, Any]]:
         """Detect anomalies in tool usage"""
@@ -445,21 +449,25 @@ class BaseTracker(ABC):
             for tool_name, tool_stats in server_session.tools.items():
                 # High frequency (>10 calls)
                 if tool_stats.calls > 10:
-                    anomalies.append({
-                        "type": "high_frequency",
-                        "tool": tool_name,
-                        "calls": tool_stats.calls,
-                        "threshold": 10
-                    })
+                    anomalies.append(
+                        {
+                            "type": "high_frequency",
+                            "tool": tool_name,
+                            "calls": tool_stats.calls,
+                            "threshold": 10,
+                        }
+                    )
 
                 # High average tokens (>100K per call)
                 if tool_stats.avg_tokens > 100000:
-                    anomalies.append({
-                        "type": "high_avg_tokens",
-                        "tool": tool_name,
-                        "avg_tokens": tool_stats.avg_tokens,
-                        "threshold": 100000
-                    })
+                    anomalies.append(
+                        {
+                            "type": "high_avg_tokens",
+                            "tool": tool_name,
+                            "avg_tokens": tool_stats.avg_tokens,
+                            "threshold": 100000,
+                        }
+                    )
 
         return anomalies
 
@@ -479,13 +487,13 @@ class BaseTracker(ABC):
 
         # Save session summary
         summary_path = self.session_dir / "summary.json"
-        with open(summary_path, 'w') as f:
+        with open(summary_path, "w") as f:
             json.dump(self.session.to_dict(), f, indent=2, default=str)
 
         # Save per-server sessions
         for server_name, server_session in self.server_sessions.items():
             server_path = self.session_dir / f"mcp-{server_name}.json"
-            with open(server_path, 'w') as f:
+            with open(server_path, "w") as f:
                 json.dump(server_session.to_dict(), f, indent=2, default=str)
 
     # ========================================================================

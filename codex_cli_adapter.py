@@ -56,7 +56,7 @@ class CodexCLIAdapter(BaseTracker):
             stderr=subprocess.PIPE,
             text=True,
             bufsize=1,  # Line buffered
-            universal_newlines=True
+            universal_newlines=True,
         )
 
         print("[Codex CLI] Process started. Monitoring output...")
@@ -103,42 +103,42 @@ class CodexCLIAdapter(BaseTracker):
             data = json.loads(line)
 
             # Look for conversation events
-            if data.get('type') != 'conversation':
+            if data.get("type") != "conversation":
                 return None
 
-            message = data.get('message', {})
+            message = data.get("message", {})
 
             # Extract model information
             if not self.detected_model:
-                model_id = message.get('model')
+                model_id = message.get("model")
                 if model_id:
                     self.detected_model = model_id
                     self.model_name = model_id
 
             # Extract token usage
-            usage = message.get('usage', {})
+            usage = message.get("usage", {})
             if not usage:
                 return None
 
             # Codex CLI format field names
             usage_dict = {
-                'input_tokens': usage.get('inputTokens', 0),
-                'output_tokens': usage.get('outputTokens', 0),
-                'cache_created_tokens': 0,  # Codex doesn't have cache creation
-                'cache_read_tokens': usage.get('cacheReadInputTokens', 0)
+                "input_tokens": usage.get("inputTokens", 0),
+                "output_tokens": usage.get("outputTokens", 0),
+                "cache_created_tokens": 0,  # Codex doesn't have cache creation
+                "cache_read_tokens": usage.get("cacheReadInputTokens", 0),
             }
 
             # Extract tools used
-            content = message.get('content', [])
+            content = message.get("content", [])
             if isinstance(content, list):
                 for content_block in content:
-                    if isinstance(content_block, dict) and content_block.get('type') == 'toolUse':
-                        tool_name = content_block.get('name')
-                        tool_params = content_block.get('input', {})
+                    if isinstance(content_block, dict) and content_block.get("type") == "toolUse":
+                        tool_name = content_block.get("name")
+                        tool_params = content_block.get("input", {})
 
-                        if tool_name and tool_name.startswith('mcp__'):
+                        if tool_name and tool_name.startswith("mcp__"):
                             # Return MCP tool call data
-                            usage_dict['tool_params'] = tool_params
+                            usage_dict["tool_params"] = tool_params
                             return (tool_name, usage_dict)
 
             return None
@@ -155,10 +155,10 @@ class CodexCLIAdapter(BaseTracker):
             Dictionary with platform-specific data
         """
         return {
-            'model': self.detected_model,
-            'model_name': self.model_name,
-            'codex_args': self.codex_args,
-            'process_id': self.process.pid if self.process else None
+            "model": self.detected_model,
+            "model_name": self.model_name,
+            "codex_args": self.codex_args,
+            "process_id": self.process.pid if self.process else None,
         }
 
     # ========================================================================
@@ -174,28 +174,25 @@ class CodexCLIAdapter(BaseTracker):
             usage: Token usage dictionary
         """
         # Extract tool parameters for duplicate detection
-        tool_params = usage.get('tool_params', {})
+        tool_params = usage.get("tool_params", {})
         content_hash = None
         if tool_params:
             content_hash = self.compute_content_hash(tool_params)
 
         # Get platform metadata
-        platform_data = {
-            'model': self.detected_model,
-            'model_name': self.model_name
-        }
+        platform_data = {"model": self.detected_model, "model_name": self.model_name}
 
         # Record tool call using BaseTracker
         # BaseTracker will normalize the tool name (strip -mcp suffix)
         self.record_tool_call(
             tool_name=tool_name,
-            input_tokens=usage['input_tokens'],
-            output_tokens=usage['output_tokens'],
-            cache_created_tokens=usage['cache_created_tokens'],
-            cache_read_tokens=usage['cache_read_tokens'],
+            input_tokens=usage["input_tokens"],
+            output_tokens=usage["output_tokens"],
+            cache_created_tokens=usage["cache_created_tokens"],
+            cache_read_tokens=usage["cache_read_tokens"],
             duration_ms=0,  # Codex CLI doesn't provide duration
             content_hash=content_hash,
-            platform_data=platform_data
+            platform_data=platform_data,
         )
 
 
@@ -203,16 +200,19 @@ class CodexCLIAdapter(BaseTracker):
 # Standalone Execution
 # ============================================================================
 
+
 def main() -> int:
     """Main entry point for standalone execution"""
     import argparse
 
     parser = argparse.ArgumentParser(
         description="Codex CLI MCP Tracker (BaseTracker Adapter)",
-        epilog="All arguments after -- are passed to codex command"
+        epilog="All arguments after -- are passed to codex command",
     )
-    parser.add_argument('--project', default='mcp-audit', help='Project name')
-    parser.add_argument('--output', default='logs/sessions', help='Output directory for session logs')
+    parser.add_argument("--project", default="mcp-audit", help="Project name")
+    parser.add_argument(
+        "--output", default="logs/sessions", help="Output directory for session logs"
+    )
 
     # Parse known args, rest go to codex
     args, codex_args = parser.parse_known_args()
@@ -246,4 +246,5 @@ def main() -> int:
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(main())

@@ -20,6 +20,7 @@ from normalization import normalize_tool_name, normalize_server_name
 # Test Fixtures
 # ============================================================================
 
+
 @pytest.fixture
 def sample_claude_code_events():
     """Sample Claude Code debug.log events"""
@@ -37,16 +38,16 @@ def sample_claude_code_events():
                         "type": "tool_use",
                         "id": "tool_001",
                         "name": "mcp__zen__chat",
-                        "input": {"prompt": "test query"}
+                        "input": {"prompt": "test query"},
                     }
                 ],
                 "usage": {
                     "input_tokens": 100,
                     "output_tokens": 50,
                     "cache_creation_input_tokens": 20,
-                    "cache_read_input_tokens": 500
-                }
-            }
+                    "cache_read_input_tokens": 500,
+                },
+            },
         },
         {
             "id": "msg_002",
@@ -61,17 +62,17 @@ def sample_claude_code_events():
                         "type": "tool_use",
                         "id": "tool_002",
                         "name": "mcp__brave-search__web",
-                        "input": {"query": "search query"}
+                        "input": {"query": "search query"},
                     }
                 ],
                 "usage": {
                     "input_tokens": 200,
                     "output_tokens": 100,
                     "cache_creation_input_tokens": 0,
-                    "cache_read_input_tokens": 1000
-                }
-            }
-        }
+                    "cache_read_input_tokens": 1000,
+                },
+            },
+        },
     ]
 
 
@@ -87,15 +88,11 @@ def sample_codex_cli_events():
                     {
                         "type": "toolUse",
                         "name": "mcp__zen-mcp__chat",  # Codex format with -mcp
-                        "input": {"prompt": "test query"}
+                        "input": {"prompt": "test query"},
                     }
                 ],
-                "usage": {
-                    "inputTokens": 100,
-                    "outputTokens": 50,
-                    "cacheReadInputTokens": 500
-                }
-            }
+                "usage": {"inputTokens": 100, "outputTokens": 50, "cacheReadInputTokens": 500},
+            },
         },
         {
             "type": "conversation",
@@ -105,22 +102,19 @@ def sample_codex_cli_events():
                     {
                         "type": "toolUse",
                         "name": "mcp__brave-search-mcp__web",  # Codex format
-                        "input": {"query": "search query"}
+                        "input": {"query": "search query"},
                     }
                 ],
-                "usage": {
-                    "inputTokens": 200,
-                    "outputTokens": 100,
-                    "cacheReadInputTokens": 1000
-                }
-            }
-        }
+                "usage": {"inputTokens": 200, "outputTokens": 100, "cacheReadInputTokens": 1000},
+            },
+        },
     ]
 
 
 # ============================================================================
 # Cross-Platform Normalization Tests
 # ============================================================================
+
 
 class TestCrossPlatformNormalization:
     """Test that different platforms normalize to same tool names"""
@@ -139,10 +133,10 @@ class TestCrossPlatformNormalization:
     def test_normalized_tools_aggregate_correctly(self):
         """Test different platform formats aggregate to same tool"""
         tools = [
-            "mcp__zen__chat",           # Claude Code
-            "mcp__zen-mcp__chat",       # Codex CLI
-            "mcp__zen__debug",          # Claude Code
-            "mcp__zen-mcp__debug"       # Codex CLI
+            "mcp__zen__chat",  # Claude Code
+            "mcp__zen-mcp__chat",  # Codex CLI
+            "mcp__zen__debug",  # Claude Code
+            "mcp__zen-mcp__debug",  # Codex CLI
         ]
 
         normalized = set(normalize_tool_name(t) for t in tools)
@@ -157,6 +151,7 @@ class TestCrossPlatformNormalization:
 # Event Parsing Tests
 # ============================================================================
 
+
 class TestEventParsing:
     """Test event parsing across platforms"""
 
@@ -170,7 +165,7 @@ class TestEventParsing:
             if result:
                 tool_name, usage = result
                 assert tool_name.startswith("mcp__")
-                assert usage['input_tokens'] > 0
+                assert usage["input_tokens"] > 0
 
     def test_codex_cli_event_parsing(self, sample_codex_cli_events):
         """Test parsing Codex CLI events"""
@@ -183,7 +178,7 @@ class TestEventParsing:
                 tool_name, usage = result
                 assert tool_name.startswith("mcp__")
                 assert "-mcp__" in tool_name  # Codex format
-                assert usage['input_tokens'] > 0
+                assert usage["input_tokens"] > 0
 
     def test_unrecognized_event_handling(self, tmp_path):
         """Test handling of unrecognized events"""
@@ -202,6 +197,7 @@ class TestEventParsing:
 # Session Tracking Tests
 # ============================================================================
 
+
 class TestSessionTracking:
     """Test complete session tracking workflow"""
 
@@ -214,14 +210,14 @@ class TestSessionTracking:
             result = adapter.parse_event(json.dumps(event))
             if result:
                 tool_name, usage = result
-                content_hash = adapter.compute_content_hash(usage.get('tool_params', {}))
+                content_hash = adapter.compute_content_hash(usage.get("tool_params", {}))
                 adapter.record_tool_call(
                     tool_name=tool_name,
-                    input_tokens=usage['input_tokens'],
-                    output_tokens=usage['output_tokens'],
-                    cache_created_tokens=usage['cache_created_tokens'],
-                    cache_read_tokens=usage['cache_read_tokens'],
-                    content_hash=content_hash
+                    input_tokens=usage["input_tokens"],
+                    output_tokens=usage["output_tokens"],
+                    cache_created_tokens=usage["cache_created_tokens"],
+                    cache_read_tokens=usage["cache_read_tokens"],
+                    content_hash=content_hash,
                 )
 
         # Finalize session
@@ -245,10 +241,10 @@ class TestSessionTracking:
                 tool_name, usage = result
                 adapter.record_tool_call(
                     tool_name=tool_name,
-                    input_tokens=usage['input_tokens'],
-                    output_tokens=usage['output_tokens'],
-                    cache_created_tokens=usage['cache_created_tokens'],
-                    cache_read_tokens=usage['cache_read_tokens']
+                    input_tokens=usage["input_tokens"],
+                    output_tokens=usage["output_tokens"],
+                    cache_created_tokens=usage["cache_created_tokens"],
+                    cache_read_tokens=usage["cache_read_tokens"],
                 )
 
         # Finalize session
@@ -270,6 +266,7 @@ class TestSessionTracking:
 # Persistence Tests
 # ============================================================================
 
+
 class TestPersistence:
     """Test session persistence and recovery"""
 
@@ -284,10 +281,10 @@ class TestPersistence:
                 tool_name, usage = result
                 adapter.record_tool_call(
                     tool_name=tool_name,
-                    input_tokens=usage['input_tokens'],
-                    output_tokens=usage['output_tokens'],
-                    cache_created_tokens=usage['cache_created_tokens'],
-                    cache_read_tokens=usage['cache_read_tokens']
+                    input_tokens=usage["input_tokens"],
+                    output_tokens=usage["output_tokens"],
+                    cache_created_tokens=usage["cache_created_tokens"],
+                    cache_read_tokens=usage["cache_read_tokens"],
                 )
 
         session = adapter.finalize_session()
@@ -317,7 +314,7 @@ class TestPersistence:
         summary_data = {
             "schema_version": "2.0.0",  # Incompatible major version
             "project": "test",
-            "platform": "test"
+            "platform": "test",
         }
 
         (session_dir / "summary.json").write_text(json.dumps(summary_data))
@@ -330,6 +327,7 @@ class TestPersistence:
 # ============================================================================
 # Duplicate Detection Tests
 # ============================================================================
+
 
 class TestDuplicateDetection:
     """Test duplicate tool call detection"""
@@ -347,16 +345,13 @@ class TestDuplicateDetection:
 
         # Record two calls with same hash
         adapter.record_tool_call(
-            tool_name="mcp__zen__chat",
-            input_tokens=100,
-            output_tokens=50,
-            content_hash=hash1
+            tool_name="mcp__zen__chat", input_tokens=100, output_tokens=50, content_hash=hash1
         )
         adapter.record_tool_call(
             tool_name="mcp__zen__chat",
             input_tokens=100,
             output_tokens=50,
-            content_hash=hash2  # Duplicate
+            content_hash=hash2,  # Duplicate
         )
 
         session = adapter.finalize_session()
@@ -371,6 +366,7 @@ class TestDuplicateDetection:
 # Anomaly Detection Tests
 # ============================================================================
 
+
 class TestAnomalyDetection:
     """Test anomaly detection in tool usage"""
 
@@ -380,11 +376,7 @@ class TestAnomalyDetection:
 
         # Record 15 calls (threshold is 10)
         for _ in range(15):
-            adapter.record_tool_call(
-                tool_name="mcp__zen__chat",
-                input_tokens=100,
-                output_tokens=50
-            )
+            adapter.record_tool_call(tool_name="mcp__zen__chat", input_tokens=100, output_tokens=50)
 
         session = adapter.finalize_session()
 
@@ -400,9 +392,7 @@ class TestAnomalyDetection:
 
         # Record call with 150K tokens (threshold is 100K)
         adapter.record_tool_call(
-            tool_name="mcp__zen__thinkdeep",
-            input_tokens=100000,
-            output_tokens=50000
+            tool_name="mcp__zen__thinkdeep", input_tokens=100000, output_tokens=50000
         )
 
         session = adapter.finalize_session()
@@ -417,6 +407,7 @@ class TestAnomalyDetection:
 # Multi-Server Tracking Tests
 # ============================================================================
 
+
 class TestMultiServerTracking:
     """Test tracking multiple MCP servers"""
 
@@ -425,20 +416,12 @@ class TestMultiServerTracking:
         adapter = ClaudeCodeAdapter(project="test", claude_dir=tmp_path)
 
         # Record calls to different servers
+        adapter.record_tool_call(tool_name="mcp__zen__chat", input_tokens=100, output_tokens=50)
         adapter.record_tool_call(
-            tool_name="mcp__zen__chat",
-            input_tokens=100,
-            output_tokens=50
+            tool_name="mcp__brave-search__web", input_tokens=200, output_tokens=100
         )
         adapter.record_tool_call(
-            tool_name="mcp__brave-search__web",
-            input_tokens=200,
-            output_tokens=100
-        )
-        adapter.record_tool_call(
-            tool_name="mcp__context7__search",
-            input_tokens=150,
-            output_tokens=75
+            tool_name="mcp__context7__search", input_tokens=150, output_tokens=75
         )
 
         session = adapter.finalize_session()
@@ -454,15 +437,9 @@ class TestMultiServerTracking:
         adapter = ClaudeCodeAdapter(project="test", claude_dir=tmp_path)
 
         # Record calls to multiple servers
+        adapter.record_tool_call(tool_name="mcp__zen__chat", input_tokens=100, output_tokens=50)
         adapter.record_tool_call(
-            tool_name="mcp__zen__chat",
-            input_tokens=100,
-            output_tokens=50
-        )
-        adapter.record_tool_call(
-            tool_name="mcp__brave-search__web",
-            input_tokens=200,
-            output_tokens=100
+            tool_name="mcp__brave-search__web", input_tokens=200, output_tokens=100
         )
 
         adapter.finalize_session()
@@ -477,6 +454,7 @@ class TestMultiServerTracking:
 # ============================================================================
 # End-to-End Workflow Tests
 # ============================================================================
+
 
 class TestEndToEndWorkflow:
     """Complete end-to-end workflow tests"""
@@ -493,10 +471,10 @@ class TestEndToEndWorkflow:
                 tool_name, usage = result
                 adapter.record_tool_call(
                     tool_name=tool_name,
-                    input_tokens=usage['input_tokens'],
-                    output_tokens=usage['output_tokens'],
-                    cache_created_tokens=usage['cache_created_tokens'],
-                    cache_read_tokens=usage['cache_read_tokens']
+                    input_tokens=usage["input_tokens"],
+                    output_tokens=usage["output_tokens"],
+                    cache_created_tokens=usage["cache_created_tokens"],
+                    cache_read_tokens=usage["cache_read_tokens"],
                 )
 
         # 3. Finalize session
@@ -532,10 +510,10 @@ class TestEndToEndWorkflow:
                 tool_name, usage = result
                 adapter.record_tool_call(
                     tool_name=tool_name,
-                    input_tokens=usage['input_tokens'],
-                    output_tokens=usage['output_tokens'],
-                    cache_created_tokens=usage['cache_created_tokens'],
-                    cache_read_tokens=usage['cache_read_tokens']
+                    input_tokens=usage["input_tokens"],
+                    output_tokens=usage["output_tokens"],
+                    cache_created_tokens=usage["cache_created_tokens"],
+                    cache_read_tokens=usage["cache_read_tokens"],
                 )
 
         # 3. Finalize and save
@@ -567,10 +545,10 @@ class TestEndToEndWorkflow:
                     tool_name, usage = result
                     adapter.record_tool_call(
                         tool_name=tool_name,
-                        input_tokens=usage['input_tokens'],
-                        output_tokens=usage['output_tokens'],
-                        cache_created_tokens=usage['cache_created_tokens'],
-                        cache_read_tokens=usage['cache_read_tokens']
+                        input_tokens=usage["input_tokens"],
+                        output_tokens=usage["output_tokens"],
+                        cache_created_tokens=usage["cache_created_tokens"],
+                        cache_read_tokens=usage["cache_read_tokens"],
                     )
 
             adapter.finalize_session()

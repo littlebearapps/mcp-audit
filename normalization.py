@@ -147,6 +147,7 @@ def is_builtin_tool(tool_name: str) -> bool:
 # Platform-Specific Utilities
 # ============================================================================
 
+
 def normalize_claude_code_tool(tool_name: str) -> str:
     """
     Normalize Claude Code tool name (pass-through, already in correct format).
@@ -204,6 +205,7 @@ def normalize_gemini_cli_tool(tool_name: str) -> str:
 
 if __name__ == "__main__":
     import doctest
+
     doctest.testmod()
 
     # Manual tests
@@ -216,7 +218,7 @@ if __name__ == "__main__":
         "mcp__brave-search__brave_web_search",
         "mcp__brave-search-mcp__brave_web_search",
         "Read",
-        "execute_zsh"
+        "execute_zsh",
     ]
 
     for tool_name in test_cases:

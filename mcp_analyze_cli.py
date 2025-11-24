@@ -17,8 +17,8 @@ __version__ = "0.2.0"
 def main() -> int:
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
-        prog='mcp-analyze',
-        description='MCP Audit - Multi-platform MCP usage tracking and cost analysis',
+        prog="mcp-analyze",
+        description="MCP Audit - Multi-platform MCP usage tracking and cost analysis",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -35,29 +35,25 @@ Examples:
   mcp-analyze report ./session-data --format json --output report.json
 
 For more information, visit: https://github.com/littlebearapps/mcp-audit
-        """
+        """,
     )
 
-    parser.add_argument(
-        '--version',
-        action='version',
-        version=f'mcp-analyze {__version__}'
-    )
+    parser.add_argument("--version", action="version", version=f"mcp-analyze {__version__}")
 
     # Subcommands
     subparsers = parser.add_subparsers(
-        title='commands',
-        description='Available commands',
-        dest='command',
-        help='Command to execute'
+        title="commands",
+        description="Available commands",
+        dest="command",
+        help="Command to execute",
     )
 
     # ========================================================================
     # collect command
     # ========================================================================
     collect_parser = subparsers.add_parser(
-        'collect',
-        help='Collect MCP session data from CLI tools',
+        "collect",
+        help="Collect MCP session data from CLI tools",
         description="""
 Collect MCP session data by monitoring CLI tool output.
 
@@ -67,97 +63,86 @@ MCP tool usage, token counts, and cost data in real-time.
 The collected data is saved to the specified output directory and can be
 analyzed later with the 'report' command.
         """,
-        formatter_class=argparse.RawDescriptionHelpFormatter
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
     collect_parser.add_argument(
-        '--platform',
-        choices=['claude-code', 'codex-cli', 'gemini-cli', 'auto'],
-        default='auto',
-        help='Platform to monitor (default: auto-detect)'
+        "--platform",
+        choices=["claude-code", "codex-cli", "gemini-cli", "auto"],
+        default="auto",
+        help="Platform to monitor (default: auto-detect)",
     )
 
     collect_parser.add_argument(
-        '--output',
+        "--output",
         type=Path,
-        default=Path('logs/sessions'),
-        help='Output directory for session data (default: logs/sessions)'
+        default=Path("logs/sessions"),
+        help="Output directory for session data (default: logs/sessions)",
     )
 
     collect_parser.add_argument(
-        '--project',
+        "--project",
         type=str,
         default=None,
-        help='Project name for session (default: auto-detect from directory)'
+        help="Project name for session (default: auto-detect from directory)",
     )
 
     collect_parser.add_argument(
-        '--no-logs',
-        action='store_true',
-        help='Skip writing logs to disk (real-time display only)'
+        "--no-logs", action="store_true", help="Skip writing logs to disk (real-time display only)"
     )
 
     collect_parser.add_argument(
-        '--quiet',
-        action='store_true',
-        help='Suppress real-time display (logs only)'
+        "--quiet", action="store_true", help="Suppress real-time display (logs only)"
     )
 
     # ========================================================================
     # report command
     # ========================================================================
     report_parser = subparsers.add_parser(
-        'report',
-        help='Generate reports from collected session data',
+        "report",
+        help="Generate reports from collected session data",
         description="""
 Generate reports from collected MCP session data.
 
 This command analyzes session data and produces reports in various formats
 (JSON, Markdown, CSV) showing token usage, costs, and MCP tool efficiency.
         """,
-        formatter_class=argparse.RawDescriptionHelpFormatter
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
     report_parser.add_argument(
-        'session_dir',
-        type=Path,
-        help='Session directory or parent directory containing sessions'
+        "session_dir", type=Path, help="Session directory or parent directory containing sessions"
     )
 
     report_parser.add_argument(
-        '--format',
-        choices=['json', 'markdown', 'csv'],
-        default='markdown',
-        help='Report format (default: markdown)'
+        "--format",
+        choices=["json", "markdown", "csv"],
+        default="markdown",
+        help="Report format (default: markdown)",
     )
 
     report_parser.add_argument(
-        '--output',
+        "--output",
         type=Path,
         default=None,
-        help='Output file path (default: stdout or auto-generated filename)'
+        help="Output file path (default: stdout or auto-generated filename)",
     )
 
     report_parser.add_argument(
-        '--aggregate',
-        action='store_true',
-        help='Aggregate data across multiple sessions'
+        "--aggregate", action="store_true", help="Aggregate data across multiple sessions"
     )
 
     report_parser.add_argument(
-        '--top-n',
-        type=int,
-        default=10,
-        help='Number of top tools to show (default: 10)'
+        "--top-n", type=int, default=10, help="Number of top tools to show (default: 10)"
     )
 
     # Parse arguments
     args = parser.parse_args()
 
     # Execute command
-    if args.command == 'collect':
+    if args.command == "collect":
         return cmd_collect(args)
-    elif args.command == 'report':
+    elif args.command == "report":
         return cmd_report(args)
     else:
         parser.print_help()
@@ -168,6 +153,7 @@ This command analyzes session data and produces reports in various formats
 # Command Implementations
 # ============================================================================
 
+
 def cmd_collect(args) -> int:
     """Execute collect command."""
     print("=" * 70)
@@ -177,7 +163,7 @@ def cmd_collect(args) -> int:
 
     # Detect platform
     platform = args.platform
-    if platform == 'auto':
+    if platform == "auto":
         platform = detect_platform()
         print(f"Auto-detected platform: {platform}")
     else:
@@ -193,11 +179,13 @@ def cmd_collect(args) -> int:
     print()
 
     # Import appropriate tracker
-    if platform == 'claude-code':
+    if platform == "claude-code":
         from claude_code_adapter import ClaudeCodeAdapter
+
         tracker_class = ClaudeCodeAdapter
-    elif platform == 'codex-cli':
+    elif platform == "codex-cli":
         from codex_cli_adapter import CodexCLIAdapter
+
         tracker_class = CodexCLIAdapter
     else:
         print(f"Error: Platform '{platform}' not yet implemented")
@@ -210,7 +198,7 @@ def cmd_collect(args) -> int:
             project_name=project,
             session_dir=output_dir,
             enable_logging=not args.no_logs,
-            quiet_mode=args.quiet
+            quiet_mode=args.quiet,
         )
 
         print("Starting session tracking...")
@@ -243,6 +231,7 @@ def cmd_collect(args) -> int:
     except Exception as e:
         print(f"Error: {e}")
         import traceback
+
         traceback.print_exc()
         return 1
 
@@ -297,11 +286,11 @@ def cmd_report(args) -> int:
     print()
 
     # Generate report
-    if args.format == 'json':
+    if args.format == "json":
         return generate_json_report(sessions, args)
-    elif args.format == 'markdown':
+    elif args.format == "markdown":
         return generate_markdown_report(sessions, args)
-    elif args.format == 'csv':
+    elif args.format == "csv":
         return generate_csv_report(sessions, args)
     else:
         print(f"Error: Unknown format: {args.format}")
@@ -312,25 +301,22 @@ def cmd_report(args) -> int:
 # Report Generators
 # ============================================================================
 
+
 def generate_json_report(sessions, args) -> int:
     """Generate JSON report."""
     import json
     from datetime import datetime
 
     # Build report data
-    report = {
-        'generated': datetime.now().isoformat(),
-        'version': __version__,
-        'sessions': []
-    }
+    report = {"generated": datetime.now().isoformat(), "version": __version__, "sessions": []}
 
     for session in sessions:
-        report['sessions'].append(session.to_dict())
+        report["sessions"].append(session.to_dict())
 
     # Output to file or stdout
     output_path = args.output
     if output_path:
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             json.dump(report, f, indent=2, default=str)
         print(f"JSON report written to: {output_path}")
     else:
@@ -392,7 +378,7 @@ def generate_markdown_report(sessions, args) -> int:
             all_tools.sort(key=lambda x: x[2], reverse=True)
 
             # Show top N
-            for tool_name, calls, total_tokens in all_tools[:args.top_n]:
+            for tool_name, calls, total_tokens in all_tools[: args.top_n]:
                 lines.append(f"- **{tool_name}**: {calls} calls, {total_tokens:,} tokens")
 
             lines.append("")
@@ -401,7 +387,7 @@ def generate_markdown_report(sessions, args) -> int:
     content = "\n".join(lines)
     output_path = args.output
     if output_path:
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             f.write(content)
         print(f"Markdown report written to: {output_path}")
     else:
@@ -422,30 +408,33 @@ def generate_csv_report(sessions, args) -> int:
         for server_name, server_session in session.server_sessions.items():
             for tool_name, stats in server_session.tools.items():
                 if tool_name not in tool_stats:
-                    tool_stats[tool_name] = {
-                        'calls': 0,
-                        'total_tokens': 0
-                    }
+                    tool_stats[tool_name] = {"calls": 0, "total_tokens": 0}
 
-                tool_stats[tool_name]['calls'] += stats.calls
-                tool_stats[tool_name]['total_tokens'] += stats.total_tokens
+                tool_stats[tool_name]["calls"] += stats.calls
+                tool_stats[tool_name]["total_tokens"] += stats.total_tokens
 
     # Build CSV rows
     rows = []
-    for tool_name, stats in sorted(tool_stats.items(), key=lambda x: x[1]['total_tokens'], reverse=True):
-        rows.append({
-            'tool_name': tool_name,
-            'total_calls': stats['calls'],
-            'total_tokens': stats['total_tokens'],
-            'avg_tokens': stats['total_tokens'] // stats['calls'] if stats['calls'] > 0 else 0
-        })
+    for tool_name, stats in sorted(
+        tool_stats.items(), key=lambda x: x[1]["total_tokens"], reverse=True
+    ):
+        rows.append(
+            {
+                "tool_name": tool_name,
+                "total_calls": stats["calls"],
+                "total_tokens": stats["total_tokens"],
+                "avg_tokens": stats["total_tokens"] // stats["calls"] if stats["calls"] > 0 else 0,
+            }
+        )
 
     # Output to file or stdout
-    output_path = args.output or Path('mcp-audit-report.csv')
+    output_path = args.output or Path("mcp-audit-report.csv")
 
-    with open(output_path, 'w', newline='') as f:
+    with open(output_path, "w", newline="") as f:
         if rows:
-            writer = csv.DictWriter(f, fieldnames=['tool_name', 'total_calls', 'total_tokens', 'avg_tokens'])
+            writer = csv.DictWriter(
+                f, fieldnames=["tool_name", "total_calls", "total_tokens", "avg_tokens"]
+            )
             writer.writeheader()
             writer.writerows(rows)
 
@@ -457,18 +446,19 @@ def generate_csv_report(sessions, args) -> int:
 # Utility Functions
 # ============================================================================
 
+
 def detect_platform() -> str:
     """Auto-detect platform from environment."""
     # Check for Claude Code debug log
     claude_log = Path.home() / ".claude" / "cache"
     if claude_log.exists():
-        return 'claude-code'
+        return "claude-code"
 
     # Check for Codex CLI indicators
     # (Would need to check for codex-specific environment variables)
 
     # Default to Claude Code
-    return 'claude-code'
+    return "claude-code"
 
 
 def detect_project_name() -> str:

@@ -9,12 +9,7 @@ import pytest
 import json
 import re
 from pathlib import Path
-from privacy import (
-    PrivacyFilter,
-    SessionPrivacyFilter,
-    redact_string,
-    sanitize_session_file
-)
+from privacy import PrivacyFilter, SessionPrivacyFilter, redact_string, sanitize_session_file
 
 
 class TestPrivacyFilterPatterns:
@@ -150,9 +145,7 @@ class TestPrivacyFilterCustomPatterns:
 
     def test_custom_pattern_redaction(self):
         """Test custom regex patterns"""
-        custom_patterns = {
-            'custom_id': re.compile(r'ID-\d{6}')
-        }
+        custom_patterns = {"custom_id": re.compile(r"ID-\d{6}")}
 
         filter = PrivacyFilter(custom_patterns=custom_patterns)
 
@@ -174,7 +167,7 @@ class TestPrivacyFilterDictRedaction:
             "username": "john",
             "password": "secret123",
             "api_key": "sk-1234567890",
-            "email": "john@example.com"
+            "email": "john@example.com",
         }
 
         redacted = filter.redact_dict(data)
@@ -189,15 +182,7 @@ class TestPrivacyFilterDictRedaction:
         """Test redacting nested dictionaries"""
         filter = PrivacyFilter()
 
-        data = {
-            "user": {
-                "name": "john",
-                "password": "secret123",
-                "metadata": {
-                    "token": "abc123"
-                }
-            }
-        }
+        data = {"user": {"name": "john", "password": "secret123", "metadata": {"token": "abc123"}}}
 
         redacted = filter.redact_dict(data)
 
@@ -212,7 +197,7 @@ class TestPrivacyFilterDictRedaction:
         data = {
             "users": [
                 {"name": "john", "password": "secret1"},
-                {"name": "jane", "password": "secret2"}
+                {"name": "jane", "password": "secret2"},
             ]
         }
 
@@ -229,7 +214,7 @@ class TestPrivacyFilterDictRedaction:
         data = {
             "username": "john",
             "public_key": "not_really_sensitive",
-            "custom_secret": "very_secret"
+            "custom_secret": "very_secret",
         }
 
         redacted = filter.redact_dict(data, sensitive_keys=["custom_secret"])
@@ -309,6 +294,7 @@ class TestPrivacyFilterFileRedaction:
 # SessionPrivacyFilter Tests
 # ============================================================================
 
+
 class TestSessionPrivacyFilter:
     """Tests for SessionPrivacyFilter"""
 
@@ -319,7 +305,7 @@ class TestSessionPrivacyFilter:
         session_data = {
             "project": "test-project",
             "platform": "claude-code",
-            "token_usage": {"total_tokens": 1000}
+            "token_usage": {"total_tokens": 1000},
         }
 
         sanitized = filter.sanitize_session(session_data)
@@ -336,8 +322,8 @@ class TestSessionPrivacyFilter:
             "platform_data": {
                 "debug_log_path": "/Users/john/.claude/debug.log",
                 "claude_dir": "/Users/john/.claude",
-                "checkpoint_path": "/tmp/checkpoint"
-            }
+                "checkpoint_path": "/tmp/checkpoint",
+            },
         }
 
         sanitized = filter.sanitize_session(session_data)
@@ -350,13 +336,7 @@ class TestSessionPrivacyFilter:
         """Test git metadata sanitization"""
         filter = SessionPrivacyFilter()
 
-        session_data = {
-            "git_metadata": {
-                "branch": "main",
-                "commit": "abc123",
-                "status": "clean"
-            }
-        }
+        session_data = {"git_metadata": {"branch": "main", "commit": "abc123", "status": "clean"}}
 
         sanitized = filter.sanitize_session(session_data)
 
@@ -370,14 +350,7 @@ class TestSessionPrivacyFilter:
 
         session_data = {
             "server_sessions": {
-                "zen": {
-                    "tools": {
-                        "mcp__zen__chat": {
-                            "calls": 5,
-                            "total_tokens": 1000
-                        }
-                    }
-                }
+                "zen": {"tools": {"mcp__zen__chat": {"calls": 5, "total_tokens": 1000}}}
             }
         }
 
@@ -400,9 +373,9 @@ class TestSessionPrivacyFilter:
                             "call_history": [
                                 {
                                     "platform_data": {"input": "sensitive query"},
-                                    "content_hash": "abc123"
+                                    "content_hash": "abc123",
                                 }
-                            ]
+                            ],
                         }
                     }
                 }
@@ -421,6 +394,7 @@ class TestSessionPrivacyFilter:
 # ============================================================================
 # Convenience Functions Tests
 # ============================================================================
+
 
 class TestConvenienceFunctions:
     """Tests for convenience functions"""
@@ -445,6 +419,7 @@ class TestConvenienceFunctions:
 # ============================================================================
 # Edge Cases and Error Handling
 # ============================================================================
+
 
 class TestEdgeCases:
     """Tests for edge cases and error handling"""
@@ -500,6 +475,7 @@ class TestEdgeCases:
 # Integration Tests
 # ============================================================================
 
+
 class TestPrivacyIntegration:
     """Integration tests for complete privacy workflow"""
 
@@ -511,12 +487,8 @@ class TestPrivacyIntegration:
         session_data = {
             "project": "test-project",
             "platform": "claude-code",
-            "platform_data": {
-                "debug_log_path": "/Users/john/.claude/debug.log"
-            },
-            "git_metadata": {
-                "branch": "main"
-            },
+            "platform_data": {"debug_log_path": "/Users/john/.claude/debug.log"},
+            "git_metadata": {"branch": "main"},
             "server_sessions": {
                 "zen": {
                     "tools": {
@@ -524,12 +496,12 @@ class TestPrivacyIntegration:
                             "calls": 2,
                             "call_history": [
                                 {"platform_data": {"input": "query"}},
-                                {"platform_data": {"input": "another"}}
-                            ]
+                                {"platform_data": {"input": "another"}},
+                            ],
                         }
                     }
                 }
-            }
+            },
         }
 
         sanitized = filter.sanitize_session(session_data)
@@ -537,7 +509,12 @@ class TestPrivacyIntegration:
         # Verify all sanitization applied
         assert sanitized["platform_data"]["debug_log_path"] == "[REDACTED_PATH]"
         assert sanitized["git_metadata"]["branch"] == "main"
-        assert sanitized["server_sessions"]["zen"]["tools"]["mcp__zen__chat"]["call_history"][0]["platform_data"] == "[REDACTED]"
+        assert (
+            sanitized["server_sessions"]["zen"]["tools"]["mcp__zen__chat"]["call_history"][0][
+                "platform_data"
+            ]
+            == "[REDACTED]"
+        )
 
 
 if __name__ == "__main__":
