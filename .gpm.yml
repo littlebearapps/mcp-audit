@@ -1,8 +1,10 @@
 branchProtection:
   enabled: false
   requireReviews: 0
-  requireStatusChecks: []
+  requireStatusChecks:
+    - quality-gate
   enforceAdmins: false
+  deleteBranchOnMerge: true
 ci:
   waitForChecks: true
   failFast: true
@@ -13,9 +15,10 @@ security:
   scanDependencies: true
   allowedVulnerabilities: []
 pr:
-  templatePath: null
+  templatePath: .github/PULL_REQUEST_TEMPLATE.md
   autoAssign: []
   autoLabel: []
+  deleteBranchOnMerge: true
 autoFix:
   enabled: true
   maxAttempts: 2
