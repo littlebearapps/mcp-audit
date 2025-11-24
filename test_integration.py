@@ -160,9 +160,9 @@ class TestCrossPlatformNormalization:
 class TestEventParsing:
     """Test event parsing across platforms"""
 
-    def test_claude_code_event_parsing(self, sample_claude_code_events):
+    def test_claude_code_event_parsing(self, sample_claude_code_events, tmp_path):
         """Test parsing Claude Code events"""
-        adapter = ClaudeCodeAdapter(project="test")
+        adapter = ClaudeCodeAdapter(project="test", claude_dir=tmp_path)
 
         for event in sample_claude_code_events:
             result = adapter.parse_event(json.dumps(event))
@@ -185,9 +185,9 @@ class TestEventParsing:
                 assert "-mcp__" in tool_name  # Codex format
                 assert usage['input_tokens'] > 0
 
-    def test_unrecognized_event_handling(self):
+    def test_unrecognized_event_handling(self, tmp_path):
         """Test handling of unrecognized events"""
-        adapter = ClaudeCodeAdapter(project="test")
+        adapter = ClaudeCodeAdapter(project="test", claude_dir=tmp_path)
 
         # Invalid JSON
         result = adapter.parse_event("{ invalid json }")
@@ -205,9 +205,9 @@ class TestEventParsing:
 class TestSessionTracking:
     """Test complete session tracking workflow"""
 
-    def test_claude_code_session_tracking(self, sample_claude_code_events):
+    def test_claude_code_session_tracking(self, sample_claude_code_events, tmp_path):
         """Test complete Claude Code session tracking"""
-        adapter = ClaudeCodeAdapter(project="test-project")
+        adapter = ClaudeCodeAdapter(project="test-project", claude_dir=tmp_path)
 
         # Parse events and record calls
         for event in sample_claude_code_events:
@@ -276,7 +276,7 @@ class TestPersistence:
     def test_save_and_load_session(self, tmp_path, sample_claude_code_events):
         """Test saving and loading session"""
         # Create and track session
-        adapter = ClaudeCodeAdapter(project="test-project")
+        adapter = ClaudeCodeAdapter(project="test-project", claude_dir=tmp_path)
 
         for event in sample_claude_code_events:
             result = adapter.parse_event(json.dumps(event))
@@ -334,9 +334,9 @@ class TestPersistence:
 class TestDuplicateDetection:
     """Test duplicate tool call detection"""
 
-    def test_duplicate_detection(self):
+    def test_duplicate_detection(self, tmp_path):
         """Test duplicate calls are detected"""
-        adapter = ClaudeCodeAdapter(project="test")
+        adapter = ClaudeCodeAdapter(project="test", claude_dir=tmp_path)
 
         # Same input = same content hash
         input_params = {"query": "test"}
@@ -374,9 +374,9 @@ class TestDuplicateDetection:
 class TestAnomalyDetection:
     """Test anomaly detection in tool usage"""
 
-    def test_high_frequency_detection(self):
+    def test_high_frequency_detection(self, tmp_path):
         """Test high frequency anomaly detection"""
-        adapter = ClaudeCodeAdapter(project="test")
+        adapter = ClaudeCodeAdapter(project="test", claude_dir=tmp_path)
 
         # Record 15 calls (threshold is 10)
         for _ in range(15):
@@ -394,9 +394,9 @@ class TestAnomalyDetection:
         assert anomalies[0]["tool"] == "mcp__zen__chat"
         assert anomalies[0]["calls"] == 15
 
-    def test_high_avg_tokens_detection(self):
+    def test_high_avg_tokens_detection(self, tmp_path):
         """Test high average tokens anomaly detection"""
-        adapter = ClaudeCodeAdapter(project="test")
+        adapter = ClaudeCodeAdapter(project="test", claude_dir=tmp_path)
 
         # Record call with 150K tokens (threshold is 100K)
         adapter.record_tool_call(
@@ -420,9 +420,9 @@ class TestAnomalyDetection:
 class TestMultiServerTracking:
     """Test tracking multiple MCP servers"""
 
-    def test_multiple_servers_tracked(self):
+    def test_multiple_servers_tracked(self, tmp_path):
         """Test multiple MCP servers tracked separately"""
-        adapter = ClaudeCodeAdapter(project="test")
+        adapter = ClaudeCodeAdapter(project="test", claude_dir=tmp_path)
 
         # Record calls to different servers
         adapter.record_tool_call(
@@ -451,7 +451,7 @@ class TestMultiServerTracking:
 
     def test_server_session_files_created(self, tmp_path):
         """Test per-server JSON files created"""
-        adapter = ClaudeCodeAdapter(project="test")
+        adapter = ClaudeCodeAdapter(project="test", claude_dir=tmp_path)
 
         # Record calls to multiple servers
         adapter.record_tool_call(
@@ -484,7 +484,7 @@ class TestEndToEndWorkflow:
     def test_complete_claude_code_workflow(self, tmp_path, sample_claude_code_events):
         """Test complete workflow: events → tracking → persistence → loading"""
         # 1. Create adapter
-        adapter = ClaudeCodeAdapter(project="e2e-test")
+        adapter = ClaudeCodeAdapter(project="e2e-test", claude_dir=tmp_path)
 
         # 2. Parse events and track
         for event in sample_claude_code_events:
@@ -559,7 +559,7 @@ class TestEndToEndWorkflow:
 
         # Create 3 sessions
         for i in range(3):
-            adapter = ClaudeCodeAdapter(project=f"session-{i}")
+            adapter = ClaudeCodeAdapter(project=f"session-{i}", claude_dir=tmp_path)
 
             for event in sample_claude_code_events:
                 result = adapter.parse_event(json.dumps(event))

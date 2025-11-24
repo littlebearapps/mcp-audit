@@ -22,24 +22,26 @@ class ClaudeCodeAdapter(BaseTracker):
     Uses file watcher approach to tail debug logs in real-time.
     """
 
-    def __init__(self, project: str, project_path: str = ""):
+    def __init__(self, project: str, project_path: str = "", claude_dir: Optional[Path] = None):
         """
         Initialize Claude Code adapter.
 
         Args:
             project: Project name (e.g., "mcp-audit")
             project_path: Relative project path (e.g., "wp-navigator-pro/main")
+            claude_dir: Optional Claude Code directory (for testing)
         """
         super().__init__(project=project, platform="claude-code")
 
         self.project_path = project_path or project
         self.file_positions: Dict[Path, int] = {}  # Track read positions
-        self.claude_dir: Optional[Path] = None
+        self.claude_dir: Optional[Path] = claude_dir
         self.detected_model: Optional[str] = None
         self.model_name: str = "Unknown Model"
 
-        # Find Claude Code directory
-        self._find_claude_directory()
+        # Find Claude Code directory (only if not provided)
+        if self.claude_dir is None:
+            self._find_claude_directory()
 
     def _find_claude_directory(self) -> None:
         """Find Claude Code data directory for this project"""
