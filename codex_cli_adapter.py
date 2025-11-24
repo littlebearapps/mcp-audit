@@ -203,7 +203,7 @@ class CodexCLIAdapter(BaseTracker):
 # Standalone Execution
 # ============================================================================
 
-def main():
+def main() -> int:
     """Main entry point for standalone execution"""
     import argparse
     import sys
@@ -241,7 +241,9 @@ def main():
         print(f"Total tokens: {session.token_usage.total_tokens:,}")
         print(f"MCP calls: {session.mcp_tool_calls.total_calls}")
         print(f"Cache efficiency: {session.token_usage.cache_efficiency:.1%}")
+        return 0
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    sys.exit(main())

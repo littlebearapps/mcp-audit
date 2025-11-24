@@ -154,7 +154,7 @@ class ClaudeCodeAdapter(BaseTracker):
                 print("\n[Claude Code] Stopping tracker...")
                 break
 
-    def parse_event(self, event_data: Any) -> Optional[Tuple[str, dict]]:
+    def parse_event(self, event_data: Any) -> Optional[Tuple[str, Dict[str, Any]]]:
         """
         Parse Claude Code debug.log event.
 
@@ -231,7 +231,7 @@ class ClaudeCodeAdapter(BaseTracker):
     # Helper Methods
     # ========================================================================
 
-    def _process_tool_call(self, tool_name: str, usage: dict) -> None:
+    def _process_tool_call(self, tool_name: str, usage: Dict[str, Any]) -> None:
         """
         Process a single tool call using BaseTracker.
 
@@ -268,7 +268,7 @@ class ClaudeCodeAdapter(BaseTracker):
 # Standalone Execution
 # ============================================================================
 
-def main():
+def main() -> int:
     """Main entry point for standalone execution"""
     import argparse
 
@@ -299,7 +299,9 @@ def main():
         print(f"Total tokens: {session.token_usage.total_tokens:,}")
         print(f"MCP calls: {session.mcp_tool_calls.total_calls}")
         print(f"Cache efficiency: {session.token_usage.cache_efficiency:.1%}")
+        return 0
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    sys.exit(main())
