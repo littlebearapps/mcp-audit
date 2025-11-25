@@ -125,7 +125,7 @@ events = storage.read_session(
 
 ```bash
 # Generate report from this session
-mcp-analyze report ./examples/codex-cli-session/
+mcp-audit report ./examples/codex-cli-session/
 
 # Output includes:
 # - Token usage breakdown
@@ -139,7 +139,7 @@ Use MCP Audit to compare costs across platforms:
 
 ```bash
 # Analyze both example sessions
-mcp-analyze report ./examples/
+mcp-audit report ./examples/
 
 # Compare Claude Code vs Codex CLI:
 # - Different pricing models

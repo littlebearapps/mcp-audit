@@ -48,6 +48,12 @@ npm run mcp:analyze
 - `claude_code_adapter.py` - Claude Code tracker (300 lines)
 - `codex_cli_adapter.py` - Codex CLI tracker (220 lines)
 
+### Display Module
+- `display/__init__.py` - Factory function with TTY detection
+- `display/rich_display.py` - Rich TUI with Live updates
+- `display/plain_display.py` - CI/logging fallback
+- `display/null_display.py` - Silent mode
+
 ### Utilities
 - `normalization.py` - Server/tool name normalization
 - `session_manager.py` - Session lifecycle management
@@ -82,7 +88,8 @@ npm run mcp:analyze
 
 ## Key Features
 
-- ✅ Cross-platform MCP tracking (Claude Code + Codex CLI)
+- ✅ Cross-platform MCP tracking (Claude Code + Codex CLI + Gemini CLI)
+- ✅ Rich TUI display with auto TTY detection (--tui, --plain, --quiet)
 - ✅ Auto-recovery from incomplete sessions (events.jsonl)
 - ✅ Duplicate detection and anomaly analysis
 - ✅ Ctrl+C safe signal handling (no data loss)

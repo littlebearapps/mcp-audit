@@ -32,6 +32,15 @@ mcp-audit/main/
 ├── claude_code_adapter.py              # Claude Code tracker (300 lines)
 ├── codex_cli_adapter.py                # Codex CLI tracker (220 lines)
 │
+├── # Display Module
+├── display/
+│   ├── __init__.py                     # Factory function, TTY detection
+│   ├── base.py                         # DisplayAdapter ABC
+│   ├── snapshot.py                     # DisplaySnapshot dataclass
+│   ├── rich_display.py                 # Rich TUI implementation
+│   ├── plain_display.py                # CI/logging fallback
+│   └── null_display.py                 # Silent mode
+│
 ├── # Utilities
 ├── normalization.py                    # Server/tool name normalization
 ├── session_manager.py                  # Session lifecycle management
@@ -92,6 +101,33 @@ mcp-audit/main/
 - Process wrapper approach (stdout/stderr)
 - Automatic `-mcp` suffix normalization
 - 77% code reduction from legacy tracker
+
+---
+
+### Display Module
+
+**display/__init__.py** - Factory and exports
+- `create_display(mode, refresh_rate)` factory function
+- Auto TTY detection for mode selection
+- Exports: DisplayAdapter, DisplaySnapshot, RichDisplay, PlainDisplay, NullDisplay
+
+**display/snapshot.py** - Immutable display state
+- Frozen dataclass capturing session metrics
+- All primitive/tuple fields for thread safety
+- Created via `DisplaySnapshot.create()` factory
+
+**display/rich_display.py** - Rich TUI implementation
+- Live updating dashboard with Rich library
+- Panels: header, tokens, tools, activity, footer
+- Configurable refresh rate (default 0.5s)
+
+**display/plain_display.py** - CI/logging fallback
+- Rate-limited print output
+- Works in non-TTY environments
+
+**display/null_display.py** - Silent mode
+- No-op implementations for all methods
+- Used with `--quiet` flag
 
 ---
 

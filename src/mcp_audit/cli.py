@@ -15,28 +15,31 @@ from . import __version__
 def main() -> int:
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
-        prog="mcp-analyze",
+        prog="mcp-audit",
         description="MCP Audit - Multi-platform MCP usage tracking and cost analysis",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   # Collect session data under Claude Code
-  mcp-analyze collect --platform claude-code --output ./session-data
+  mcp-audit collect --platform claude-code --output ./session-data
 
   # Collect session data under Codex CLI
-  mcp-analyze collect --platform codex-cli --output ./session-data
+  mcp-audit collect --platform codex-cli --output ./session-data
+
+  # Collect session data under Gemini CLI (requires telemetry enabled)
+  mcp-audit collect --platform gemini-cli --output ./session-data
 
   # Generate report from session data
-  mcp-analyze report ./session-data --format markdown --output report.md
+  mcp-audit report ./session-data --format markdown --output report.md
 
   # Generate JSON report
-  mcp-analyze report ./session-data --format json --output report.json
+  mcp-audit report ./session-data --format json --output report.json
 
 For more information, visit: https://github.com/littlebearapps/mcp-audit
         """,
     )
 
-    parser.add_argument("--version", action="version", version=f"mcp-analyze {__version__}")
+    parser.add_argument("--version", action="version", version=f"mcp-audit {__version__}")
 
     # Subcommands
     subparsers = parser.add_subparsers(
@@ -55,8 +58,8 @@ For more information, visit: https://github.com/littlebearapps/mcp-audit
         description="""
 Collect MCP session data by monitoring CLI tool output.
 
-This command runs under a Claude Code or Codex CLI session and captures
-MCP tool usage, token counts, and cost data in real-time.
+This command runs under a Claude Code, Codex CLI, or Gemini CLI session
+and captures MCP tool usage, token counts, and cost data in real-time.
 
 The collected data is saved to the specified output directory and can be
 analyzed later with the 'report' command.
@@ -90,7 +93,26 @@ analyzed later with the 'report' command.
     )
 
     collect_parser.add_argument(
-        "--quiet", action="store_true", help="Suppress real-time display (logs only)"
+        "--quiet", action="store_true", help="Suppress all display output (logs only)"
+    )
+
+    collect_parser.add_argument(
+        "--tui",
+        action="store_true",
+        help="Use rich TUI display (default when TTY available)",
+    )
+
+    collect_parser.add_argument(
+        "--plain",
+        action="store_true",
+        help="Use plain text output (for CI/logs)",
+    )
+
+    collect_parser.add_argument(
+        "--refresh-rate",
+        type=float,
+        default=0.5,
+        help="TUI refresh rate in seconds (default: 0.5)",
     )
 
     # ========================================================================
@@ -152,29 +174,52 @@ This command analyzes session data and produces reports in various formats
 # ============================================================================
 
 
+def get_display_mode(args) -> str:
+    """Determine display mode from CLI args."""
+    if args.quiet:
+        return "quiet"
+    if args.plain:
+        return "plain"
+    if args.tui:
+        return "tui"
+    return "auto"  # Will use TUI if TTY, else plain
+
+
 def cmd_collect(args) -> int:
     """Execute collect command."""
-    print("=" * 70)
-    print("MCP Analyze - Collect Session Data")
-    print("=" * 70)
-    print()
+    from datetime import datetime
+
+    from .display import DisplaySnapshot, create_display
+
+    # Determine display mode
+    display_mode = get_display_mode(args)
+
+    # Create display adapter
+    try:
+        display = create_display(mode=display_mode, refresh_rate=args.refresh_rate)
+    except ImportError as e:
+        print(f"Error: {e}")
+        return 1
 
     # Detect platform
     platform = args.platform
     if platform == "auto":
         platform = detect_platform()
-        print(f"Auto-detected platform: {platform}")
-    else:
-        print(f"Platform: {platform}")
 
     # Determine project name
     project = args.project or detect_project_name()
-    print(f"Project: {project}")
 
-    # Output directory
-    output_dir = args.output
-    print(f"Output directory: {output_dir}")
-    print()
+    # Create initial snapshot for display start
+    start_time = datetime.now()
+    initial_snapshot = DisplaySnapshot.create(
+        project=project,
+        platform=platform,
+        start_time=start_time,
+        duration_seconds=0.0,
+    )
+
+    # Start display
+    display.start(initial_snapshot)
 
     # Import appropriate tracker
     if platform == "claude-code":
@@ -185,9 +230,14 @@ def cmd_collect(args) -> int:
         from .codex_cli_adapter import CodexCLIAdapter
 
         tracker_class = CodexCLIAdapter
+    elif platform == "gemini-cli":
+        from .gemini_cli_adapter import GeminiCLIAdapter
+
+        tracker_class = GeminiCLIAdapter
     else:
+        display.stop(initial_snapshot)
         print(f"Error: Platform '{platform}' not yet implemented")
-        print("Supported platforms: claude-code, codex-cli")
+        print("Supported platforms: claude-code, codex-cli, gemini-cli")
         return 1
 
     # Create tracker instance
@@ -196,39 +246,82 @@ def cmd_collect(args) -> int:
             project=project,
         )
 
-        print("Starting session tracking...")
-        print("Press Ctrl+C to stop and save session data")
-        print()
-
         # Start tracking
         tracker.start()
 
         # Monitor until interrupted
         try:
-            tracker.monitor()
+            tracker.monitor(display=display)
         except KeyboardInterrupt:
-            print("\n\nInterrupted by user. Saving session data...")
+            pass  # Display will show summary
 
         # Stop tracking (saves session)
         session = tracker.stop()
 
+        # Build final snapshot
+        if session:
+            final_snapshot = _build_snapshot_from_session(session, start_time)
+        else:
+            final_snapshot = initial_snapshot
+
+        # Stop display and show summary
+        display.stop(final_snapshot)
+
         if session and not args.no_logs:
-            print("\n" + "=" * 70)
-            print("Session Summary")
-            print("=" * 70)
-            print(f"Total tokens: {session.token_usage.total_tokens:,}")
-            print(f"Cost estimate: ${session.cost_estimate:.4f}")
-            print(f"MCP tool calls: {session.mcp_tool_calls.total_calls}")
             print(f"Session saved to: {tracker.session_dir}")
 
         return 0
 
     except Exception as e:
+        display.stop(initial_snapshot)
         print(f"Error: {e}")
         import traceback
 
         traceback.print_exc()
         return 1
+
+
+def _build_snapshot_from_session(session, start_time) -> "DisplaySnapshot":
+    """Build DisplaySnapshot from a Session object."""
+    from datetime import datetime
+
+    from .display import DisplaySnapshot
+
+    # Calculate duration
+    duration_seconds = (datetime.now() - start_time).total_seconds()
+
+    # Calculate cache tokens
+    cache_tokens = session.token_usage.cache_read_tokens + session.token_usage.cache_created_tokens
+
+    # Calculate cache efficiency
+    total = session.token_usage.total_tokens
+    cache_efficiency = cache_tokens / total if total > 0 else 0.0
+
+    # Build top tools list
+    top_tools = []
+    for server_name, server_session in session.server_sessions.items():
+        for tool_name, tool_stats in server_session.tools.items():
+            avg_tokens = tool_stats.total_tokens // tool_stats.calls if tool_stats.calls > 0 else 0
+            top_tools.append((tool_name, tool_stats.calls, tool_stats.total_tokens, avg_tokens))
+
+    # Sort by total tokens descending
+    top_tools.sort(key=lambda x: x[2], reverse=True)
+
+    return DisplaySnapshot.create(
+        project=session.project,
+        platform=session.platform,
+        start_time=start_time,
+        duration_seconds=duration_seconds,
+        input_tokens=session.token_usage.input_tokens,
+        output_tokens=session.token_usage.output_tokens,
+        cache_tokens=cache_tokens,
+        total_tokens=session.token_usage.total_tokens,
+        cache_efficiency=cache_efficiency,
+        cost_estimate=session.cost_estimate,
+        total_tool_calls=session.mcp_tool_calls.total_calls,
+        unique_tools=session.mcp_tool_calls.unique_tools,
+        top_tools=top_tools,
+    )
 
 
 def cmd_report(args) -> int:

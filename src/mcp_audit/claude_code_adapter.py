@@ -7,10 +7,14 @@ Implements BaseTracker for Claude Code's debug.log format.
 
 import json
 import time
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from .base_tracker import BaseTracker
+
+if TYPE_CHECKING:
+    from .display import DisplayAdapter, DisplaySnapshot
 
 
 class ClaudeCodeAdapter(BaseTracker):
@@ -226,6 +230,132 @@ class ClaudeCodeAdapter(BaseTracker):
         }
 
     # ========================================================================
+    # Display Integration
+    # ========================================================================
+
+    def monitor(self, display: Optional["DisplayAdapter"] = None) -> None:
+        """
+        Main monitoring loop with display integration.
+
+        Args:
+            display: Optional DisplayAdapter for real-time UI updates
+        """
+        self._display = display
+        self._start_time = datetime.now()
+        self._last_display_update = 0.0
+
+        print(f"[Claude Code] Initializing tracker for: {self.project_path}")
+        print(f"[Claude Code] Monitoring directory: {self.claude_dir}")
+
+        # Initial file discovery
+        files = self._find_jsonl_files()
+        print(f"[Claude Code] Found {len(files)} .jsonl files")
+
+        # Initialize file positions (start from end - track NEW content only)
+        for file_path in files:
+            try:
+                self.file_positions[file_path] = file_path.stat().st_size
+            except Exception:
+                continue
+
+        # Main monitoring loop
+        while True:
+            try:
+                files = self._find_jsonl_files()
+
+                for file_path in files:
+                    # Initialize position for new files
+                    if file_path not in self.file_positions:
+                        try:
+                            self.file_positions[file_path] = file_path.stat().st_size
+                        except Exception:
+                            continue
+
+                    # Read new content
+                    try:
+                        with open(file_path) as f:
+                            # Seek to last position
+                            f.seek(self.file_positions[file_path])
+
+                            # Read new content
+                            new_content = f.read()
+                            if new_content:
+                                # Process each new line
+                                for line in new_content.split("\n"):
+                                    if line.strip():
+                                        result = self.parse_event(line)
+                                        if result:
+                                            tool_name, usage = result
+                                            self._process_tool_call(tool_name, usage)
+
+                            # Update position
+                            self.file_positions[file_path] = f.tell()
+                    except Exception as e:
+                        self.handle_unrecognized_line(f"Error reading {file_path.name}: {e}")
+                        continue
+
+                # Update display periodically (every 0.5 seconds)
+                if display:
+                    now = time.time()
+                    if now - self._last_display_update >= 0.5:
+                        self._last_display_update = now
+                        snapshot = self._build_display_snapshot()
+                        display.update(snapshot)
+
+                # Sleep briefly
+                time.sleep(0.2)
+
+            except KeyboardInterrupt:
+                break
+
+    def _build_display_snapshot(self) -> "DisplaySnapshot":
+        """Build DisplaySnapshot from current session state."""
+        from .display import DisplaySnapshot
+
+        # Calculate duration
+        duration_seconds = (datetime.now() - self._start_time).total_seconds()
+
+        # Calculate cache tokens
+        cache_tokens = (
+            self.session.token_usage.cache_read_tokens
+            + self.session.token_usage.cache_created_tokens
+        )
+
+        # Calculate cache efficiency
+        total = self.session.token_usage.total_tokens
+        cache_efficiency = cache_tokens / total if total > 0 else 0.0
+
+        # Build top tools list
+        top_tools = []
+        for server_session in self.server_sessions.values():
+            for tool_name, tool_stats in server_session.tools.items():
+                avg_tokens = tool_stats.total_tokens // tool_stats.calls if tool_stats.calls > 0 else 0
+                top_tools.append((tool_name, tool_stats.calls, tool_stats.total_tokens, avg_tokens))
+
+        # Sort by total tokens descending
+        top_tools.sort(key=lambda x: x[2], reverse=True)
+
+        return DisplaySnapshot.create(
+            project=self.project,
+            platform=self.platform,
+            start_time=self._start_time,
+            duration_seconds=duration_seconds,
+            input_tokens=self.session.token_usage.input_tokens,
+            output_tokens=self.session.token_usage.output_tokens,
+            cache_tokens=cache_tokens,
+            total_tokens=self.session.token_usage.total_tokens,
+            cache_efficiency=cache_efficiency,
+            cost_estimate=self.session.cost_estimate,
+            total_tool_calls=sum(ss.total_calls for ss in self.server_sessions.values()),
+            unique_tools=len(set(
+                tool_name
+                for ss in self.server_sessions.values()
+                for tool_name in ss.tools.keys()
+            )),
+            top_tools=top_tools[:10],
+        )
+
+    # ========================================================================
     # Helper Methods
     # ========================================================================
 
@@ -257,6 +387,16 @@ class ClaudeCodeAdapter(BaseTracker):
             content_hash=content_hash,
             platform_data=platform_data,
         )
+
+        # Notify display of event
+        if hasattr(self, "_display") and self._display:
+            total_tokens = (
+                usage["input_tokens"]
+                + usage["output_tokens"]
+                + usage["cache_created_tokens"]
+                + usage["cache_read_tokens"]
+            )
+            self._display.on_event(tool_name, total_tokens, datetime.now())
 
 
 # ============================================================================

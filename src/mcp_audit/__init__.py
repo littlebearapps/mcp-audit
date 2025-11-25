@@ -72,6 +72,22 @@ def __getattr__(name: str) -> Any:
 
         return CodexCLIAdapter
 
+    if name in ("GeminiCLIAdapter",):
+        from .gemini_cli_adapter import GeminiCLIAdapter
+
+        return GeminiCLIAdapter
+
+    # Display module
+    if name in ("DisplayAdapter", "DisplaySnapshot", "create_display", "DisplayMode"):
+        from .display import (  # noqa: F401
+            DisplayAdapter,
+            DisplayMode,
+            DisplaySnapshot,
+            create_display,
+        )
+
+        return locals()[name]
+
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
@@ -102,4 +118,10 @@ __all__ = [
     # Platform adapters
     "ClaudeCodeAdapter",
     "CodexCLIAdapter",
+    "GeminiCLIAdapter",
+    # Display
+    "DisplayAdapter",
+    "DisplaySnapshot",
+    "create_display",
+    "DisplayMode",
 ]

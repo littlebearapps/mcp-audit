@@ -13,7 +13,10 @@ from collections import defaultdict
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+
+if TYPE_CHECKING:
+    from .display import DisplayAdapter
 
 # Schema version (LOCKED - see docs/CORE-SCHEMA-SPEC.md)
 SCHEMA_VERSION = "1.0.0"
@@ -470,6 +473,50 @@ class BaseTracker(ABC):
                     )
 
         return anomalies
+
+    # ========================================================================
+    # High-Level Interface (CLI integration)
+    # ========================================================================
+
+    def start(self) -> None:
+        """
+        Initialize tracking (called before monitor loop).
+
+        Default implementation is a no-op. Subclasses may override
+        for any pre-monitoring setup.
+        """
+        pass
+
+    def monitor(self, display: Optional["DisplayAdapter"] = None) -> None:
+        """
+        Main monitoring loop with optional display integration.
+
+        Default implementation calls start_tracking() which contains
+        the platform-specific monitoring loop. Subclasses should override
+        this to integrate display updates.
+
+        Args:
+            display: Optional DisplayAdapter for real-time UI updates
+        """
+        # Store display for use in event processing
+        self._display = display
+        # Call platform-specific tracking
+        self.start_tracking()
+
+    def stop(self) -> Optional[Session]:
+        """
+        Stop tracking and finalize session.
+
+        Returns:
+            Finalized Session object, or None if no data collected
+        """
+        session = self.finalize_session()
+
+        # Save session data
+        output_dir = Path("logs/sessions")
+        self.save_session(output_dir)
+
+        return session
 
     # ========================================================================
     # Persistence (Shared implementation)

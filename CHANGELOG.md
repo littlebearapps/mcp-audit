@@ -9,7 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **PyPI distribution** - Now installable via `pip install mcp-audit` or `pipx install mcp-audit`
-- **CLI command** - `mcp-analyze` command with `collect` and `report` subcommands
+- **Rich TUI display** - Beautiful terminal dashboard with live updating panels
+  - Auto TTY detection (TUI for terminals, plain text for CI)
+  - Display modes: `--tui`, `--plain`, `--quiet`
+  - Configurable refresh rate with `--refresh-rate`
+- **Gemini CLI adapter** - Full support for tracking Gemini CLI sessions via OpenTelemetry
+- **Display adapter pattern** - Modular display system (RichDisplay, PlainDisplay, NullDisplay)
+- **CLI command** - `mcp-audit` command with `collect` and `report` subcommands
 - **Proper package structure** - Modern `src/` layout following Python packaging best practices
 - **Type hints** - Full type annotations with `py.typed` marker for editor support
 - **GitHub Actions** - Automated CI/CD pipeline with PyPI publishing on releases

@@ -27,7 +27,7 @@ pip install mcp-audit
 Open a new terminal and run:
 
 ```bash
-mcp-analyze collect --platform codex_cli
+mcp-audit collect --platform codex_cli
 ```
 
 You'll see a live display:
@@ -128,15 +128,15 @@ MCP Audit automatically detects:
 
 ```bash
 # Specify project name
-mcp-analyze collect --platform codex_cli --project "api-refactor"
+mcp-audit collect --platform codex_cli --project "api-refactor"
 
 # Custom output directory
-mcp-analyze collect --platform codex_cli --output ./codex-sessions/
+mcp-audit collect --platform codex_cli --output ./codex-sessions/
 ```
 
 ### Pricing Configuration
 
-Create `~/.mcp-audit/config/mcp-analyze.toml`:
+Create `~/.mcp-audit/config/mcp-audit.toml`:
 
 ```toml
 [pricing.openai]
@@ -185,26 +185,26 @@ MCP Audit differentiates between:
 ### Terminal Report
 
 ```bash
-mcp-analyze report --platform codex_cli
+mcp-audit report --platform codex_cli
 ```
 
 ### Filter by Date
 
 ```bash
-mcp-analyze report --platform codex_cli --start 2025-11-20 --end 2025-11-25
+mcp-audit report --platform codex_cli --start 2025-11-20 --end 2025-11-25
 ```
 
 ### Export Options
 
 ```bash
 # JSON
-mcp-analyze report --format json --output codex-report.json
+mcp-audit report --format json --output codex-report.json
 
 # CSV
-mcp-analyze report --format csv --output codex-report.csv
+mcp-audit report --format csv --output codex-report.csv
 
 # Markdown
-mcp-analyze report --format markdown --output codex-report.md
+mcp-audit report --format markdown --output codex-report.md
 ```
 
 ---
@@ -269,7 +269,7 @@ Run MCP Audit before starting Codex CLI to capture all events:
 
 ```bash
 # Terminal 1
-mcp-analyze collect --platform codex_cli
+mcp-audit collect --platform codex_cli
 
 # Terminal 2 (after tracker starts)
 codex
@@ -280,7 +280,7 @@ codex
 Use descriptive project names for easier analysis:
 
 ```bash
-mcp-analyze collect --platform codex_cli --project "feature-auth"
+mcp-audit collect --platform codex_cli --project "feature-auth"
 ```
 
 ### Cost Comparison
@@ -289,10 +289,10 @@ Compare costs between Claude Code and Codex CLI:
 
 ```bash
 # Claude Code sessions
-mcp-analyze report --platform claude_code --last 7
+mcp-audit report --platform claude_code --last 7
 
 # Codex CLI sessions
-mcp-analyze report --platform codex_cli --last 7
+mcp-audit report --platform codex_cli --last 7
 ```
 
 ---

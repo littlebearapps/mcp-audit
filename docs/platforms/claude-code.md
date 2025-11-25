@@ -27,7 +27,7 @@ pip install mcp-audit
 Open a new terminal and run:
 
 ```bash
-mcp-analyze collect --platform claude_code
+mcp-audit collect --platform claude_code
 ```
 
 You'll see a live display of your session:
@@ -123,15 +123,15 @@ Override auto-detection with CLI flags:
 
 ```bash
 # Specify project name
-mcp-analyze collect --platform claude_code --project "my-feature"
+mcp-audit collect --platform claude_code --project "my-feature"
 
 # Custom output directory
-mcp-analyze collect --platform claude_code --output ./my-sessions/
+mcp-audit collect --platform claude_code --output ./my-sessions/
 ```
 
 ### Pricing Configuration
 
-Create `~/.mcp-audit/config/mcp-analyze.toml`:
+Create `~/.mcp-audit/config/mcp-audit.toml`:
 
 ```toml
 [pricing.claude]
@@ -176,19 +176,19 @@ Examples:
 ### Terminal Report
 
 ```bash
-mcp-analyze report
+mcp-audit report
 ```
 
 ### JSON Export
 
 ```bash
-mcp-analyze report --format json --output report.json
+mcp-audit report --format json --output report.json
 ```
 
 ### CSV for Spreadsheets
 
 ```bash
-mcp-analyze report --format csv --output report.csv
+mcp-audit report --format csv --output report.csv
 ```
 
 ### Session Details

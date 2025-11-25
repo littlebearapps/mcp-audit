@@ -68,10 +68,10 @@ print(f"Loaded {len(events)} events")
 
 ```bash
 # Analyze all example sessions
-mcp-analyze report ./examples/
+mcp-audit report ./examples/
 
 # Analyze specific platform
-mcp-analyze report ./examples/claude-code-session/
+mcp-audit report ./examples/claude-code-session/
 ```
 
 ### Test Against Examples

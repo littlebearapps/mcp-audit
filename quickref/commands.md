@@ -8,16 +8,34 @@ Quick reference for all npm scripts and common workflows.
 
 ```bash
 # Standard mode - full output with session logging
-npm run cc:live
+mcp-audit collect --platform claude_code
 
-# Quiet mode - less verbose output
-npm run cc:live:quiet
+# With Rich TUI display (auto-detected for TTY)
+mcp-audit collect --platform claude_code --tui
 
-# No logs mode - real-time only, no disk writes
-npm run cc:live:no-logs
+# Plain text output (for CI/pipes)
+mcp-audit collect --platform claude_code --plain
 
-# Show help
-npm run cc:help
+# Silent mode (logs only, no display)
+mcp-audit collect --platform claude_code --quiet
+```
+
+---
+
+## Display Modes
+
+MCP Audit auto-detects TTY and chooses the best display:
+
+| Mode | Flag | Use Case |
+|------|------|----------|
+| TUI | `--tui` | Interactive terminals (default for TTY) |
+| Plain | `--plain` | CI/CD pipelines, log files |
+| Quiet | `--quiet` | Background processes, logs only |
+| Auto | (default) | Auto-detect based on TTY |
+
+```bash
+# Custom refresh rate for TUI (default: 0.5s)
+mcp-audit collect --platform claude_code --refresh-rate 1.0
 ```
 
 ---
@@ -26,10 +44,11 @@ npm run cc:help
 
 ```bash
 # Start Codex tracking
-npm run codex:live
+mcp-audit collect --platform codex_cli
 
-# Show help
-npm run codex:help
+# With display options (same as Claude Code)
+mcp-audit collect --platform codex_cli --tui
+mcp-audit collect --platform codex_cli --plain
 ```
 
 ---

@@ -98,7 +98,7 @@ events = storage.read_session(
 
 ```bash
 # Generate report from this session
-mcp-analyze report ./examples/claude-code-session/
+mcp-audit report ./examples/claude-code-session/
 
 # Output includes:
 # - Token usage breakdown

@@ -12,7 +12,7 @@ MCP Audit measures token usage and costs across AI coding sessions, helping you 
 
 ## Why MCP Audit?
 
-AI coding assistants like Claude Code and Codex CLI use MCP (Model Context Protocol) servers that can significantly impact your token usage and costs. MCP Audit helps you:
+AI coding assistants like Claude Code, Codex CLI, and Gemini CLI use MCP (Model Context Protocol) servers that can significantly impact your token usage and costs. MCP Audit helps you:
 
 - **Find expensive tools** - Identify which MCP tools consume the most tokens
 - **Detect duplicates** - Spot redundant tool calls wasting tokens
@@ -41,10 +41,13 @@ pip install mcp-audit[analytics]
 
 ```bash
 # Track Claude Code session
-mcp-analyze collect --platform claude_code
+mcp-audit collect --platform claude_code
 
 # Track Codex CLI session
-mcp-analyze collect --platform codex_cli
+mcp-audit collect --platform codex_cli
+
+# Track Gemini CLI session (requires telemetry enabled)
+mcp-audit collect --platform gemini_cli
 ```
 
 Sessions are automatically saved to `~/.mcp-audit/sessions/`.
@@ -53,13 +56,13 @@ Sessions are automatically saved to `~/.mcp-audit/sessions/`.
 
 ```bash
 # View summary of recent sessions
-mcp-analyze report
+mcp-audit report
 
 # Export detailed CSV
-mcp-analyze report --format csv --output report.csv
+mcp-audit report --format csv --output report.csv
 
 # Analyze specific date range
-mcp-analyze report --start 2025-11-01 --end 2025-11-30
+mcp-audit report --start 2025-11-01 --end 2025-11-30
 ```
 
 ### 3. Review Results
@@ -79,12 +82,12 @@ Estimated Total Cost: $2.34 (across 15 sessions)
 
 ## Platform Support
 
-| Platform | Status | Token Tracking | Time Tracking |
-|----------|--------|----------------|---------------|
-| Claude Code | **Stable** | Yes | Yes |
-| Codex CLI | **Stable** | Yes | Yes |
-| Gemini CLI | Planned | TBD | TBD |
-| Ollama CLI | Experimental | No* | Yes |
+| Platform | Status | Token Tracking | Time Tracking | Latency |
+|----------|--------|----------------|---------------|---------|
+| Claude Code | **Stable** | Yes | Yes | No |
+| Codex CLI | **Stable** | Yes | Yes | No |
+| Gemini CLI | **Stable** | Yes | Yes | Yes |
+| Ollama CLI | Experimental | No* | Yes | Yes |
 
 *Ollama runs locally without token costs; time-based tracking available.
 
@@ -97,7 +100,7 @@ Estimated Total Cost: $2.34 (across 15 sessions)
 Monitor your session as you work:
 
 ```bash
-mcp-analyze collect --platform claude_code
+mcp-audit collect --platform claude_code
 ```
 
 ```
@@ -116,7 +119,7 @@ Recent: mcp__zen__chat (3,421 tokens)
 Aggregate insights across all your sessions:
 
 ```bash
-mcp-analyze report --last 30
+mcp-audit report --last 30
 ```
 
 - Top expensive tools by total tokens
@@ -150,7 +153,7 @@ Automatically identifies redundant tool calls:
 
 ## Configuration
 
-Create `~/.mcp-audit/config/mcp-analyze.toml`:
+Create `~/.mcp-audit/config/mcp-audit.toml`:
 
 ```toml
 [pricing.claude]
@@ -159,6 +162,10 @@ Create `~/.mcp-audit/config/mcp-analyze.toml`:
 
 [pricing.openai]
 "gpt-4o" = { input = 2.50, output = 10.00 }
+
+[pricing.gemini]
+"gemini-2.5-pro" = { input = 1.25, output = 10.00, cache_read = 0.3125 }
+"gemini-2.5-flash" = { input = 0.075, output = 0.30 }
 ```
 
 See [Pricing Configuration](docs/PRICING-CONFIGURATION.md) for details.
@@ -173,6 +180,7 @@ See [Pricing Configuration](docs/PRICING-CONFIGURATION.md) for details.
 | [Data Contract](docs/data-contract.md) | Backward compatibility guarantees |
 | [Platforms: Claude Code](docs/platforms/claude-code.md) | Claude Code setup guide |
 | [Platforms: Codex CLI](docs/platforms/codex-cli.md) | Codex CLI setup guide |
+| [Platforms: Gemini CLI](docs/platforms/gemini-cli.md) | Gemini CLI setup guide |
 | [Contributing](docs/contributing.md) | How to add platform adapters |
 | [Privacy & Security](docs/privacy-security.md) | Data handling policies |
 
@@ -181,7 +189,7 @@ See [Pricing Configuration](docs/PRICING-CONFIGURATION.md) for details.
 ## CLI Reference
 
 ```bash
-mcp-analyze --help
+mcp-audit --help
 
 Commands:
   collect   Track a live session
@@ -196,18 +204,31 @@ Options:
 ### collect
 
 ```bash
-mcp-analyze collect [OPTIONS]
+mcp-audit collect [OPTIONS]
 
 Options:
-  --platform TEXT    Platform to track (claude_code, codex_cli)
-  --project TEXT     Project name (auto-detected from directory)
-  --output PATH      Output directory (default: ~/.mcp-audit/sessions/)
+  --platform TEXT     Platform to track (claude_code, codex_cli, gemini_cli, auto)
+  --project TEXT      Project name (auto-detected from directory)
+  --output PATH       Output directory (default: logs/sessions)
+  --tui               Use rich TUI display (default when TTY available)
+  --plain             Use plain text output (for CI/logs)
+  --quiet             Suppress all display output (logs only)
+  --refresh-rate NUM  TUI refresh rate in seconds (default: 0.5)
+  --no-logs           Skip writing logs to disk (real-time display only)
 ```
+
+#### Display Modes
+
+MCP Audit automatically detects whether you're running in a terminal (TTY) and chooses the best display mode:
+
+- **TUI mode** (default for terminals): Beautiful Rich-based dashboard with live updating
+- **Plain mode** (default for CI/pipes): Simple scrolling text output
+- **Quiet mode**: No display output, only writes logs to disk
 
 ### report
 
 ```bash
-mcp-analyze report [OPTIONS] [SESSION_DIR]
+mcp-audit report [OPTIONS] [SESSION_DIR]
 
 Options:
   --format TEXT      Output format: json, csv, markdown (default: markdown)
@@ -229,9 +250,12 @@ Sessions are stored at `~/.mcp-audit/sessions/`:
 ├── claude_code/
 │   └── 2025-11-25/
 │       └── session-20251125T103045-abc123.jsonl
-└── codex_cli/
+├── codex_cli/
+│   └── 2025-11-25/
+│       └── session-20251125T143022-def456.jsonl
+└── gemini_cli/
     └── 2025-11-25/
-        └── session-20251125T143022-def456.jsonl
+        └── session-20251125T160530-ghi789.jsonl
 ```
 
 Each session is a JSONL file (one event per line) for efficient streaming.

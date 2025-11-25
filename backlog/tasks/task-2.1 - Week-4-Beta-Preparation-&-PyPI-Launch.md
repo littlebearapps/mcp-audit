@@ -4,7 +4,7 @@ title: 'Week 4: Beta Preparation & PyPI Launch'
 status: In Progress
 assignee: []
 created_date: '2025-11-24 06:13'
-updated_date: '2025-11-25 03:01'
+updated_date: '2025-11-25 04:10'
 labels: []
 dependencies: []
 parent_task_id: task-2
@@ -56,6 +56,11 @@ Make tool pip-installable BEFORE beta launch. This is CRITICAL and moved from We
 
 - [ ] #20 pipx installation documented as primary method (isolated environment best practice)
 - [ ] #21 pipx install mcp-audit tested and verified on all platforms
+
+- [ ] #22 PyPI organization registered at pypi.org (production)
+- [ ] #23 Trusted publisher configured on pypi.org for GitHub Actions
+- [ ] #24 TestPyPI test upload successful (pre-release validation)
+- [ ] #25 Production PyPI upload successful (full release)
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -82,4 +87,28 @@ Make tool pip-installable BEFORE beta launch. This is CRITICAL and moved from We
 2. Verify pip install mcp-audit works from PyPI
 3. Test on clean systems (macOS, Linux, Windows WSL)
 4. Begin beta tester recruitment
+
+## PyPI Registration Clarification (2025-11-25)
+
+**Two registrations needed**:
+
+1. **TestPyPI** (test.pypi.org) - For testing workflow before production
+   - Used for pre-releases and workflow validation
+   - Safe to test without affecting production
+
+2. **PyPI** (pypi.org) - For production releases ⭐ REQUIRED
+   - This is what users will `pip install` from
+   - Needs trusted publisher setup for GitHub Actions
+   - Register at: https://pypi.org/account/register/
+
+**GitHub Actions Workflow** (publish.yml):
+- Pre-releases → TestPyPI automatically
+- Full releases → PyPI automatically
+- Manual dispatch can target either
+
+**Action Required**:
+- [ ] Register organization on pypi.org (not just test.pypi.org)
+- [ ] Set up trusted publisher for littlebearapps/mcp-audit on pypi.org
+- [ ] Test with pre-release to TestPyPI first
+- [ ] Then create full release for PyPI
 <!-- SECTION:NOTES:END -->

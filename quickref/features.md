@@ -41,6 +41,45 @@ Both trackers support unified MCP tracking with automatic normalization across p
 
 ---
 
+## TUI Display
+
+### Display Adapter Pattern
+
+MCP Audit uses a display adapter pattern for flexible output:
+
+- **RichDisplay** - Beautiful Rich-based TUI with live updating panels
+- **PlainDisplay** - Simple text output for CI/logs
+- **NullDisplay** - Silent mode (logs to disk only)
+
+### Auto-Detection
+
+Display mode auto-detected based on environment:
+
+```python
+# TTY detected → RichDisplay (TUI)
+# Not TTY (pipe/CI) → PlainDisplay
+# --quiet flag → NullDisplay
+```
+
+### Display Panels (TUI Mode)
+
+- **Header**: Project name, platform, session duration
+- **Tokens**: Input/output/cache counts with efficiency %
+- **Tools**: Top tools by token usage
+- **Activity**: Recent tool calls with timestamps
+- **Footer**: Cost estimate, help text
+
+### CLI Flags
+
+| Flag | Effect |
+|------|--------|
+| `--tui` | Force Rich TUI mode |
+| `--plain` | Force plain text mode |
+| `--quiet` | Silent (logs only) |
+| `--refresh-rate N` | TUI update interval (default 0.5s) |
+
+---
+
 ## Signal Handling
 
 ### Ctrl+C Safety
