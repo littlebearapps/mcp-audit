@@ -13,7 +13,10 @@ __email__ = "contact@littlebearapps.com"
 # Users can import directly: from mcp_audit import BaseTracker
 
 
-def __getattr__(name: str):
+from typing import Any
+
+
+def __getattr__(name: str) -> Any:
     """Lazy import handler for package attributes."""
     if name in (
         "BaseTracker",
@@ -36,13 +39,13 @@ def __getattr__(name: str):
 
         return locals()[name]
 
-    if name in ("normalize_tool_name", "extract_server_name"):
-        from .normalization import normalize_tool_name, extract_server_name
+    if name in ("normalize_tool_name", "normalize_server_name", "extract_server_and_tool"):
+        from .normalization import normalize_tool_name, normalize_server_name, extract_server_and_tool
 
         return locals()[name]
 
-    if name in ("PricingConfig", "get_default_pricing"):
-        from .pricing_config import PricingConfig, get_default_pricing
+    if name in ("PricingConfig", "load_pricing_config", "get_model_cost"):
+        from .pricing_config import PricingConfig, load_pricing_config, get_model_cost
 
         return locals()[name]
 
@@ -79,10 +82,12 @@ __all__ = [
     "MCPToolCalls",
     # Normalization
     "normalize_tool_name",
-    "extract_server_name",
+    "normalize_server_name",
+    "extract_server_and_tool",
     # Pricing
     "PricingConfig",
-    "get_default_pricing",
+    "load_pricing_config",
+    "get_model_cost",
     # Storage
     "StorageManager",
     "SessionIndex",
