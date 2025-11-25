@@ -9,7 +9,12 @@ import pytest
 import json
 import re
 from pathlib import Path
-from mcp_audit.privacy import PrivacyFilter, SessionPrivacyFilter, redact_string, sanitize_session_file
+from mcp_audit.privacy import (
+    PrivacyFilter,
+    SessionPrivacyFilter,
+    redact_string,
+    sanitize_session_file,
+)
 
 
 class TestPrivacyFilterPatterns:

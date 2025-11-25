@@ -13,7 +13,7 @@ from pathlib import Path
 from datetime import datetime, date, timedelta
 from typing import Generator
 
-from mcp_audit.storage import (
+from storage import (
     StorageManager,
     SessionIndex,
     DailyIndex,
@@ -29,7 +29,6 @@ from mcp_audit.storage import (
 # =============================================================================
 # Fixtures
 # =============================================================================
-
 
 @pytest.fixture
 def temp_storage_dir() -> Generator[Path, None, None]:
@@ -100,7 +99,6 @@ def sample_session_index() -> SessionIndex:
 # Test: Default Base Directory
 # =============================================================================
 
-
 class TestDefaultBaseDir:
     """Test default base directory configuration."""
 
@@ -118,7 +116,6 @@ class TestDefaultBaseDir:
 # =============================================================================
 # Test: StorageManager Initialization
 # =============================================================================
-
 
 class TestStorageManagerInit:
     """Test StorageManager initialization."""
@@ -146,7 +143,6 @@ class TestStorageManagerInit:
 # =============================================================================
 # Test: Path Generation
 # =============================================================================
-
 
 class TestPathGeneration:
     """Test path generation methods."""
@@ -199,7 +195,6 @@ class TestPathGeneration:
 # =============================================================================
 # Test: Session Writing
 # =============================================================================
-
 
 class TestSessionWriting:
     """Test session file writing."""
@@ -263,7 +258,6 @@ class TestSessionWriting:
 # Test: Session Reading
 # =============================================================================
 
-
 class TestSessionReading:
     """Test session file reading."""
 
@@ -297,7 +291,7 @@ class TestSessionReading:
         # Write mixed valid and invalid JSON
         with open(session_path, "w") as f:
             f.write('{"type": "valid"}\n')
-            f.write("invalid json line\n")
+            f.write('invalid json line\n')
             f.write('{"type": "also_valid"}\n')
 
         events = list(storage.read_session_events(session_path))
@@ -316,7 +310,6 @@ class TestSessionReading:
 # =============================================================================
 # Test: Session Index
 # =============================================================================
-
 
 class TestSessionIndex:
     """Test SessionIndex dataclass."""
@@ -339,7 +332,6 @@ class TestSessionIndex:
 # =============================================================================
 # Test: Daily Index
 # =============================================================================
-
 
 class TestDailyIndex:
     """Test DailyIndex dataclass."""
@@ -413,7 +405,6 @@ class TestDailyIndex:
 # Test: Platform Index
 # =============================================================================
 
-
 class TestPlatformIndex:
     """Test PlatformIndex dataclass."""
 
@@ -459,13 +450,10 @@ class TestPlatformIndex:
 # Test: Index Management
 # =============================================================================
 
-
 class TestIndexManagement:
     """Test index file management."""
 
-    def test_save_and_load_daily_index(
-        self, storage: StorageManager, sample_session_index: SessionIndex
-    ):
+    def test_save_and_load_daily_index(self, storage: StorageManager, sample_session_index: SessionIndex):
         """Save and load daily index."""
         daily_index = DailyIndex(
             schema_version=STORAGE_SCHEMA_VERSION,
@@ -506,9 +494,7 @@ class TestIndexManagement:
         assert loaded is not None
         assert loaded.total_sessions == 3
 
-    def test_update_indexes_for_session(
-        self, storage: StorageManager, sample_session_index: SessionIndex
-    ):
+    def test_update_indexes_for_session(self, storage: StorageManager, sample_session_index: SessionIndex):
         """Update both indexes when adding a session."""
         storage.update_indexes_for_session(
             platform="claude_code",
@@ -530,7 +516,6 @@ class TestIndexManagement:
 # =============================================================================
 # Test: Session Discovery
 # =============================================================================
-
 
 class TestSessionDiscovery:
     """Test session discovery methods."""
@@ -622,7 +607,6 @@ class TestSessionDiscovery:
 # Test: Storage Statistics
 # =============================================================================
 
-
 class TestStorageStats:
     """Test storage statistics."""
 
@@ -651,7 +635,6 @@ class TestStorageStats:
 # =============================================================================
 # Test: Migration Helpers
 # =============================================================================
-
 
 class TestMigration:
     """Test v0.x to v1.x migration."""
@@ -751,7 +734,6 @@ class TestMigration:
 # Test: Supported Platforms
 # =============================================================================
 
-
 class TestSupportedPlatforms:
     """Test supported platforms constant."""
 
@@ -775,7 +757,6 @@ class TestSupportedPlatforms:
 # Test: Edge Cases
 # =============================================================================
 
-
 class TestEdgeCases:
     """Test edge cases and error handling."""
 
@@ -790,8 +771,8 @@ class TestEdgeCases:
         session_path = storage.create_session_file("claude_code", "test")
         with open(session_path, "w") as f:
             f.write('{"type": "a"}\n')
-            f.write("\n")
-            f.write("   \n")
+            f.write('\n')
+            f.write('   \n')
             f.write('{"type": "b"}\n')
 
         events = storage.load_session_events(session_path)
@@ -800,7 +781,6 @@ class TestEdgeCases:
     def test_concurrent_session_ids(self, storage: StorageManager):
         """Session IDs generated at same second should differ."""
         import time
-
         ts = datetime.now()
         ids = [storage.generate_session_id("claude_code", ts) for _ in range(10)]
         # Random suffix should make them unique
@@ -811,7 +791,7 @@ class TestEdgeCases:
         session_path = storage.create_session_file("claude_code", "test")
         event = {
             "type": "test",
-            "content": 'Special chars: \n\t"quotes" and unicode: 日本語',
+            "content": "Special chars: \n\t\"quotes\" and unicode: 日本語",
         }
         storage.append_event(session_path, event)
 

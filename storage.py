@@ -13,23 +13,18 @@ This module provides:
 """
 
 import json
-from dataclasses import asdict, dataclass, field
-from datetime import date, datetime
+import os
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Literal, Optional
+from datetime import datetime, date
+from typing import Optional, Dict, Any, List, Iterator, Literal
+from dataclasses import dataclass, field, asdict
 
 # Schema version for storage format
 STORAGE_SCHEMA_VERSION = "1.0.0"
 
 # Supported platforms
 Platform = Literal["claude_code", "codex_cli", "gemini_cli", "ollama_cli", "custom"]
-SUPPORTED_PLATFORMS: List[Platform] = [
-    "claude_code",
-    "codex_cli",
-    "gemini_cli",
-    "ollama_cli",
-    "custom",
-]
+SUPPORTED_PLATFORMS: List[Platform] = ["claude_code", "codex_cli", "gemini_cli", "ollama_cli", "custom"]
 
 
 def get_default_base_dir() -> Path:
@@ -49,7 +44,6 @@ class SessionIndex:
 
     Used for efficient cross-session queries without loading full session data.
     """
-
     schema_version: str
     session_id: str
     platform: Platform
@@ -82,7 +76,6 @@ class DailyIndex:
 
     Stored at: <platform>/<YYYY-MM-DD>/.index.json
     """
-
     schema_version: str
     platform: Platform
     date: str  # YYYY-MM-DD
@@ -143,7 +136,6 @@ class PlatformIndex:
     Stored at: <platform>/.index.json
     Provides quick access to date ranges and totals without scanning directories.
     """
-
     schema_version: str
     platform: Platform
     dates: List[str] = field(default_factory=list)  # List of YYYY-MM-DD with sessions
@@ -209,9 +201,7 @@ class StorageManager:
     def get_platform_dir(self, platform: Platform) -> Path:
         """Get directory for a specific platform."""
         if platform not in SUPPORTED_PLATFORMS:
-            raise ValueError(
-                f"Unsupported platform: {platform}. Must be one of {SUPPORTED_PLATFORMS}"
-            )
+            raise ValueError(f"Unsupported platform: {platform}. Must be one of {SUPPORTED_PLATFORMS}")
         return self.base_dir / platform
 
     def get_date_dir(self, platform: Platform, session_date: date) -> Path:
@@ -219,7 +209,12 @@ class StorageManager:
         date_str = session_date.strftime("%Y-%m-%d")
         return self.get_platform_dir(platform) / date_str
 
-    def get_session_path(self, platform: Platform, session_date: date, session_id: str) -> Path:
+    def get_session_path(
+        self,
+        platform: Platform,
+        session_date: date,
+        session_id: str
+    ) -> Path:
         """
         Get the path for a session file.
 
@@ -260,7 +255,10 @@ class StorageManager:
     # =========================================================================
 
     def create_session_file(
-        self, platform: Platform, session_id: str, session_date: Optional[date] = None
+        self,
+        platform: Platform,
+        session_id: str,
+        session_date: Optional[date] = None
     ) -> Path:
         """
         Create a new session file and its parent directories.
@@ -295,7 +293,11 @@ class StorageManager:
         with open(session_path, "a") as f:
             f.write(json.dumps(event, default=str) + "\n")
 
-    def write_session_events(self, session_path: Path, events: List[Dict[str, Any]]) -> None:
+    def write_session_events(
+        self,
+        session_path: Path,
+        events: List[Dict[str, Any]]
+    ) -> None:
         """
         Write all events to a session file (overwrites existing).
 
@@ -324,7 +326,7 @@ class StorageManager:
         if not session_path.exists():
             return
 
-        with open(session_path) as f:
+        with open(session_path, "r") as f:
             for line_num, line in enumerate(f, 1):
                 line = line.strip()
                 if not line:
@@ -375,7 +377,7 @@ class StorageManager:
             return None
 
         try:
-            with open(index_path) as f:
+            with open(index_path, "r") as f:
                 data = json.load(f)
             return DailyIndex.from_dict(data)
         except (json.JSONDecodeError, KeyError) as e:
@@ -418,7 +420,7 @@ class StorageManager:
             return None
 
         try:
-            with open(index_path) as f:
+            with open(index_path, "r") as f:
                 data = json.load(f)
             return PlatformIndex.from_dict(data)
         except (json.JSONDecodeError, KeyError) as e:
@@ -446,7 +448,10 @@ class StorageManager:
         return index_path
 
     def update_indexes_for_session(
-        self, platform: Platform, session_date: date, session_index: SessionIndex
+        self,
+        platform: Platform,
+        session_date: date,
+        session_index: SessionIndex
     ) -> None:
         """
         Update both daily and platform indexes after adding/updating a session.
@@ -469,12 +474,8 @@ class StorageManager:
 
         # Check if session already exists (update) or is new (add)
         existing_idx = next(
-            (
-                i
-                for i, s in enumerate(daily_index.sessions)
-                if s.session_id == session_index.session_id
-            ),
-            None,
+            (i for i, s in enumerate(daily_index.sessions) if s.session_id == session_index.session_id),
+            None
         )
         if existing_idx is not None:
             daily_index.sessions[existing_idx] = session_index
@@ -497,17 +498,12 @@ class StorageManager:
             platform_index.dates.sort()
 
         platform_index.total_sessions = sum(
-            1
-            for d in platform_index.dates
+            1 for d in platform_index.dates
             if (idx := self.load_daily_index(platform, datetime.strptime(d, "%Y-%m-%d").date()))
             for _ in (idx.sessions if idx else [])
         )
-        platform_index.first_session_date = (
-            platform_index.dates[0] if platform_index.dates else None
-        )
-        platform_index.last_session_date = (
-            platform_index.dates[-1] if platform_index.dates else None
-        )
+        platform_index.first_session_date = platform_index.dates[0] if platform_index.dates else None
+        platform_index.last_session_date = platform_index.dates[-1] if platform_index.dates else None
         platform_index.last_updated = datetime.now().isoformat()
 
         # Recalculate totals
@@ -572,7 +568,7 @@ class StorageManager:
         platform: Optional[Platform] = None,
         start_date: Optional[date] = None,
         end_date: Optional[date] = None,
-        limit: Optional[int] = None,
+        limit: Optional[int] = None
     ) -> List[Path]:
         """
         List session files with optional filtering.
@@ -673,9 +669,10 @@ class StorageManager:
 # Migration Helpers
 # =============================================================================
 
-
 def migrate_v0_session(
-    v0_session_dir: Path, storage: StorageManager, platform: Platform = "claude_code"
+    v0_session_dir: Path,
+    storage: StorageManager,
+    platform: Platform = "claude_code"
 ) -> Optional[Path]:
     """
     Migrate a v0.x session directory to v1.x format.
@@ -728,14 +725,15 @@ def migrate_v0_session(
 
     # Copy events to new format
     if events_file.exists():
-        with open(events_file) as src, open(new_session_path, "w") as dst:
-            for line in src:
-                dst.write(line)
+        with open(events_file, "r") as src:
+            with open(new_session_path, "w") as dst:
+                for line in src:
+                    dst.write(line)
 
     # If we have summary.json, extract metadata for index
     if summary_file.exists():
         try:
-            with open(summary_file) as f:
+            with open(summary_file, "r") as f:
                 summary = json.load(f)
 
             # Create index entry
@@ -766,7 +764,9 @@ def migrate_v0_session(
 
 
 def migrate_all_v0_sessions(
-    v0_base_dir: Path, storage: StorageManager, platform: Platform = "claude_code"
+    v0_base_dir: Path,
+    storage: StorageManager,
+    platform: Platform = "claude_code"
 ) -> Dict[str, Any]:
     """
     Migrate all v0.x sessions from a directory.
@@ -824,6 +824,7 @@ def migrate_all_v0_sessions(
 
 if __name__ == "__main__":
     import tempfile
+    import shutil
 
     print("Storage Module Tests")
     print("=" * 60)
@@ -838,7 +839,9 @@ if __name__ == "__main__":
 
         # Test 2: Create session file
         session_path = storage.create_session_file(
-            platform="claude_code", session_id=session_id, session_date=date.today()
+            platform="claude_code",
+            session_id=session_id,
+            session_date=date.today()
         )
         print(f"✓ Created session file: {session_path}")
 
@@ -874,7 +877,7 @@ if __name__ == "__main__":
             file_size_bytes=session_path.stat().st_size,
         )
         storage.update_indexes_for_session("claude_code", date.today(), session_index)
-        print("✓ Updated indexes")
+        print(f"✓ Updated indexes")
 
         # Test 6: List sessions
         sessions = storage.list_sessions()
@@ -883,17 +886,13 @@ if __name__ == "__main__":
 
         # Test 7: Get storage stats
         stats = storage.get_storage_stats()
-        print(
-            f"✓ Storage stats: {stats['total_sessions']} sessions, {stats['total_size_bytes']} bytes"
-        )
+        print(f"✓ Storage stats: {stats['total_sessions']} sessions, {stats['total_size_bytes']} bytes")
 
         # Test 8: Load daily index
         daily_index = storage.load_daily_index("claude_code", date.today())
         assert daily_index is not None
         assert daily_index.session_count == 1
-        print(
-            f"✓ Daily index: {daily_index.session_count} session(s), {daily_index.total_tokens} tokens"
-        )
+        print(f"✓ Daily index: {daily_index.session_count} session(s), {daily_index.total_tokens} tokens")
 
         # Test 9: Load platform index
         platform_index = storage.load_platform_index("claude_code")

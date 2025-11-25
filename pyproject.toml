@@ -141,6 +141,8 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["ARG", "S101"]
+"src/mcp_audit/storage.py" = ["ARG002"]  # Platform arg reserved for future use
+"src/mcp_audit/cli.py" = ["ARG002"]  # Args objects from argparse
 
 [tool.black]
 line-length = 100

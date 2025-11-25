@@ -5,10 +5,9 @@ MCP Analyze CLI - Command-line interface for MCP Audit
 Provides commands for collecting MCP session data and generating reports.
 """
 
-import sys
 import argparse
+import sys
 from pathlib import Path
-from typing import Optional, List
 
 from . import __version__
 
@@ -368,7 +367,7 @@ def generate_markdown_report(sessions, args) -> int:
 
             # Collect all tools
             all_tools = []
-            for server_name, server_session in session.server_sessions.items():
+            for _server_name, server_session in session.server_sessions.items():
                 for tool_name, tool_stats in server_session.tools.items():
                     all_tools.append((tool_name, tool_stats.calls, tool_stats.total_tokens))
 
@@ -397,13 +396,12 @@ def generate_markdown_report(sessions, args) -> int:
 def generate_csv_report(sessions, args) -> int:
     """Generate CSV report."""
     import csv
-    from datetime import datetime
 
     # Collect tool statistics across all sessions
     tool_stats = {}
 
     for session in sessions:
-        for server_name, server_session in session.server_sessions.items():
+        for _server_name, server_session in session.server_sessions.items():
             for tool_name, stats in server_session.tools.items():
                 if tool_name not in tool_stats:
                     tool_stats[tool_name] = {"calls": 0, "total_tokens": 0}

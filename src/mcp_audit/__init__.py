@@ -27,30 +27,38 @@ def __getattr__(name: str) -> Any:
         "TokenUsage",
         "MCPToolCalls",
     ):
-        from .base_tracker import (
+        from .base_tracker import (  # noqa: F401
             BaseTracker,
-            Session,
-            ServerSession,
             Call,
-            ToolStats,
-            TokenUsage,
             MCPToolCalls,
+            ServerSession,
+            Session,
+            TokenUsage,
+            ToolStats,
         )
 
         return locals()[name]
 
     if name in ("normalize_tool_name", "normalize_server_name", "extract_server_and_tool"):
-        from .normalization import normalize_tool_name, normalize_server_name, extract_server_and_tool
+        from .normalization import (  # noqa: F401
+            extract_server_and_tool,
+            normalize_server_name,
+            normalize_tool_name,
+        )
 
         return locals()[name]
 
     if name in ("PricingConfig", "load_pricing_config", "get_model_cost"):
-        from .pricing_config import PricingConfig, load_pricing_config, get_model_cost
+        from .pricing_config import (  # noqa: F401
+            PricingConfig,
+            get_model_cost,
+            load_pricing_config,
+        )
 
         return locals()[name]
 
     if name in ("StorageManager", "SessionIndex"):
-        from .storage import StorageManager, SessionIndex
+        from .storage import SessionIndex, StorageManager  # noqa: F401
 
         return locals()[name]
 
