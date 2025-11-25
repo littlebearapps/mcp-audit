@@ -5,6 +5,13 @@ All notable changes to MCP Audit will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] - 2025-11-25
+
+### Added
+- **CodeQL workflow** - Explicit `codeql.yml` for badge compatibility and consistent security scanning
+- **Auto-tag workflow** - Automatic git tagging on version bumps for seamless PyPI publishing
+- **Release documentation** - Added Releasing section to CONTRIBUTING.md
+
 ## [0.3.1] - 2025-11-25
 
 ### Added
