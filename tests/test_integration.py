@@ -10,8 +10,8 @@ import json
 from pathlib import Path
 from datetime import datetime
 from mcp_audit.base_tracker import BaseTracker, SCHEMA_VERSION
-from claude_code_adapter import ClaudeCodeAdapter
-from codex_cli_adapter import CodexCLIAdapter
+from mcp_audit.claude_code_adapter import ClaudeCodeAdapter
+from mcp_audit.codex_cli_adapter import CodexCLIAdapter
 from mcp_audit.session_manager import SessionManager
 from mcp_audit.normalization import normalize_tool_name, normalize_server_name
 
