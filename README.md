@@ -1,332 +1,277 @@
 # MCP Audit
 
-**Purpose**: Internal MCP efficiency measurement and token usage analysis for Claude Code and Codex CLI sessions.
+**Track and optimize your AI coding assistant costs.**
 
-**Status**: Week 1 Complete + Codex MCP Tracking ✅ (full parity with Claude Code tracker)
+MCP Audit measures token usage and costs across AI coding sessions, helping you identify expensive MCP tools and optimize your workflow.
+
+[![CI](https://github.com/littlebearapps/mcp-audit/actions/workflows/ci.yml/badge.svg)](https://github.com/littlebearapps/mcp-audit/actions/workflows/ci.yml)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
 
-## Overview
+## Why MCP Audit?
 
-This folder contains tools for analyzing MCP (Model Context Protocol) tool efficiency and token usage across AI coding assistant sessions (Claude Code, Codex CLI).
+AI coding assistants like Claude Code and Codex CLI use MCP (Model Context Protocol) servers that can significantly impact your token usage and costs. MCP Audit helps you:
 
-**Use Case**: Internal analysis of custom MCP server (~50 tools) to identify:
-- Token bloat and high-cost operations
-- Duplicate/redundant tool calls
-- Anomalies (high variance, high frequency)
-- Cross-session patterns and trends
+- **Find expensive tools** - Identify which MCP tools consume the most tokens
+- **Detect duplicates** - Spot redundant tool calls wasting tokens
+- **Track trends** - Monitor usage patterns across sessions
+- **Optimize costs** - Make data-driven decisions to reduce spending
+
+---
+
+## Installation
+
+```bash
+# Install from PyPI
+pip install mcp-audit
+
+# Or with optional analytics features
+pip install mcp-audit[analytics]
+```
+
+**Requirements**: Python 3.8+
 
 ---
 
 ## Quick Start
 
-### 1. Track a Claude Code Session
+### 1. Track a Session
 
 ```bash
-# From project root
-npm run cc:live              # Start live tracking
-npm run cc:live:quiet        # Quiet mode (less verbose)
-npm run cc:live:no-logs      # Skip saving session logs
-npm run cc:help              # Show help
+# Track Claude Code session
+mcp-analyze collect --platform claude_code
+
+# Track Codex CLI session
+mcp-analyze collect --platform codex_cli
 ```
 
-This starts real-time monitoring and creates session logs in `scripts/ai-mcp-audit/logs/sessions/`.
+Sessions are automatically saved to `~/.mcp-audit/sessions/`.
 
-### 2. Track a Codex CLI Session
+### 2. Generate a Report
 
 ```bash
-# From project root
-npm run codex:live           # Start Codex tracking
-npm run codex:help           # Show help
+# View summary of recent sessions
+mcp-analyze report
+
+# Export detailed CSV
+mcp-analyze report --format csv --output report.csv
+
+# Analyze specific date range
+mcp-analyze report --start 2025-11-01 --end 2025-11-30
 ```
 
-### 3. Analyze All Sessions
+### 3. Review Results
 
-```bash
-# From project root
-npm run mcp:analyze          # Analyze all sessions
-npm run mcp:help             # Show help
-
-# Or run directly with custom path
-python3 scripts/ai-mcp-audit/analyze-mcp-efficiency.py /path/to/sessions
 ```
-
----
-
-## Tools
-
-### Live Session Trackers
-
-**Claude Code**: `live-cc-session-tracker.py` ✅ **Updated 2025-11-23**
-- Real-time token tracking for current session
-- MCP tool usage breakdown
-- Cache efficiency analysis
-- Duplicate call detection
-- Enhanced anomaly detection
-- Auto-generates session logs on exit (including Ctrl+C)
-- Validates MCP file completeness
-
-**Codex CLI**: `live-codex-session-tracker.py` ✅ **Updated 2025-11-22**
-- **Full MCP tracking parity** with Claude Code tracker
-- Per-MCP server and per-tool token tracking
-- Cross-platform server name normalization (`-mcp` suffix handling)
-- Built-in vs MCP tool differentiation
-- Adapted for Codex CLI output format (response_item/event_msg)
-
-**Shell Wrapper**: `live-session-tracker.sh`
-- Simple bash wrapper for live monitoring
-- Color-coded terminal output
-
-### Cross-Session Analyzer
-
-**Script**: `analyze-mcp-efficiency.py`
-
-**What it does**:
-- Loads all session data from `logs/sessions/`
-- **Automatically recovers incomplete sessions from events.jsonl** ✨
-- Aggregates tool statistics across sessions
-- Identifies outliers and patterns
-- Exports detailed CSV report
-
-**Output**:
-- Top 10 most expensive tools (by total tokens)
-- Top 10 most frequent tools (by call count)
-- Outlier warnings:
-  - High average tokens (>100K per call)
-  - High call frequency (>10 calls/session)
-  - High variance (>5x difference min/max)
-- CSV export: `mcp-efficiency-report.csv`
-
-### Usage Reports
-
-**Claude Code**: `usage-wp-nav.sh`
-- Historical usage via ccusage
-- Project-filtered session data
-
-**Codex CLI**: `usage-codex-wpnav.sh`
-- Historical Codex usage via @ccusage/codex
-- Cache efficiency metrics
-
----
-
-## Files
-
-### Python Scripts
-- `live-cc-session-tracker.py` - Claude Code real-time tracker
-- `live-codex-session-tracker.py` - Codex CLI real-time tracker
-- `analyze-mcp-efficiency.py` - Cross-session analysis
-- `investigate-codex-format.py` - Codex format investigation
-
-### Shell Scripts
-- `live-session-tracker.sh` - Bash wrapper
-- `usage-wp-nav.sh` - ccusage helper
-- `usage-codex-wpnav.sh` - Codex usage helper
-
-### Documentation
-
-**Context Files** (Modular Structure ✨ **New**):
-- `CLAUDE.md` - Main project context (165 lines, uses @-imports)
-- `quickref/commands.md` - npm scripts and workflows (256 lines)
-- `quickref/architecture.md` - Files, data structures, principles (309 lines)
-- `quickref/features.md` - Cross-platform, signal handling, validation (317 lines)
-- `quickref/troubleshooting.md` - Common issues and solutions (407 lines)
-- `quickref/integration.md` - ccusage, zen relationships (298 lines)
-
-**Implementation Docs**:
-- `README.md` - Original tool documentation (comprehensive)
-- `docs/MCP-EFFICIENCY-MEASUREMENT-PLAN.md` - Implementation plan (GPT-5 validated)
-- `docs/CLAUDE-MD-IMPROVEMENT-PLAN.md` - Context restructuring plan ✨ **New**
-- `docs/MCP-EFFICIENCY-CODE-ANALYSIS.md` - Code analysis
-- `docs/MCP-EFFICIENCY-PLAN-UPDATES.md` - Plan updates
-- `docs/ENHANCEMENTS-5-8-SUMMARY.md` - Enhancement summary
-- `docs/CODEX-CLAUDE-FORMAT-DIFFERENCES.md` - Cross-platform format comparison
-- `docs/CODEX-MCP-TRACKING-IMPLEMENTATION.md` - Codex MCP tracking implementation
-
-### Data
-- `model-pricing.json` - Token pricing for cost calculations
-- `logs/sessions/` - Session data storage (auto-created)
-
----
-
-## Session Data Structure
-
-Each session creates a folder: `logs/sessions/{project}-{timestamp}/`
-
-**Files created**:
-- `summary.json` - Session totals, redundancy analysis, anomalies
-- `mcp-{server}.json` - Per-server tool statistics
-- `events.jsonl` - Event stream (optional)
-
----
-
-## Cross-Platform Compatibility ✨ **New**
-
-Both trackers now support **unified MCP tracking** across Claude Code and Codex CLI:
-
-**Key Difference Handled**:
-- **Claude Code**: `mcp__brave-search__brave_web_search`
-- **Codex CLI**: `mcp__brave-search-mcp__brave_web_search`
-
-**Solution**: Automatic server name normalization (strips `-mcp` suffix) enables consistent tracking across platforms.
-
-**See**: `docs/CODEX-CLAUDE-FORMAT-DIFFERENCES.md` for complete format comparison (520 lines)
-
----
-
-## Week 1 Implementation (Complete ✅)
-
-### Task 1: Duplicate Detection
-- Tracks tool calls by signature (tool + params)
-- Detects identical calls made multiple times
-- Records wasted tokens and occurrence count
-- Generates warnings for duplicates
-- New `redundancy_analysis` in summary.json
-
-### Task 2: Cross-Session Analysis
-- `analyze-mcp-efficiency.py` script (400+ lines)
-- Loads all sessions from logs/sessions/
-- Aggregates per-tool statistics
-- Calculates derived stats (avg, median, variance)
-- Identifies outliers (3 categories)
-- Terminal report + CSV export
-
-### Task 3: Enhanced Anomaly Detection
-- High call frequency (>5 calls/session)
-- High variance (>5x difference min/max tokens)
-- Per-tool token history tracking
-- Automatic detection in write_summary()
-
----
-
-## Week 2 & Week 3 (Pending)
-
-**Week 2**: Data Collection
-- Run 5-10 typical Claude Code sessions
-- Let trackers capture data naturally
-- Build up session history
-
-**Week 3**: Analysis & Optimization
-- Run cross-session analysis
-- Identify top 5 problem tools
-- Fix duplicates, optimize high-token tools
-- Measure improvement
-
----
-
-## npm Scripts
-
-```bash
-# Claude Code tracking
-npm run cc:live                 # Start live tracker
-npm run cc:live:quiet           # Quiet mode
-npm run cc:live:no-logs         # Skip session logging
-npm run cc:help                 # Show help
-
-# Codex CLI tracking
-npm run codex:live              # Start Codex tracker
-npm run codex:help              # Show help
-
-# Cross-session analysis
-npm run mcp:analyze             # Analyze all sessions
-npm run mcp:help                # Show analyzer help
-
-# Historical usage (legacy)
-npm run usage:wpnav             # Claude Code historical
-npm run usage:codex-wpnav       # Codex historical
-```
-
----
-
-## Example Workflow
-
-```bash
-# 1. Start tracking session
-npm run cc:live
-
-# 2. Do normal work in Claude Code
-# (live tracker shows real-time stats)
-
-# 3. Exit tracker (Ctrl+C)
-# Session data saved to logs/sessions/
-
-# 4. Repeat for 5-10 sessions over a few days/weeks
-
-# 5. Analyze all sessions
-npm run mcp:analyze
-
-# 6. Review terminal output + CSV
-open mcp-efficiency-report.csv
-
-# 7. Identify and fix issues
-# (duplicates, high-token tools, etc.)
-
-# 8. Re-run analysis to measure improvement
-npm run mcp:analyze
-```
-
----
-
-## Output Examples
-
-### Live Tracker (Terminal)
-```
-╔════════════════════════════════════════════════════════════════╗
-║ WP Navigator Pro - Live Session Tracker                       ║
-╚════════════════════════════════════════════════════════════════╝
-
-Token Usage (This Session)
-  Input tokens:           45,231
-  Output tokens:          12,543
-  Cache created:           8,123
-  Cache read:            125,432
-
-  Total tokens:          191,329
-  Cache efficiency:           93%
-
-  Estimated Cost:  $0.1234
-```
-
-### Cross-Session Analysis (Terminal)
-```
-═══════════════════════════════════════════════════════════════
 Top 10 Most Expensive Tools (Total Tokens)
 ═══════════════════════════════════════════════════════════════
-Tool                                                 Calls       Tokens    Avg/Call
-zen__thinkdeep                                         12      450,231      37,519
-Read                                                   45      123,456       2,743
+Tool                              Calls    Tokens    Avg/Call
+mcp__zen__thinkdeep                  12   450,231      37,519
+mcp__brave-search__web               45   123,456       2,743
+mcp__zen__chat                       89    98,765       1,109
 
-⚠️  Tools with High Average Tokens (>100,000)
-═══════════════════════════════════════════════════════════════
-Tool                                                 Avg Tokens/Call
-zen__thinkdeep                                              150,234
-
-✓ No tools with high call frequency (all <10 calls/session)
-✓ No tools with high variance (all <5x)
+Estimated Total Cost: $2.34 (across 15 sessions)
 ```
 
 ---
 
-## Recent Updates
+## Platform Support
 
-**2025-11-24**: ✅ **CLAUDE.md Modular Restructuring**
-- Restructured CLAUDE.md from 319 lines → 165 lines (48% reduction)
-- Created 5 quickref files with @-imports for modular documentation
-- Follows Anthropic best practices for Claude Code context files
-- No information loss, improved token efficiency through on-demand loading
-- All context organized: commands, architecture, features, troubleshooting, integration
+| Platform | Status | Token Tracking | Time Tracking |
+|----------|--------|----------------|---------------|
+| Claude Code | **Stable** | Yes | Yes |
+| Codex CLI | **Stable** | Yes | Yes |
+| Gemini CLI | Planned | TBD | TBD |
+| Ollama CLI | Experimental | No* | Yes |
 
-**2025-11-23**: ✅ **Session Recovery & Validation**
-- Fixed signal handler to write complete logs on Ctrl+C exit
-- Added automatic recovery from events.jsonl for incomplete sessions
-- Added validation check to warn about missing MCP files
-- Recovered 505K tokens of previously lost MCP data from 2 incomplete sessions
+*Ollama runs locally without token costs; time-based tracking available.
 
-**2025-11-22**: ✅ **Codex MCP Tracking Complete**
-- Implemented full MCP tracking for Codex CLI tracker
-- Achieved 100% parity with Claude Code tracker
-- Cross-platform server name normalization
-- Per-server and per-tool token tracking
-- Comprehensive documentation added
+---
 
-**Last Updated**: 2025-11-23
-**Status**: Week 1 Complete + Codex MCP Tracking ✅ + Session Recovery ✅, Week 2-3 Pending (Data Collection & Optimization)
+## Features
+
+### Real-Time Tracking
+
+Monitor your session as you work:
+
+```bash
+mcp-analyze collect --platform claude_code
+```
+
+```
+MCP Audit - Live Session
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Tokens:  45,231 input │ 12,543 output │ 125K cached
+Cost:    $0.12 (estimated)
+Tools:   42 calls │ 12 unique
+
+Recent: mcp__zen__chat (3,421 tokens)
+```
+
+### Cross-Session Analysis
+
+Aggregate insights across all your sessions:
+
+```bash
+mcp-analyze report --last 30
+```
+
+- Top expensive tools by total tokens
+- Most frequently called tools
+- Anomaly detection (high variance, duplicates)
+- Trend analysis over time
+
+### Duplicate Detection
+
+Automatically identifies redundant tool calls:
+
+```json
+{
+  "redundancy_analysis": {
+    "duplicate_calls": 3,
+    "potential_savings": 15234,
+    "details": [
+      {"tool": "mcp__brave-search__web", "count": 2, "tokens": 8765}
+    ]
+  }
+}
+```
+
+### Privacy-First Design
+
+- **No prompts stored** - Only token counts and tool names
+- **Local-only** - All data stays on your machine
+- **Redaction hooks** - Customize what gets logged
+
+---
+
+## Configuration
+
+Create `~/.mcp-audit/config/mcp-analyze.toml`:
+
+```toml
+[pricing.claude]
+"claude-sonnet-4" = { input = 3.00, output = 15.00 }
+"claude-opus-4" = { input = 15.00, output = 75.00 }
+
+[pricing.openai]
+"gpt-4o" = { input = 2.50, output = 10.00 }
+```
+
+See [Pricing Configuration](docs/PRICING-CONFIGURATION.md) for details.
+
+---
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Architecture](docs/architecture.md) | System design, data model, adapters |
+| [Data Contract](docs/data-contract.md) | Backward compatibility guarantees |
+| [Platforms: Claude Code](docs/platforms/claude-code.md) | Claude Code setup guide |
+| [Platforms: Codex CLI](docs/platforms/codex-cli.md) | Codex CLI setup guide |
+| [Contributing](docs/contributing.md) | How to add platform adapters |
+| [Privacy & Security](docs/privacy-security.md) | Data handling policies |
+
+---
+
+## CLI Reference
+
+```bash
+mcp-analyze --help
+
+Commands:
+  collect   Track a live session
+  report    Generate usage report
+  migrate   Migrate from v0.x format
+
+Options:
+  --version  Show version
+  --help     Show help
+```
+
+### collect
+
+```bash
+mcp-analyze collect [OPTIONS]
+
+Options:
+  --platform TEXT    Platform to track (claude_code, codex_cli)
+  --project TEXT     Project name (auto-detected from directory)
+  --output PATH      Output directory (default: ~/.mcp-audit/sessions/)
+```
+
+### report
+
+```bash
+mcp-analyze report [OPTIONS] [SESSION_DIR]
+
+Options:
+  --format TEXT      Output format: json, csv, markdown (default: markdown)
+  --output PATH      Output file (default: stdout)
+  --top INT          Number of top tools to show (default: 10)
+  --start DATE       Start date filter (YYYY-MM-DD)
+  --end DATE         End date filter (YYYY-MM-DD)
+  --last INT         Analyze last N days
+```
+
+---
+
+## Data Storage
+
+Sessions are stored at `~/.mcp-audit/sessions/`:
+
+```
+~/.mcp-audit/sessions/
+├── claude_code/
+│   └── 2025-11-25/
+│       └── session-20251125T103045-abc123.jsonl
+└── codex_cli/
+    └── 2025-11-25/
+        └── session-20251125T143022-def456.jsonl
+```
+
+Each session is a JSONL file (one event per line) for efficient streaming.
+
+---
+
+## Contributing
+
+We welcome contributions! See [CONTRIBUTING.md](docs/contributing.md) for:
+
+- How to add new platform adapters
+- Testing requirements
+- PR workflow
+
+### Development Setup
+
+```bash
+git clone https://github.com/littlebearapps/mcp-audit.git
+cd mcp-audit
+python -m venv venv
+source venv/bin/activate
+pip install -e ".[dev]"
+pytest
+```
+
+---
+
+## License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+---
+
+## Links
+
+- [GitHub Repository](https://github.com/littlebearapps/mcp-audit)
+- [Issue Tracker](https://github.com/littlebearapps/mcp-audit/issues)
+- [Discussions](https://github.com/littlebearapps/mcp-audit/discussions)
+- [Changelog](CHANGELOG.md)
+
+---
+
+**Made with care by [Little Bear Apps](https://littlebearapps.com)**

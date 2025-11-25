@@ -1,10 +1,10 @@
 ---
 id: task-2.1
 title: 'Week 4: Beta Preparation & PyPI Launch'
-status: Roadmap
+status: In Progress
 assignee: []
 created_date: '2025-11-24 06:13'
-updated_date: '2025-11-24 06:28'
+updated_date: '2025-11-25 02:22'
 labels: []
 dependencies: []
 parent_task_id: task-2

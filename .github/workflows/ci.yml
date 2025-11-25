@@ -62,11 +62,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
 
+      - name: Install package in editable mode
+        run: pip install -e .
+
       - name: Run tests with coverage
-        run: pytest --cov=. --cov-report=term-missing --cov-report=xml --cov-report=html
+        run: pytest tests/ --cov=src/mcp_audit --cov-report=term-missing --cov-report=xml --cov-report=html
 
       - name: Type check with mypy
-        run: mypy --config-file=mypy.ini .
+        run: mypy src/mcp_audit
 
       - name: Lint with ruff
         run: ruff check .

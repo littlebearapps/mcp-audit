@@ -1,6 +1,6 @@
 # Architecture - MCP Audit
 
-File descriptions, data structures, and development principles.
+File descriptions, data structures, and development principles. Phase 1 complete.
 
 ---
 
@@ -9,127 +9,133 @@ File descriptions, data structures, and development principles.
 ```
 mcp-audit/main/
 ├── CLAUDE.md                           # Project context (main file)
-├── quickref/                           # Quick reference docs
-│   ├── commands.md                     # npm scripts + workflows
-│   ├── architecture.md                 # This file
-│   ├── features.md                     # Feature details
-│   ├── troubleshooting.md              # Common issues
-│   └── integration.md                  # Tool relationships
-├── docs/                               # Implementation docs
-│   ├── MCP-EFFICIENCY-MEASUREMENT-PLAN.md
-│   ├── CODEX-CLAUDE-FORMAT-DIFFERENCES.md
-│   ├── CODEX-MCP-TRACKING-IMPLEMENTATION.md
-│   ├── CLAUDE-MD-IMPROVEMENT-PLAN.md
-│   └── ...
-├── logs/sessions/                      # Session data (auto-generated)
-│   └── {project}-{timestamp}/
-│       ├── summary.json
-│       ├── mcp-{server}.json
-│       └── events.jsonl
-├── live-cc-session-tracker.py          # Claude Code tracker
-├── live-codex-session-tracker.py       # Codex CLI tracker
-├── live-session-tracker.sh             # Bash wrapper
-├── analyze-mcp-efficiency.py           # Cross-session analyzer
-├── investigate-codex-format.py         # Format investigation
-├── model-pricing.json                  # Token pricing data
-├── .claude-settings.json               # Claude Code settings
-├── COMMANDS.md                         # Quick command reference
-├── README.md                           # Comprehensive docs
-└── package.json                        # npm scripts
+├── quickref/                           # Internal quick reference docs
+├── docs/                               # Public documentation
+│   ├── architecture.md                 # System design and data model
+│   ├── data-contract.md                # Backward compatibility guarantees
+│   ├── contributing.md                 # How to contribute
+│   ├── privacy-security.md             # Data handling policies
+│   ├── platforms/claude-code.md        # Claude Code setup
+│   ├── platforms/codex-cli.md          # Codex CLI setup
+│   └── ROADMAP.md                      # 14-week plan
+├── examples/                           # Sanitized example sessions
+│   ├── claude-code-session/
+│   └── codex-cli-session/
+│
+├── # Core Modules (Phase 1)
+├── storage.py                          # JSONL storage with indexing (650 lines)
+├── base_tracker.py                     # Platform abstraction (520 lines)
+├── pricing_config.py                   # Model pricing config (360 lines)
+├── mcp_analyze_cli.py                  # CLI interface (540 lines)
+│
+├── # Platform Adapters
+├── claude_code_adapter.py              # Claude Code tracker (300 lines)
+├── codex_cli_adapter.py                # Codex CLI tracker (220 lines)
+│
+├── # Utilities
+├── normalization.py                    # Server/tool name normalization
+├── session_manager.py                  # Session lifecycle management
+├── privacy.py                          # Data redaction/sanitization
+│
+├── # Configuration
+├── mcp-analyze.toml                    # User pricing config
+├── pyproject.toml                      # Project config (pytest, mypy, ruff)
+├── .github/workflows/ci.yml            # CI/CD pipeline
+│
+├── # Tests
+├── test_storage.py                     # Storage tests (57 tests)
+└── README.md                           # User-facing documentation
 ```
 
 ---
 
 ## Key Files
 
-### Live Session Trackers
+### Core Modules (Phase 1)
 
-**live-cc-session-tracker.py** - Claude Code real-time monitoring (v2025-11-23)
-- Token usage tracking (input, output, cache created/read)
-- MCP tool call analysis with per-server breakdowns
-- Duplicate detection (redundancy_analysis)
-- Auto-generates session logs on exit (Ctrl+C safe)
+**storage.py** - JSONL session storage with indexing (650 lines)
+- Directory structure: `~/.mcp-audit/sessions/<platform>/<YYYY-MM-DD>/`
+- SessionIndex, DailyIndex, PlatformIndex for efficient queries
+- StorageManager class with full CRUD operations
+- Migration helpers for v0.x to v1.x format
+- 57 tests in test_storage.py
+
+**base_tracker.py** - Platform abstraction layer (520 lines)
+- Abstract adapter interface for platform trackers
+- Core data structures (Session, ServerSession, Call, ToolStats)
+- Schema v1.0.0 with versioning
+- Duplicate detection, anomaly analysis
 - Signal handling for graceful shutdown
-- Writes to `logs/sessions/{project}-{timestamp}/`
 
-**live-codex-session-tracker.py** - Codex CLI real-time monitoring (v2025-11-22)
-- Full parity with Claude Code tracker
-- Cross-platform server name normalization (`-mcp` suffix stripping)
-- Built-in vs MCP tool differentiation
-- Same output format as Claude Code tracker
+**pricing_config.py** - Configurable model pricing (360 lines)
+- TOML-based configuration (mcp-analyze.toml)
+- Claude, OpenAI, and custom model support
+- Validation with warnings for unknown models
+- Cost calculation with cache token handling
 
-**live-session-tracker.sh** - Bash wrapper with color output
-- Color-coded terminal display
-- Passes arguments to Python trackers
-- Simple invocation: `bash live-session-tracker.sh <tracker.py> [args]`
-
----
-
-### Analysis Tools
-
-**analyze-mcp-efficiency.py** - Cross-session aggregate analysis
-- Loads all sessions from `logs/sessions/`
-- Auto-recovery from incomplete sessions (events.jsonl fallback)
-- Identifies outliers and patterns:
-  - High average tokens (>100K per call)
-  - High frequency (>10 calls per session)
-  - High variance (>5x standard deviation)
-- Exports CSV reports: `mcp-efficiency-report.csv`
-- Top 10 rankings:
-  - Most expensive tools (total tokens)
-  - Most frequent tools (call count)
-
-**investigate-codex-format.py** - Codex format investigation
-- Used during development to understand Codex CLI output format
-- Compares with Claude Code format
-- See `docs/CODEX-CLAUDE-FORMAT-DIFFERENCES.md` for findings
+**mcp_analyze_cli.py** - CLI interface (540 lines)
+- `mcp-analyze collect` - Real-time session tracking
+- `mcp-analyze report` - Cross-session analysis
+- Auto-platform detection
+- Multiple output formats (JSON, Markdown, CSV)
 
 ---
 
-### Configuration Files
+### Platform Adapters
 
-**model-pricing.json** - Token pricing for cost calculations
-- Pricing data for Sonnet 4.5
-- Input/output/cache rates
-- Updated when model pricing changes
+**claude_code_adapter.py** - Claude Code tracker (300 lines)
+- File watcher approach (monitors debug.log)
+- Inherits from BaseTracker
+- 77% code reduction from legacy tracker
 
-**.claude-settings.json** - Claude Code project settings
-- Working directory configuration
-- MCP server settings
-- Tool permissions
-
-**COMMANDS.md** - Quick command reference
-- One-page reference for all npm scripts
-- Minimal version of `quickref/commands.md`
+**codex_cli_adapter.py** - Codex CLI tracker (220 lines)
+- Process wrapper approach (stdout/stderr)
+- Automatic `-mcp` suffix normalization
+- 77% code reduction from legacy tracker
 
 ---
 
-### Documentation
+### Utilities
 
-**README.md** - Comprehensive tool documentation (315 lines)
-- Full project overview
-- Installation and setup
-- Usage examples
-- Development roadmap
+**normalization.py** - Cross-platform name normalization
+- Server name extraction from tool names
+- `-mcp` suffix handling for Codex format
+- MCP vs built-in tool detection
 
-**docs/MCP-EFFICIENCY-MEASUREMENT-PLAN.md** - GPT-5 validated implementation plan
-- Original project plan
-- Week-by-week breakdown
-- Success criteria
+**session_manager.py** - Session lifecycle management
+- Session directory creation
+- Save/load with schema validation
+- Incomplete session detection
 
-**docs/CODEX-CLAUDE-FORMAT-DIFFERENCES.md** - Cross-platform format comparison (520 lines)
-- Detailed format analysis
-- Normalization strategies
-- Implementation decisions
+**privacy.py** - Data redaction and sanitization
+- Regex-based sensitive data detection
+- API keys, emails, passwords, IPs, etc.
+- Safe export for sharing sessions
 
-**docs/CODEX-MCP-TRACKING-IMPLEMENTATION.md** - Codex tracking implementation
-- Implementation details
-- Challenges and solutions
+---
 
-**docs/CLAUDE-MD-IMPROVEMENT-PLAN.md** - Context documentation restructuring
-- Best practices research
-- Modular structure design
-- Implementation guide
+### Public Documentation
+
+**docs/architecture.md** - System design documentation
+- Storage directory structure
+- Core data model (Session, Call, ServerSession)
+- BaseTracker abstraction
+- Platform adapter interface
+
+**docs/data-contract.md** - Backward compatibility guarantees
+- Schema versioning policy
+- Migration support documentation
+- Breaking change process
+
+**docs/contributing.md** - Contribution guide
+- Adding platform adapters (step-by-step)
+- Plugin system documentation
+- Testing requirements, PR workflow
+
+**docs/privacy-security.md** - Privacy documentation
+- What data is/isn't collected
+- Local-only operation
+- Redaction hooks
 
 ---
 
@@ -303,7 +309,13 @@ Example: `mcp-zen.json`
 
 ## Related Documentation
 
-- **quickref/commands.md** - npm scripts and workflows
-- **quickref/features.md** - Feature details
-- **quickref/troubleshooting.md** - Common issues
-- **README.md** - Comprehensive tool docs
+**Internal (quickref/)**:
+- commands.md - CLI commands and workflows
+- features.md - Feature details
+- troubleshooting.md - Common issues
+
+**Public (docs/)**:
+- architecture.md - System design
+- data-contract.md - Compatibility guarantees
+- contributing.md - How to contribute
+- privacy-security.md - Data handling

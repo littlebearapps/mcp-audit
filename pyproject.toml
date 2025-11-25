@@ -1,21 +1,21 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "mcp-audit"
-version = "0.2.0"
+version = "0.3.0"
 description = "MCP efficiency analyzer for tracking token usage and costs across AI coding sessions"
 readme = "README.md"
-license = { text = "MIT" }
+license = "MIT"
 authors = [
     { name = "Little Bear Apps", email = "contact@littlebearapps.com" }
 ]
-keywords = ["mcp", "audit", "tokens", "cost", "claude", "codex"]
+keywords = ["mcp", "audit", "tokens", "cost", "claude", "codex", "ai", "llm", "model-context-protocol"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
@@ -23,6 +23,9 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Quality Assurance",
+    "Typing :: Typed",
 ]
 requires-python = ">=3.8"
 dependencies = []
@@ -34,19 +37,28 @@ dev = [
     "mypy>=1.7.0",
     "ruff>=0.1.0",
     "black>=23.0.0",
+    "build>=1.0.0",
+    "twine>=4.0.0",
 ]
 toml = [
     "toml>=0.10.2",
 ]
 
 [project.scripts]
-mcp-analyze = "mcp_analyze_cli:main"
+mcp-analyze = "mcp_audit.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/littlebearapps/mcp-audit"
-Documentation = "https://github.com/littlebearapps/mcp-audit/blob/main/README.md"
+Documentation = "https://github.com/littlebearapps/mcp-audit#readme"
 Repository = "https://github.com/littlebearapps/mcp-audit"
 Issues = "https://github.com/littlebearapps/mcp-audit/issues"
+Changelog = "https://github.com/littlebearapps/mcp-audit/blob/main/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+mcp_audit = ["py.typed"]
 
 [tool.pytest.ini_options]
 minversion = "7.4"
@@ -61,7 +73,7 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 
 [tool.coverage.run]
-source = ["."]
+source = ["src/mcp_audit"]
 omit = [
     "tests/*",
     "venv/*",
