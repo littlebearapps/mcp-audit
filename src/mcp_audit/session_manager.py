@@ -217,7 +217,7 @@ class SessionManager:
                 data = json.load(f)
 
             # Import needed for type reconstruction
-            from base_tracker import ToolStats, Call
+            from .base_tracker import ToolStats, Call
 
             # Reconstruct ToolStats for each tool
             tools = {}
