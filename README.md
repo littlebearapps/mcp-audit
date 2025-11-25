@@ -4,8 +4,11 @@
 
 MCP Audit measures token usage and costs across AI coding sessions, helping you identify expensive MCP tools and optimize your workflow.
 
-[![CI](https://github.com/littlebearapps/mcp-audit/actions/workflows/ci.yml/badge.svg)](https://github.com/littlebearapps/mcp-audit/actions/workflows/ci.yml)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![PyPI version](https://img.shields.io/pypi/v/mcp-audit.svg)](https://pypi.org/project/mcp-audit/)
+[![PyPI downloads](https://img.shields.io/pypi/dm/mcp-audit.svg)](https://pypi.org/project/mcp-audit/)
+[![Python 3.8+](https://img.shields.io/pypi/pyversions/mcp-audit.svg)](https://pypi.org/project/mcp-audit/)
+[![CI](https://img.shields.io/github/actions/workflow/status/littlebearapps/mcp-audit/ci.yml?branch=main&label=CI)](https://github.com/littlebearapps/mcp-audit/actions/workflows/ci.yml)
+[![CodeQL](https://img.shields.io/github/actions/workflow/status/littlebearapps/mcp-audit/codeql.yml?branch=main&label=CodeQL)](https://github.com/littlebearapps/mcp-audit/actions/workflows/codeql.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
@@ -27,8 +30,8 @@ AI coding assistants like Claude Code, Codex CLI, and Gemini CLI use MCP (Model 
 # Install from PyPI
 pip install mcp-audit
 
-# Or with optional analytics features
-pip install mcp-audit[analytics]
+# Or install with pipx (isolated environment)
+pipx install mcp-audit
 ```
 
 **Requirements**: Python 3.8+
@@ -264,7 +267,7 @@ Each session is a JSONL file (one event per line) for efficient streaming.
 
 ## Contributing
 
-We welcome contributions! See [CONTRIBUTING.md](docs/contributing.md) for:
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for:
 
 - How to add new platform adapters
 - Testing requirements
