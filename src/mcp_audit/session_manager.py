@@ -169,7 +169,7 @@ class SessionManager:
             Session object
         """
         # Import needed for type reconstruction
-        from base_tracker import TokenUsage, MCPToolCalls
+        from .base_tracker import TokenUsage, MCPToolCalls
 
         # Reconstruct timestamp
         timestamp = datetime.fromisoformat(data["timestamp"])
