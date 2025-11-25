@@ -84,6 +84,9 @@ jobs:
     if: |
       (github.event_name == 'release' && !github.event.release.prerelease) ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'pypi')
+    environment:
+      name: pypi
+      url: https://pypi.org/project/mcp-audit/
     permissions:
       id-token: write  # Required for trusted publishing
     steps:
