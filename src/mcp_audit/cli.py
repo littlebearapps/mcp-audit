@@ -6,8 +6,13 @@ Provides commands for collecting MCP session data and generating reports.
 """
 
 import argparse
+import contextlib
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .display import DisplaySnapshot
 
 from . import __version__
 
@@ -250,10 +255,8 @@ def cmd_collect(args) -> int:
         tracker.start()
 
         # Monitor until interrupted
-        try:
+        with contextlib.suppress(KeyboardInterrupt):
             tracker.monitor(display=display)
-        except KeyboardInterrupt:
-            pass  # Display will show summary
 
         # Stop tracking (saves session)
         session = tracker.stop()
@@ -299,7 +302,7 @@ def _build_snapshot_from_session(session, start_time) -> "DisplaySnapshot":
 
     # Build top tools list
     top_tools = []
-    for server_name, server_session in session.server_sessions.items():
+    for server_session in session.server_sessions.values():
         for tool_name, tool_stats in server_session.tools.items():
             avg_tokens = tool_stats.total_tokens // tool_stats.calls if tool_stats.calls > 0 else 0
             top_tools.append((tool_name, tool_stats.calls, tool_stats.total_tokens, avg_tokens))

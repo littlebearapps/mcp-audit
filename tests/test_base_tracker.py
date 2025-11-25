@@ -53,7 +53,7 @@ class ConcreteTestTracker(BaseTracker):
 class TestDataStructures:
     """Tests for core data structures"""
 
-    def test_call_creation(self):
+    def test_call_creation(self) -> None:
         """Test Call dataclass creation"""
         call = Call(
             tool_name="mcp__zen__chat", input_tokens=100, output_tokens=50, total_tokens=150
@@ -65,7 +65,7 @@ class TestDataStructures:
         assert call.total_tokens == 150
         assert call.schema_version == SCHEMA_VERSION
 
-    def test_call_to_dict(self):
+    def test_call_to_dict(self) -> None:
         """Test Call to_dict conversion"""
         timestamp = datetime(2025, 11, 24, 10, 30, 0)
         call = Call(
@@ -82,7 +82,7 @@ class TestDataStructures:
         assert data["input_tokens"] == 100
         assert data["timestamp"] == "2025-11-24T10:30:00"
 
-    def test_tool_stats_creation(self):
+    def test_tool_stats_creation(self) -> None:
         """Test ToolStats dataclass creation"""
         stats = ToolStats(calls=5, total_tokens=1000, avg_tokens=200.0)
 
@@ -90,7 +90,7 @@ class TestDataStructures:
         assert stats.total_tokens == 1000
         assert stats.avg_tokens == 200.0
 
-    def test_tool_stats_to_dict(self):
+    def test_tool_stats_to_dict(self) -> None:
         """Test ToolStats to_dict with call history"""
         call = Call(tool_name="test", total_tokens=100)
         stats = ToolStats(calls=1, call_history=[call])
@@ -101,7 +101,7 @@ class TestDataStructures:
         assert len(data["call_history"]) == 1
         assert data["call_history"][0]["tool_name"] == "test"
 
-    def test_server_session_creation(self):
+    def test_server_session_creation(self) -> None:
         """Test ServerSession dataclass creation"""
         session = ServerSession(server="zen", total_calls=10, total_tokens=5000)
 
@@ -109,7 +109,7 @@ class TestDataStructures:
         assert session.total_calls == 10
         assert session.total_tokens == 5000
 
-    def test_session_creation(self):
+    def test_session_creation(self) -> None:
         """Test Session dataclass creation"""
         session = Session(project="test-project", platform="test-platform", session_id="test-123")
 
@@ -127,7 +127,7 @@ class TestDataStructures:
 class TestBaseTrackerInitialization:
     """Tests for BaseTracker initialization"""
 
-    def test_initialization(self):
+    def test_initialization(self) -> None:
         """Test BaseTracker initialization"""
         tracker = ConcreteTestTracker(project="my-project", platform="my-platform")
 
@@ -136,7 +136,7 @@ class TestBaseTrackerInitialization:
         assert tracker.session.project == "my-project"
         assert tracker.session.platform == "my-platform"
 
-    def test_session_id_generation(self):
+    def test_session_id_generation(self) -> None:
         """Test session ID generation"""
         tracker = ConcreteTestTracker()
 
@@ -146,14 +146,14 @@ class TestBaseTrackerInitialization:
         assert session_id.startswith("test-project-")
         assert "T" in session_id
 
-    def test_server_sessions_initialized(self):
+    def test_server_sessions_initialized(self) -> None:
         """Test server sessions dictionary initialized"""
         tracker = ConcreteTestTracker()
 
         assert isinstance(tracker.server_sessions, dict)
         assert len(tracker.server_sessions) == 0
 
-    def test_content_hashes_initialized(self):
+    def test_content_hashes_initialized(self) -> None:
         """Test content hashes dictionary initialized"""
         tracker = ConcreteTestTracker()
 
@@ -168,7 +168,7 @@ class TestBaseTrackerInitialization:
 class TestNormalization:
     """Tests for tool name normalization"""
 
-    def test_normalize_server_name_claude_code(self):
+    def test_normalize_server_name_claude_code(self) -> None:
         """Test server name extraction (Claude Code format)"""
         tracker = ConcreteTestTracker()
 
@@ -176,7 +176,7 @@ class TestNormalization:
 
         assert server == "zen"
 
-    def test_normalize_server_name_codex_cli(self):
+    def test_normalize_server_name_codex_cli(self) -> None:
         """Test server name extraction (Codex CLI format with -mcp)"""
         tracker = ConcreteTestTracker()
 
@@ -184,7 +184,7 @@ class TestNormalization:
 
         assert server == "zen"
 
-    def test_normalize_server_name_hyphenated(self):
+    def test_normalize_server_name_hyphenated(self) -> None:
         """Test server name with hyphens"""
         tracker = ConcreteTestTracker()
 
@@ -192,7 +192,7 @@ class TestNormalization:
 
         assert server == "brave-search"
 
-    def test_normalize_tool_name_passthrough(self):
+    def test_normalize_tool_name_passthrough(self) -> None:
         """Test tool name normalization (Claude Code format)"""
         tracker = ConcreteTestTracker()
 
@@ -200,7 +200,7 @@ class TestNormalization:
 
         assert normalized == "mcp__zen__chat"
 
-    def test_normalize_tool_name_codex_cli(self):
+    def test_normalize_tool_name_codex_cli(self) -> None:
         """Test tool name normalization (Codex CLI -mcp suffix)"""
         tracker = ConcreteTestTracker()
 
@@ -208,7 +208,7 @@ class TestNormalization:
 
         assert normalized == "mcp__zen__chat"
 
-    def test_normalize_invalid_tool_name(self):
+    def test_normalize_invalid_tool_name(self) -> None:
         """Test normalization warns on invalid tool name"""
         tracker = ConcreteTestTracker()
 
@@ -226,7 +226,7 @@ class TestNormalization:
 class TestToolCallRecording:
     """Tests for recording tool calls"""
 
-    def test_record_tool_call_basic(self):
+    def test_record_tool_call_basic(self) -> None:
         """Test recording a basic tool call"""
         tracker = ConcreteTestTracker()
 
@@ -245,7 +245,7 @@ class TestToolCallRecording:
         assert tracker.session.token_usage.cache_read_tokens == 500
         assert tracker.session.token_usage.total_tokens == 670
 
-    def test_record_tool_call_creates_server_session(self):
+    def test_record_tool_call_creates_server_session(self) -> None:
         """Test tool call creates server session"""
         tracker = ConcreteTestTracker()
 
@@ -254,7 +254,7 @@ class TestToolCallRecording:
         assert "zen" in tracker.server_sessions
         assert tracker.server_sessions["zen"].server == "zen"
 
-    def test_record_tool_call_creates_tool_stats(self):
+    def test_record_tool_call_creates_tool_stats(self) -> None:
         """Test tool call creates tool stats"""
         tracker = ConcreteTestTracker()
 
@@ -266,7 +266,7 @@ class TestToolCallRecording:
         assert tool_stats.calls == 1
         assert tool_stats.total_tokens == 150
 
-    def test_record_multiple_tool_calls(self):
+    def test_record_multiple_tool_calls(self) -> None:
         """Test recording multiple tool calls"""
         tracker = ConcreteTestTracker()
 
@@ -281,7 +281,7 @@ class TestToolCallRecording:
         assert tool_stats.total_tokens == 450  # 150 + 300
         assert tool_stats.avg_tokens == 225.0  # 450 / 2
 
-    def test_record_tool_call_normalizes_codex_name(self):
+    def test_record_tool_call_normalizes_codex_name(self) -> None:
         """Test Codex CLI tool names are normalized"""
         tracker = ConcreteTestTracker()
 
@@ -293,7 +293,7 @@ class TestToolCallRecording:
         zen_session = tracker.server_sessions["zen"]
         assert "mcp__zen__chat" in zen_session.tools
 
-    def test_record_tool_call_with_duration(self):
+    def test_record_tool_call_with_duration(self) -> None:
         """Test recording tool call with duration"""
         tracker = ConcreteTestTracker()
 
@@ -307,7 +307,7 @@ class TestToolCallRecording:
         assert tool_stats.max_duration_ms == 1500
         assert tool_stats.min_duration_ms == 1500
 
-    def test_record_tool_call_duration_stats(self):
+    def test_record_tool_call_duration_stats(self) -> None:
         """Test duration statistics across multiple calls"""
         tracker = ConcreteTestTracker()
 
@@ -328,7 +328,7 @@ class TestToolCallRecording:
         assert tool_stats.max_duration_ms == 2000
         assert tool_stats.min_duration_ms == 1000
 
-    def test_record_tool_call_with_content_hash(self):
+    def test_record_tool_call_with_content_hash(self) -> None:
         """Test recording tool call with content hash (duplicate detection)"""
         tracker = ConcreteTestTracker()
 
@@ -339,7 +339,7 @@ class TestToolCallRecording:
         assert "abc123" in tracker.content_hashes
         assert len(tracker.content_hashes["abc123"]) == 1
 
-    def test_cache_efficiency_calculation(self):
+    def test_cache_efficiency_calculation(self) -> None:
         """Test cache efficiency calculation"""
         tracker = ConcreteTestTracker()
 
@@ -365,7 +365,7 @@ class TestToolCallRecording:
 class TestSessionFinalization:
     """Tests for session finalization"""
 
-    def test_finalize_session_basic(self):
+    def test_finalize_session_basic(self) -> None:
         """Test basic session finalization"""
         tracker = ConcreteTestTracker()
 
@@ -378,7 +378,7 @@ class TestSessionFinalization:
         assert session.duration_seconds is not None
         assert session.duration_seconds >= 0
 
-    def test_finalize_session_mcp_summary(self):
+    def test_finalize_session_mcp_summary(self) -> None:
         """Test MCP tool calls summary"""
         tracker = ConcreteTestTracker()
 
@@ -393,7 +393,7 @@ class TestSessionFinalization:
         assert session.mcp_tool_calls.unique_tools == 2
         assert "mcp__zen__chat (2 calls)" in session.mcp_tool_calls.most_called
 
-    def test_finalize_session_server_sessions(self):
+    def test_finalize_session_server_sessions(self) -> None:
         """Test server sessions added to session"""
         tracker = ConcreteTestTracker()
 
@@ -404,7 +404,7 @@ class TestSessionFinalization:
         assert "zen" in session.server_sessions
         assert session.server_sessions["zen"].server == "zen"
 
-    def test_analyze_redundancy(self):
+    def test_analyze_redundancy(self) -> None:
         """Test redundancy analysis (duplicate detection)"""
         tracker = ConcreteTestTracker()
 
@@ -431,7 +431,7 @@ class TestSessionFinalization:
         assert session.redundancy_analysis["duplicate_calls"] == 1
         assert session.redundancy_analysis["potential_savings"] == 150
 
-    def test_detect_anomalies_high_frequency(self):
+    def test_detect_anomalies_high_frequency(self) -> None:
         """Test anomaly detection for high frequency"""
         tracker = ConcreteTestTracker()
 
@@ -448,7 +448,7 @@ class TestSessionFinalization:
         assert anomaly["tool"] == "mcp__zen__chat"
         assert anomaly["calls"] == 15
 
-    def test_detect_anomalies_high_avg_tokens(self):
+    def test_detect_anomalies_high_avg_tokens(self) -> None:
         """Test anomaly detection for high average tokens"""
         tracker = ConcreteTestTracker()
 
@@ -475,7 +475,7 @@ class TestSessionFinalization:
 class TestPersistence:
     """Tests for session persistence"""
 
-    def test_save_session(self, tmp_path):
+    def test_save_session(self, tmp_path) -> None:
         """Test saving session to disk"""
         tracker = ConcreteTestTracker()
 
@@ -499,7 +499,7 @@ class TestPersistence:
 class TestUtilityMethods:
     """Tests for utility methods"""
 
-    def test_compute_content_hash(self):
+    def test_compute_content_hash(self) -> None:
         """Test content hash computation"""
         input_data = {"query": "test", "options": {"verbose": True}}
 
@@ -514,7 +514,7 @@ class TestUtilityMethods:
         hash3 = BaseTracker.compute_content_hash(input_data2)
         assert hash3 != hash1
 
-    def test_handle_unrecognized_line(self):
+    def test_handle_unrecognized_line(self) -> None:
         """Test unrecognized line handling"""
         tracker = ConcreteTestTracker()
 
@@ -531,7 +531,7 @@ class TestUtilityMethods:
 class TestBaseTrackerIntegration:
     """Integration tests for complete tracker workflow"""
 
-    def test_complete_workflow(self, tmp_path):
+    def test_complete_workflow(self, tmp_path) -> None:
         """Test complete tracking workflow"""
         tracker = ConcreteTestTracker()
 

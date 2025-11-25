@@ -68,7 +68,7 @@ def create_display(
                 raise ImportError(
                     "Rich TUI mode requires the 'rich' package. "
                     "Install with: pip install mcp-audit or pip install rich"
-                )
+                ) from None
             return PlainDisplay()
 
     raise ValueError(f"Unknown display mode: {mode}")

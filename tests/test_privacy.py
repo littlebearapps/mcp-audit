@@ -20,7 +20,7 @@ from mcp_audit.privacy import (
 class TestPrivacyFilterPatterns:
     """Tests for PrivacyFilter pattern matching"""
 
-    def test_api_key_redaction(self):
+    def test_api_key_redaction(self) -> None:
         """Test API key redaction"""
         filter = PrivacyFilter()
 
@@ -30,7 +30,7 @@ class TestPrivacyFilterPatterns:
         assert "sk-1234567890abcdefghijklmnop" not in redacted
         assert "[REDACTED]" in redacted
 
-    def test_email_redaction(self):
+    def test_email_redaction(self) -> None:
         """Test email address redaction"""
         filter = PrivacyFilter()
 
@@ -40,7 +40,7 @@ class TestPrivacyFilterPatterns:
         assert "john.doe@example.com" not in redacted
         assert "[REDACTED]" in redacted
 
-    def test_ipv4_redaction(self):
+    def test_ipv4_redaction(self) -> None:
         """Test IPv4 address redaction"""
         filter = PrivacyFilter()
 
@@ -50,7 +50,7 @@ class TestPrivacyFilterPatterns:
         assert "192.168.1.100" not in redacted
         assert "[REDACTED]" in redacted
 
-    def test_password_redaction(self):
+    def test_password_redaction(self) -> None:
         """Test password redaction"""
         filter = PrivacyFilter()
 
@@ -60,7 +60,7 @@ class TestPrivacyFilterPatterns:
         assert "mysecret123" not in redacted
         assert "[REDACTED]" in redacted
 
-    def test_credit_card_redaction(self):
+    def test_credit_card_redaction(self) -> None:
         """Test credit card redaction"""
         filter = PrivacyFilter()
 
@@ -70,7 +70,7 @@ class TestPrivacyFilterPatterns:
         assert "1234-5678-9012-3456" not in redacted
         assert "[REDACTED]" in redacted
 
-    def test_phone_redaction(self):
+    def test_phone_redaction(self) -> None:
         """Test phone number redaction"""
         filter = PrivacyFilter()
 
@@ -80,7 +80,7 @@ class TestPrivacyFilterPatterns:
         assert "555-123-4567" not in redacted
         assert "[REDACTED]" in redacted
 
-    def test_jwt_token_redaction(self):
+    def test_jwt_token_redaction(self) -> None:
         """Test JWT token redaction"""
         filter = PrivacyFilter()
 
@@ -90,7 +90,7 @@ class TestPrivacyFilterPatterns:
         assert "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9" not in redacted
         assert "[REDACTED]" in redacted
 
-    def test_bearer_token_redaction(self):
+    def test_bearer_token_redaction(self) -> None:
         """Test Bearer token redaction"""
         filter = PrivacyFilter()
 
@@ -100,7 +100,7 @@ class TestPrivacyFilterPatterns:
         assert "Bearer abc123xyz456" not in redacted
         assert "[REDACTED]" in redacted
 
-    def test_ssh_key_redaction(self):
+    def test_ssh_key_redaction(self) -> None:
         """Test SSH key redaction"""
         filter = PrivacyFilter()
 
@@ -114,7 +114,7 @@ class TestPrivacyFilterPatterns:
 class TestPrivacyFilterPathRedaction:
     """Tests for path redaction (optional)"""
 
-    def test_path_redaction_disabled_by_default(self):
+    def test_path_redaction_disabled_by_default(self) -> None:
         """Test path redaction is disabled by default"""
         filter = PrivacyFilter(redact_paths=False)
 
@@ -124,7 +124,7 @@ class TestPrivacyFilterPathRedaction:
         # Paths should NOT be redacted when disabled
         assert "/Users/john" in redacted
 
-    def test_home_dir_redaction(self):
+    def test_home_dir_redaction(self) -> None:
         """Test home directory redaction when enabled"""
         filter = PrivacyFilter(redact_paths=True)
 
@@ -134,7 +134,7 @@ class TestPrivacyFilterPathRedaction:
         assert "/Users/john" not in redacted
         assert "[REDACTED]_PATH" in redacted
 
-    def test_windows_path_redaction(self):
+    def test_windows_path_redaction(self) -> None:
         """Test Windows path redaction"""
         filter = PrivacyFilter(redact_paths=True)
 
@@ -148,7 +148,7 @@ class TestPrivacyFilterPathRedaction:
 class TestPrivacyFilterCustomPatterns:
     """Tests for custom pattern support"""
 
-    def test_custom_pattern_redaction(self):
+    def test_custom_pattern_redaction(self) -> None:
         """Test custom regex patterns"""
         custom_patterns = {"custom_id": re.compile(r"ID-\d{6}")}
 
@@ -164,7 +164,7 @@ class TestPrivacyFilterCustomPatterns:
 class TestPrivacyFilterDictRedaction:
     """Tests for dictionary redaction"""
 
-    def test_redact_dict_sensitive_keys(self):
+    def test_redact_dict_sensitive_keys(self) -> None:
         """Test redacting sensitive keys from dict"""
         filter = PrivacyFilter()
 
@@ -183,7 +183,7 @@ class TestPrivacyFilterDictRedaction:
         # Email in value should be redacted too
         assert "@example.com" not in redacted["email"]
 
-    def test_redact_dict_nested(self):
+    def test_redact_dict_nested(self) -> None:
         """Test redacting nested dictionaries"""
         filter = PrivacyFilter()
 
@@ -195,7 +195,7 @@ class TestPrivacyFilterDictRedaction:
         assert redacted["user"]["password"] == "[REDACTED]"
         assert redacted["user"]["metadata"]["token"] == "[REDACTED]"
 
-    def test_redact_dict_with_lists(self):
+    def test_redact_dict_with_lists(self) -> None:
         """Test redacting dictionaries containing lists"""
         filter = PrivacyFilter()
 
@@ -212,7 +212,7 @@ class TestPrivacyFilterDictRedaction:
         assert redacted["users"][0]["password"] == "[REDACTED]"
         assert redacted["users"][1]["password"] == "[REDACTED]"
 
-    def test_redact_dict_custom_sensitive_keys(self):
+    def test_redact_dict_custom_sensitive_keys(self) -> None:
         """Test redacting with custom sensitive key list"""
         filter = PrivacyFilter()
 
@@ -232,7 +232,7 @@ class TestPrivacyFilterDictRedaction:
 class TestPrivacyFilterJSONRedaction:
     """Tests for JSON string redaction"""
 
-    def test_redact_json_valid(self):
+    def test_redact_json_valid(self) -> None:
         """Test redacting valid JSON string"""
         filter = PrivacyFilter()
 
@@ -243,7 +243,7 @@ class TestPrivacyFilterJSONRedaction:
         assert data["username"] == "john"
         assert data["password"] == "[REDACTED]"
 
-    def test_redact_json_invalid(self):
+    def test_redact_json_invalid(self) -> None:
         """Test redacting invalid JSON (fallback to string redaction)"""
         filter = PrivacyFilter()
 
@@ -257,7 +257,7 @@ class TestPrivacyFilterJSONRedaction:
 class TestPrivacyFilterFileRedaction:
     """Tests for file redaction"""
 
-    def test_redact_file_json(self, tmp_path):
+    def test_redact_file_json(self, tmp_path) -> None:
         """Test redacting JSON file"""
         filter = PrivacyFilter()
 
@@ -276,7 +276,7 @@ class TestPrivacyFilterFileRedaction:
         assert output_data["username"] == "john"
         assert output_data["password"] == "[REDACTED]"
 
-    def test_redact_file_text(self, tmp_path):
+    def test_redact_file_text(self, tmp_path) -> None:
         """Test redacting plain text file"""
         filter = PrivacyFilter()
 
@@ -303,7 +303,7 @@ class TestPrivacyFilterFileRedaction:
 class TestSessionPrivacyFilter:
     """Tests for SessionPrivacyFilter"""
 
-    def test_sanitize_session_basic(self):
+    def test_sanitize_session_basic(self) -> None:
         """Test basic session sanitization"""
         filter = SessionPrivacyFilter()
 
@@ -318,7 +318,7 @@ class TestSessionPrivacyFilter:
         assert sanitized["project"] == "test-project"
         assert sanitized["platform"] == "claude-code"
 
-    def test_sanitize_platform_data(self):
+    def test_sanitize_platform_data(self) -> None:
         """Test platform data sanitization"""
         filter = SessionPrivacyFilter()
 
@@ -337,7 +337,7 @@ class TestSessionPrivacyFilter:
         assert sanitized["platform_data"]["claude_dir"] == "[REDACTED_PATH]"
         assert sanitized["platform_data"]["checkpoint_path"] == "[REDACTED_PATH]"
 
-    def test_sanitize_git_metadata(self):
+    def test_sanitize_git_metadata(self) -> None:
         """Test git metadata sanitization"""
         filter = SessionPrivacyFilter()
 
@@ -349,7 +349,7 @@ class TestSessionPrivacyFilter:
         assert sanitized["git_metadata"]["branch"] == "main"
         assert sanitized["git_metadata"]["commit"] == "abc123"
 
-    def test_sanitize_server_sessions(self):
+    def test_sanitize_server_sessions(self) -> None:
         """Test server session sanitization"""
         filter = SessionPrivacyFilter(redact_tool_inputs=False)
 
@@ -365,7 +365,7 @@ class TestSessionPrivacyFilter:
         assert "zen" in sanitized["server_sessions"]
         assert "mcp__zen__chat" in sanitized["server_sessions"]["zen"]["tools"]
 
-    def test_sanitize_tool_inputs_enabled(self):
+    def test_sanitize_tool_inputs_enabled(self) -> None:
         """Test tool input redaction when enabled"""
         filter = SessionPrivacyFilter(redact_tool_inputs=True)
 
@@ -404,7 +404,7 @@ class TestSessionPrivacyFilter:
 class TestConvenienceFunctions:
     """Tests for convenience functions"""
 
-    def test_redact_string_function(self):
+    def test_redact_string_function(self) -> None:
         """Test redact_string convenience function"""
         text = "My API key is sk-1234567890abcdefghij"
         redacted = redact_string(text)
@@ -412,7 +412,7 @@ class TestConvenienceFunctions:
         assert "sk-1234567890abcdefghij" not in redacted
         assert "[REDACTED]" in redacted
 
-    def test_redact_string_with_paths(self):
+    def test_redact_string_with_paths(self) -> None:
         """Test redact_string with path redaction enabled"""
         text = "File at /Users/john/file.txt"
         redacted = redact_string(text, redact_paths=True)
@@ -429,7 +429,7 @@ class TestConvenienceFunctions:
 class TestEdgeCases:
     """Tests for edge cases and error handling"""
 
-    def test_redact_empty_string(self):
+    def test_redact_empty_string(self) -> None:
         """Test redacting empty string"""
         filter = PrivacyFilter()
 
@@ -437,7 +437,7 @@ class TestEdgeCases:
 
         assert redacted == ""
 
-    def test_redact_none_string(self):
+    def test_redact_none_string(self) -> None:
         """Test redacting None"""
         filter = PrivacyFilter()
 
@@ -445,7 +445,7 @@ class TestEdgeCases:
 
         assert redacted is None
 
-    def test_redact_dict_empty(self):
+    def test_redact_dict_empty(self) -> None:
         """Test redacting empty dictionary"""
         filter = PrivacyFilter()
 
@@ -453,7 +453,7 @@ class TestEdgeCases:
 
         assert redacted == {}
 
-    def test_custom_placeholder(self):
+    def test_custom_placeholder(self) -> None:
         """Test custom placeholder text"""
         filter = PrivacyFilter()
 
@@ -463,7 +463,7 @@ class TestEdgeCases:
         assert "sk-1234567890abcdefghij" not in redacted
         assert "***HIDDEN***" in redacted
 
-    def test_multiple_patterns_in_text(self):
+    def test_multiple_patterns_in_text(self) -> None:
         """Test multiple sensitive patterns in one text"""
         filter = PrivacyFilter()
 
@@ -484,7 +484,7 @@ class TestEdgeCases:
 class TestPrivacyIntegration:
     """Integration tests for complete privacy workflow"""
 
-    def test_complete_session_sanitization(self):
+    def test_complete_session_sanitization(self) -> None:
         """Test complete session sanitization workflow"""
         filter = SessionPrivacyFilter(redact_tool_inputs=True)
 

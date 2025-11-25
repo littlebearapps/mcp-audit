@@ -173,9 +173,7 @@ class TestGeminiCLIAdapterInitialization:
 class TestTelemetryPathDetection:
     """Tests for telemetry file path detection"""
 
-    def test_env_var_takes_priority(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_env_var_takes_priority(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test GEMINI_TELEMETRY_OUTFILE environment variable takes priority"""
         env_path = tmp_path / "env_telemetry.log"
         monkeypatch.setenv("GEMINI_TELEMETRY_OUTFILE", str(env_path))
@@ -334,9 +332,7 @@ class TestEventParsing:
 class TestTokenAttribution:
     """Tests for token attribution to tool calls"""
 
-    def test_pending_tokens_attributed_to_tool_call(
-        self, adapter: GeminiCLIAdapter
-    ) -> None:
+    def test_pending_tokens_attributed_to_tool_call(self, adapter: GeminiCLIAdapter) -> None:
         """Test pending tokens are attributed to tool calls"""
         # Simulate token events before tool call
         adapter.parse_event(json.dumps(make_token_usage_event("input", 1000)))
@@ -353,9 +349,7 @@ class TestTokenAttribution:
         assert usage["output_tokens"] == 500
         assert usage["cache_read_tokens"] == 5000
 
-    def test_pending_tokens_reset_after_attribution(
-        self, adapter: GeminiCLIAdapter
-    ) -> None:
+    def test_pending_tokens_reset_after_attribution(self, adapter: GeminiCLIAdapter) -> None:
         """Test pending tokens are reset after attribution"""
         adapter.parse_event(json.dumps(make_token_usage_event("input", 1000)))
 
@@ -480,9 +474,7 @@ class TestPlatformMetadata:
 class TestSessionFinalization:
     """Tests for session finalization"""
 
-    def test_finalize_session_includes_thoughts_tokens(
-        self, adapter: GeminiCLIAdapter
-    ) -> None:
+    def test_finalize_session_includes_thoughts_tokens(self, adapter: GeminiCLIAdapter) -> None:
         """Test thoughts_tokens available after finalization"""
         # Parse some thought tokens
         adapter.parse_event(json.dumps(make_token_usage_event("thought", 500)))
@@ -621,9 +613,7 @@ class TestGeminiCLIAdapterIntegration:
         assert (adapter.session_dir / "mcp-zen.json").exists()
         assert (adapter.session_dir / "mcp-brave-search.json").exists()
 
-    def test_model_detection_and_pricing_lookup(
-        self, adapter: GeminiCLIAdapter
-    ) -> None:
+    def test_model_detection_and_pricing_lookup(self, adapter: GeminiCLIAdapter) -> None:
         """Test model detection works for pricing lookup"""
         event = make_token_usage_event("input", 100, model="gemini-2.5-pro")
         adapter.parse_event(json.dumps(event))

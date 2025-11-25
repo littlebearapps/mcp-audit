@@ -1,7 +1,8 @@
 branchProtection:
-  enabled: false
+  enabled: true
   requireReviews: 0
   requireStatusChecks:
+    - security
     - quality-gate
   enforceAdmins: false
   deleteBranchOnMerge: true

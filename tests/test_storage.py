@@ -104,12 +104,12 @@ def sample_session_index() -> SessionIndex:
 class TestDefaultBaseDir:
     """Test default base directory configuration."""
 
-    def test_default_base_dir_is_home(self):
+    def test_default_base_dir_is_home(self) -> None:
         """Default base dir should be ~/.mcp-audit/sessions/"""
         base_dir = get_default_base_dir()
         assert base_dir == Path.home() / ".mcp-audit" / "sessions"
 
-    def test_default_base_dir_is_path(self):
+    def test_default_base_dir_is_path(self) -> None:
         """Default base dir should be a Path object."""
         base_dir = get_default_base_dir()
         assert isinstance(base_dir, Path)
@@ -123,19 +123,19 @@ class TestDefaultBaseDir:
 class TestStorageManagerInit:
     """Test StorageManager initialization."""
 
-    def test_init_creates_base_dir(self, temp_storage_dir: Path):
+    def test_init_creates_base_dir(self, temp_storage_dir: Path) -> None:
         """Init should create base directory if it doesn't exist."""
         new_dir = temp_storage_dir / "new_subdir" / "sessions"
         storage = StorageManager(base_dir=new_dir)
         assert new_dir.exists()
         assert new_dir.is_dir()
 
-    def test_init_with_existing_dir(self, temp_storage_dir: Path):
+    def test_init_with_existing_dir(self, temp_storage_dir: Path) -> None:
         """Init should work with existing directory."""
         storage = StorageManager(base_dir=temp_storage_dir)
         assert storage.base_dir == temp_storage_dir
 
-    def test_init_with_none_uses_default(self):
+    def test_init_with_none_uses_default(self) -> None:
         """Init with None should use default base dir."""
         # Note: This will try to create ~/.mcp-audit/sessions/ in real environment
         # We just test that it doesn't crash
@@ -151,31 +151,31 @@ class TestStorageManagerInit:
 class TestPathGeneration:
     """Test path generation methods."""
 
-    def test_get_platform_dir(self, storage: StorageManager):
+    def test_get_platform_dir(self, storage: StorageManager) -> None:
         """Get platform directory path."""
         platform_dir = storage.get_platform_dir("claude_code")
         assert platform_dir == storage.base_dir / "claude_code"
 
-    def test_get_platform_dir_invalid_platform(self, storage: StorageManager):
+    def test_get_platform_dir_invalid_platform(self, storage: StorageManager) -> None:
         """Invalid platform should raise ValueError."""
         with pytest.raises(ValueError) as exc_info:
             storage.get_platform_dir("invalid_platform")  # type: ignore
         assert "Unsupported platform" in str(exc_info.value)
 
-    def test_get_date_dir(self, storage: StorageManager):
+    def test_get_date_dir(self, storage: StorageManager) -> None:
         """Get date directory path."""
         session_date = date(2025, 11, 25)
         date_dir = storage.get_date_dir("claude_code", session_date)
         assert date_dir == storage.base_dir / "claude_code" / "2025-11-25"
 
-    def test_get_session_path(self, storage: StorageManager):
+    def test_get_session_path(self, storage: StorageManager) -> None:
         """Get session file path."""
         session_date = date(2025, 11, 25)
         session_path = storage.get_session_path("claude_code", session_date, "session-123")
         expected = storage.base_dir / "claude_code" / "2025-11-25" / "session-123.jsonl"
         assert session_path == expected
 
-    def test_generate_session_id_format(self, storage: StorageManager):
+    def test_generate_session_id_format(self, storage: StorageManager) -> None:
         """Session ID should have correct format."""
         session_id = storage.generate_session_id("claude_code")
         # Format: session-{YYYYMMDD}T{HHMMSS}-{6hex}
@@ -184,12 +184,12 @@ class TestPathGeneration:
         assert len(parts) == 3  # session, timestamp, random
         assert "T" in parts[1]  # timestamp contains T
 
-    def test_generate_session_id_unique(self, storage: StorageManager):
+    def test_generate_session_id_unique(self, storage: StorageManager) -> None:
         """Each session ID should be unique."""
         ids = [storage.generate_session_id("claude_code") for _ in range(100)]
         assert len(set(ids)) == 100
 
-    def test_generate_session_id_with_timestamp(self, storage: StorageManager):
+    def test_generate_session_id_with_timestamp(self, storage: StorageManager) -> None:
         """Session ID should use provided timestamp."""
         ts = datetime(2025, 1, 15, 14, 30, 45)
         session_id = storage.generate_session_id("claude_code", timestamp=ts)
@@ -204,7 +204,7 @@ class TestPathGeneration:
 class TestSessionWriting:
     """Test session file writing."""
 
-    def test_create_session_file(self, storage: StorageManager):
+    def test_create_session_file(self, storage: StorageManager) -> None:
         """Create session file should create file and directories."""
         session_path = storage.create_session_file(
             platform="claude_code",
@@ -215,7 +215,7 @@ class TestSessionWriting:
         assert session_path.is_file()
         assert session_path.name == "test-session.jsonl"
 
-    def test_create_session_file_default_date(self, storage: StorageManager):
+    def test_create_session_file_default_date(self, storage: StorageManager) -> None:
         """Create session file with default date (today)."""
         session_path = storage.create_session_file(
             platform="claude_code",
@@ -224,7 +224,7 @@ class TestSessionWriting:
         assert session_path.exists()
         assert date.today().strftime("%Y-%m-%d") in str(session_path)
 
-    def test_append_event(self, storage: StorageManager, sample_events: list):
+    def test_append_event(self, storage: StorageManager, sample_events: list) -> None:
         """Append event should add line to file."""
         session_path = storage.create_session_file("claude_code", "test-session")
 
@@ -235,7 +235,7 @@ class TestSessionWriting:
             lines = f.readlines()
         assert len(lines) == len(sample_events)
 
-    def test_write_session_events(self, storage: StorageManager, sample_events: list):
+    def test_write_session_events(self, storage: StorageManager, sample_events: list) -> None:
         """Write all events at once."""
         session_path = storage.create_session_file("claude_code", "test-session")
         storage.write_session_events(session_path, sample_events)
@@ -244,7 +244,9 @@ class TestSessionWriting:
             lines = f.readlines()
         assert len(lines) == len(sample_events)
 
-    def test_write_session_events_overwrites(self, storage: StorageManager, sample_events: list):
+    def test_write_session_events_overwrites(
+        self, storage: StorageManager, sample_events: list
+    ) -> None:
         """Write events should overwrite existing content."""
         session_path = storage.create_session_file("claude_code", "test-session")
 
@@ -267,7 +269,9 @@ class TestSessionWriting:
 class TestSessionReading:
     """Test session file reading."""
 
-    def test_read_session_events_iterator(self, storage: StorageManager, sample_events: list):
+    def test_read_session_events_iterator(
+        self, storage: StorageManager, sample_events: list
+    ) -> None:
         """Read events as iterator."""
         session_path = storage.create_session_file("claude_code", "test-session")
         storage.write_session_events(session_path, sample_events)
@@ -275,7 +279,9 @@ class TestSessionReading:
         events = list(storage.read_session_events(session_path))
         assert len(events) == len(sample_events)
 
-    def test_read_session_events_content(self, storage: StorageManager, sample_events: list):
+    def test_read_session_events_content(
+        self, storage: StorageManager, sample_events: list
+    ) -> None:
         """Read events should preserve content."""
         session_path = storage.create_session_file("claude_code", "test-session")
         storage.write_session_events(session_path, sample_events)
@@ -284,13 +290,13 @@ class TestSessionReading:
         assert events[0]["type"] == "session_start"
         assert events[1]["tool"] == "mcp__zen__chat"
 
-    def test_read_session_events_nonexistent(self, storage: StorageManager):
+    def test_read_session_events_nonexistent(self, storage: StorageManager) -> None:
         """Read from nonexistent file should return empty iterator."""
         fake_path = storage.base_dir / "nonexistent.jsonl"
         events = list(storage.read_session_events(fake_path))
         assert events == []
 
-    def test_read_session_events_invalid_json(self, storage: StorageManager):
+    def test_read_session_events_invalid_json(self, storage: StorageManager) -> None:
         """Invalid JSON should be skipped with warning."""
         session_path = storage.create_session_file("claude_code", "test-session")
 
@@ -303,7 +309,7 @@ class TestSessionReading:
         events = list(storage.read_session_events(session_path))
         assert len(events) == 2  # Invalid line skipped
 
-    def test_load_session_events(self, storage: StorageManager, sample_events: list):
+    def test_load_session_events(self, storage: StorageManager, sample_events: list) -> None:
         """Load all events into memory."""
         session_path = storage.create_session_file("claude_code", "test-session")
         storage.write_session_events(session_path, sample_events)
@@ -321,14 +327,14 @@ class TestSessionReading:
 class TestSessionIndex:
     """Test SessionIndex dataclass."""
 
-    def test_session_index_to_dict(self, sample_session_index: SessionIndex):
+    def test_session_index_to_dict(self, sample_session_index: SessionIndex) -> None:
         """SessionIndex should convert to dict."""
         data = sample_session_index.to_dict()
         assert data["session_id"] == "session-20251125T100000-abc123"
         assert data["platform"] == "claude_code"
         assert data["total_tokens"] == 2000
 
-    def test_session_index_from_dict(self, sample_session_index: SessionIndex):
+    def test_session_index_from_dict(self, sample_session_index: SessionIndex) -> None:
         """SessionIndex should be reconstructable from dict."""
         data = sample_session_index.to_dict()
         reconstructed = SessionIndex.from_dict(data)
@@ -344,7 +350,7 @@ class TestSessionIndex:
 class TestDailyIndex:
     """Test DailyIndex dataclass."""
 
-    def test_daily_index_creation(self):
+    def test_daily_index_creation(self) -> None:
         """Create empty daily index."""
         daily_index = DailyIndex(
             schema_version=STORAGE_SCHEMA_VERSION,
@@ -354,7 +360,7 @@ class TestDailyIndex:
         assert daily_index.session_count == 0
         assert daily_index.total_tokens == 0
 
-    def test_daily_index_add_session(self, sample_session_index: SessionIndex):
+    def test_daily_index_add_session(self, sample_session_index: SessionIndex) -> None:
         """Add session to daily index."""
         daily_index = DailyIndex(
             schema_version=STORAGE_SCHEMA_VERSION,
@@ -367,7 +373,7 @@ class TestDailyIndex:
         assert daily_index.total_tokens == 2000
         assert daily_index.total_cost == 0.10
 
-    def test_daily_index_recalculate_totals(self, sample_session_index: SessionIndex):
+    def test_daily_index_recalculate_totals(self, sample_session_index: SessionIndex) -> None:
         """Recalculate totals from sessions."""
         daily_index = DailyIndex(
             schema_version=STORAGE_SCHEMA_VERSION,
@@ -380,7 +386,7 @@ class TestDailyIndex:
         assert daily_index.session_count == 2
         assert daily_index.total_tokens == 4000
 
-    def test_daily_index_to_dict(self, sample_session_index: SessionIndex):
+    def test_daily_index_to_dict(self, sample_session_index: SessionIndex) -> None:
         """Daily index should convert to dict."""
         daily_index = DailyIndex(
             schema_version=STORAGE_SCHEMA_VERSION,
@@ -394,7 +400,7 @@ class TestDailyIndex:
         assert data["platform"] == "claude_code"
         assert len(data["sessions"]) == 1
 
-    def test_daily_index_from_dict(self, sample_session_index: SessionIndex):
+    def test_daily_index_from_dict(self, sample_session_index: SessionIndex) -> None:
         """Daily index should be reconstructable from dict."""
         daily_index = DailyIndex(
             schema_version=STORAGE_SCHEMA_VERSION,
@@ -417,7 +423,7 @@ class TestDailyIndex:
 class TestPlatformIndex:
     """Test PlatformIndex dataclass."""
 
-    def test_platform_index_creation(self):
+    def test_platform_index_creation(self) -> None:
         """Create empty platform index."""
         platform_index = PlatformIndex(
             schema_version=STORAGE_SCHEMA_VERSION,
@@ -426,7 +432,7 @@ class TestPlatformIndex:
         assert platform_index.total_sessions == 0
         assert platform_index.dates == []
 
-    def test_platform_index_to_dict(self):
+    def test_platform_index_to_dict(self) -> None:
         """Platform index should convert to dict."""
         platform_index = PlatformIndex(
             schema_version=STORAGE_SCHEMA_VERSION,
@@ -438,7 +444,7 @@ class TestPlatformIndex:
         assert data["platform"] == "claude_code"
         assert len(data["dates"]) == 2
 
-    def test_platform_index_from_dict(self):
+    def test_platform_index_from_dict(self) -> None:
         """Platform index should be reconstructable from dict."""
         data = {
             "schema_version": STORAGE_SCHEMA_VERSION,
@@ -465,7 +471,7 @@ class TestIndexManagement:
 
     def test_save_and_load_daily_index(
         self, storage: StorageManager, sample_session_index: SessionIndex
-    ):
+    ) -> None:
         """Save and load daily index."""
         daily_index = DailyIndex(
             schema_version=STORAGE_SCHEMA_VERSION,
@@ -484,12 +490,12 @@ class TestIndexManagement:
         assert loaded.session_count == 1
         assert len(loaded.sessions) == 1
 
-    def test_load_daily_index_nonexistent(self, storage: StorageManager):
+    def test_load_daily_index_nonexistent(self, storage: StorageManager) -> None:
         """Load nonexistent daily index returns None."""
         loaded = storage.load_daily_index("claude_code", date(2025, 1, 1))
         assert loaded is None
 
-    def test_save_and_load_platform_index(self, storage: StorageManager):
+    def test_save_and_load_platform_index(self, storage: StorageManager) -> None:
         """Save and load platform index."""
         platform_index = PlatformIndex(
             schema_version=STORAGE_SCHEMA_VERSION,
@@ -508,7 +514,7 @@ class TestIndexManagement:
 
     def test_update_indexes_for_session(
         self, storage: StorageManager, sample_session_index: SessionIndex
-    ):
+    ) -> None:
         """Update both indexes when adding a session."""
         storage.update_indexes_for_session(
             platform="claude_code",
@@ -535,12 +541,14 @@ class TestIndexManagement:
 class TestSessionDiscovery:
     """Test session discovery methods."""
 
-    def test_list_platforms_empty(self, storage: StorageManager):
+    def test_list_platforms_empty(self, storage: StorageManager) -> None:
         """List platforms when empty."""
         platforms = storage.list_platforms()
         assert platforms == []
 
-    def test_list_platforms_with_sessions(self, storage: StorageManager, sample_events: list):
+    def test_list_platforms_with_sessions(
+        self, storage: StorageManager, sample_events: list
+    ) -> None:
         """List platforms that have sessions."""
         # Create sessions for two platforms
         storage.create_session_file("claude_code", "session-1")
@@ -549,7 +557,7 @@ class TestSessionDiscovery:
         platforms = storage.list_platforms()
         assert set(platforms) == {"claude_code", "codex_cli"}
 
-    def test_list_dates(self, storage: StorageManager):
+    def test_list_dates(self, storage: StorageManager) -> None:
         """List dates for a platform."""
         # Create sessions on different dates
         storage.create_session_file("claude_code", "s1", date(2025, 11, 24))
@@ -562,7 +570,7 @@ class TestSessionDiscovery:
         assert dates[0] == date(2025, 11, 25)
         assert dates[-1] == date(2025, 11, 23)
 
-    def test_list_sessions_all(self, storage: StorageManager):
+    def test_list_sessions_all(self, storage: StorageManager) -> None:
         """List all sessions."""
         storage.create_session_file("claude_code", "s1", date(2025, 11, 24))
         storage.create_session_file("claude_code", "s2", date(2025, 11, 25))
@@ -571,7 +579,7 @@ class TestSessionDiscovery:
         sessions = storage.list_sessions()
         assert len(sessions) == 3
 
-    def test_list_sessions_by_platform(self, storage: StorageManager):
+    def test_list_sessions_by_platform(self, storage: StorageManager) -> None:
         """List sessions filtered by platform."""
         storage.create_session_file("claude_code", "s1")
         storage.create_session_file("codex_cli", "s2")
@@ -580,7 +588,7 @@ class TestSessionDiscovery:
         assert len(sessions) == 1
         assert "claude_code" in str(sessions[0])
 
-    def test_list_sessions_by_date_range(self, storage: StorageManager):
+    def test_list_sessions_by_date_range(self, storage: StorageManager) -> None:
         """List sessions filtered by date range."""
         storage.create_session_file("claude_code", "s1", date(2025, 11, 20))
         storage.create_session_file("claude_code", "s2", date(2025, 11, 24))
@@ -593,7 +601,7 @@ class TestSessionDiscovery:
         )
         assert len(sessions) == 2
 
-    def test_list_sessions_with_limit(self, storage: StorageManager):
+    def test_list_sessions_with_limit(self, storage: StorageManager) -> None:
         """List sessions with limit."""
         for i in range(5):
             storage.create_session_file("claude_code", f"s{i}")
@@ -601,7 +609,7 @@ class TestSessionDiscovery:
         sessions = storage.list_sessions(limit=3)
         assert len(sessions) == 3
 
-    def test_find_session_by_id(self, storage: StorageManager):
+    def test_find_session_by_id(self, storage: StorageManager) -> None:
         """Find session by ID."""
         storage.create_session_file("claude_code", "target-session", date(2025, 11, 25))
         storage.create_session_file("claude_code", "other-session", date(2025, 11, 24))
@@ -610,7 +618,7 @@ class TestSessionDiscovery:
         assert found is not None
         assert "target-session" in found.name
 
-    def test_find_session_not_found(self, storage: StorageManager):
+    def test_find_session_not_found(self, storage: StorageManager) -> None:
         """Find nonexistent session returns None."""
         storage.create_session_file("claude_code", "existing-session")
 
@@ -626,13 +634,15 @@ class TestSessionDiscovery:
 class TestStorageStats:
     """Test storage statistics."""
 
-    def test_get_storage_stats_empty(self, storage: StorageManager):
+    def test_get_storage_stats_empty(self, storage: StorageManager) -> None:
         """Get stats when empty."""
         stats = storage.get_storage_stats()
         assert stats["total_sessions"] == 0
         assert stats["total_size_bytes"] == 0
 
-    def test_get_storage_stats_with_sessions(self, storage: StorageManager, sample_events: list):
+    def test_get_storage_stats_with_sessions(
+        self, storage: StorageManager, sample_events: list
+    ) -> None:
         """Get stats with sessions."""
         # Create sessions with content
         path1 = storage.create_session_file("claude_code", "s1")
@@ -656,7 +666,7 @@ class TestStorageStats:
 class TestMigration:
     """Test v0.x to v1.x migration."""
 
-    def test_migrate_v0_session_with_events(self, temp_storage_dir: Path):
+    def test_migrate_v0_session_with_events(self, temp_storage_dir: Path) -> None:
         """Migrate v0.x session with events.jsonl."""
         # Create v0.x structure
         v0_dir = temp_storage_dir / "v0_sessions"
@@ -699,7 +709,7 @@ class TestMigration:
         v1_events = v1_storage.load_session_events(new_path)
         assert len(v1_events) == 2
 
-    def test_migrate_v0_session_no_files(self, temp_storage_dir: Path):
+    def test_migrate_v0_session_no_files(self, temp_storage_dir: Path) -> None:
         """Migration should fail if no events or summary."""
         v0_dir = temp_storage_dir / "empty_session"
         v0_dir.mkdir(parents=True)
@@ -709,7 +719,7 @@ class TestMigration:
 
         assert new_path is None
 
-    def test_migrate_all_v0_sessions(self, temp_storage_dir: Path):
+    def test_migrate_all_v0_sessions(self, temp_storage_dir: Path) -> None:
         """Migrate multiple v0.x sessions."""
         v0_dir = temp_storage_dir / "v0_sessions"
 
@@ -730,7 +740,7 @@ class TestMigration:
         assert results["migrated"] == 2
         assert results["failed"] == 0
 
-    def test_migrate_detects_codex_platform(self, temp_storage_dir: Path):
+    def test_migrate_detects_codex_platform(self, temp_storage_dir: Path) -> None:
         """Migration should detect codex from directory name."""
         v0_dir = temp_storage_dir / "v0_sessions"
         v0_session = v0_dir / "test-codex-2025-11-25-120000"
@@ -755,7 +765,7 @@ class TestMigration:
 class TestSupportedPlatforms:
     """Test supported platforms constant."""
 
-    def test_supported_platforms_list(self):
+    def test_supported_platforms_list(self) -> None:
         """Check all expected platforms are in list."""
         assert "claude_code" in SUPPORTED_PLATFORMS
         assert "codex_cli" in SUPPORTED_PLATFORMS
@@ -763,7 +773,7 @@ class TestSupportedPlatforms:
         assert "ollama_cli" in SUPPORTED_PLATFORMS
         assert "custom" in SUPPORTED_PLATFORMS
 
-    def test_all_platforms_can_create_sessions(self, storage: StorageManager):
+    def test_all_platforms_can_create_sessions(self, storage: StorageManager) -> None:
         """Each platform should support session creation."""
         for platform in SUPPORTED_PLATFORMS:
             session_path = storage.create_session_file(platform, f"test-{platform}")
@@ -779,13 +789,13 @@ class TestSupportedPlatforms:
 class TestEdgeCases:
     """Test edge cases and error handling."""
 
-    def test_empty_jsonl_file(self, storage: StorageManager):
+    def test_empty_jsonl_file(self, storage: StorageManager) -> None:
         """Read empty JSONL file."""
         session_path = storage.create_session_file("claude_code", "empty")
         events = storage.load_session_events(session_path)
         assert events == []
 
-    def test_jsonl_with_blank_lines(self, storage: StorageManager):
+    def test_jsonl_with_blank_lines(self, storage: StorageManager) -> None:
         """JSONL with blank lines should skip them."""
         session_path = storage.create_session_file("claude_code", "test")
         with open(session_path, "w") as f:
@@ -797,7 +807,7 @@ class TestEdgeCases:
         events = storage.load_session_events(session_path)
         assert len(events) == 2
 
-    def test_concurrent_session_ids(self, storage: StorageManager):
+    def test_concurrent_session_ids(self, storage: StorageManager) -> None:
         """Session IDs generated at same second should differ."""
         import time
 
@@ -806,7 +816,7 @@ class TestEdgeCases:
         # Random suffix should make them unique
         assert len(set(ids)) == 10
 
-    def test_special_characters_in_event(self, storage: StorageManager):
+    def test_special_characters_in_event(self, storage: StorageManager) -> None:
         """Events with special characters should be handled."""
         session_path = storage.create_session_file("claude_code", "test")
         event = {
