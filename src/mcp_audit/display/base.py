@@ -7,7 +7,7 @@ enabling multiple display backends (Rich TUI, plain text, silent mode).
 
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
     from .snapshot import DisplaySnapshot
@@ -73,6 +73,6 @@ class DisplayAdapter(ABC):
         exc_type: type[BaseException] | None,
         exc_val: BaseException | None,
         exc_tb: object,
-    ) -> bool:
+    ) -> Literal[False]:
         """Context manager exit - does not suppress exceptions."""
         return False
