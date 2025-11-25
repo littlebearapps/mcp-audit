@@ -5,6 +5,7 @@ Uses Rich's Live display for a beautiful, real-time updating dashboard
 that shows session metrics without scrolling.
 """
 
+import contextlib
 from collections import deque
 from datetime import datetime
 from typing import Deque, Optional, Tuple
@@ -75,10 +76,8 @@ class RichDisplay(DisplayAdapter):
     def stop(self, snapshot: DisplaySnapshot) -> None:
         """Stop live display and show final summary."""
         if self.live:
-            try:
+            with contextlib.suppress(Exception):
                 self.live.stop()
-            except Exception:
-                pass  # Ignore errors during cleanup
             self.live = None
         self._print_final_summary(snapshot)
 

@@ -329,7 +329,9 @@ class ClaudeCodeAdapter(BaseTracker):
         top_tools = []
         for server_session in self.server_sessions.values():
             for tool_name, tool_stats in server_session.tools.items():
-                avg_tokens = tool_stats.total_tokens // tool_stats.calls if tool_stats.calls > 0 else 0
+                avg_tokens = (
+                    tool_stats.total_tokens // tool_stats.calls if tool_stats.calls > 0 else 0
+                )
                 top_tools.append((tool_name, tool_stats.calls, tool_stats.total_tokens, avg_tokens))
 
         # Sort by total tokens descending
@@ -347,11 +349,9 @@ class ClaudeCodeAdapter(BaseTracker):
             cache_efficiency=cache_efficiency,
             cost_estimate=self.session.cost_estimate,
             total_tool_calls=sum(ss.total_calls for ss in self.server_sessions.values()),
-            unique_tools=len(set(
-                tool_name
-                for ss in self.server_sessions.values()
-                for tool_name in ss.tools.keys()
-            )),
+            unique_tools=len(
+                {tool_name for ss in self.server_sessions.values() for tool_name in ss.tools}
+            ),
             top_tools=top_tools[:10],
         )
 

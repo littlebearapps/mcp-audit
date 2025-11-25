@@ -146,7 +146,9 @@ class GeminiCLIAdapter(BaseTracker):
         print("    export GEMINI_TELEMETRY_OUTFILE=~/.gemini/telemetry.log")
         print()
         print("  Option 2: Add to ~/.gemini/settings.json:")
-        print('    {"telemetry": {"enabled": true, "target": "local", "outfile": ".gemini/telemetry.log"}}')
+        print(
+            '    {"telemetry": {"enabled": true, "target": "local", "outfile": ".gemini/telemetry.log"}}'
+        )
         print()
         return False
 

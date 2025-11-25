@@ -36,6 +36,26 @@ npm run mcp:analyze
 
 ---
 
+## Git Workflow (gpm)
+
+**All changes require PR with passing CI.** Never push directly to main.
+
+```bash
+gpm feature my-feature   # Create feature branch
+# ... make changes ...
+gpm verify               # Run lint/test locally
+gpm ship                 # Create PR → wait CI → merge
+```
+
+**PyPI Release** (after PR merged to main):
+```bash
+git tag v0.3.1 && git push --tags  # Triggers publish workflow
+```
+
+**CI Requirements**: security scan, pytest, mypy, ruff, black
+
+---
+
 ## Key Files
 
 ### Core Modules (Phase 1)

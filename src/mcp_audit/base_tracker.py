@@ -485,7 +485,7 @@ class BaseTracker(ABC):
         Default implementation is a no-op. Subclasses may override
         for any pre-monitoring setup.
         """
-        pass
+        return None  # Intentional no-op: subclasses override as needed
 
     def monitor(self, display: Optional["DisplayAdapter"] = None) -> None:
         """
