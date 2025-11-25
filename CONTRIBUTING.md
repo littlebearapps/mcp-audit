@@ -14,6 +14,7 @@ Thank you for your interest in contributing to MCP Audit! This guide covers ever
 6. [Pull Request Workflow](#pull-request-workflow)
 7. [Code Style](#code-style)
 8. [Documentation](#documentation)
+9. [Releasing](#releasing)
 
 ---
 
@@ -656,6 +657,59 @@ docs/
 - **Clear headings** - Use hierarchy (H1 > H2 > H3)
 - **Code examples** - Include runnable examples
 - **Links** - Cross-reference related docs
+
+---
+
+## Releasing
+
+MCP Audit uses automated releases via GitHub Actions. When a version bump is merged to main, a new release is automatically published to PyPI.
+
+### Release Process
+
+1. **Bump version** in two files:
+   - `pyproject.toml`: Update `version = "X.Y.Z"`
+   - `src/mcp_audit/__init__.py`: Update `__version__ = "X.Y.Z"`
+
+2. **Update CHANGELOG.md**:
+   - Add new section: `## [X.Y.Z] - YYYY-MM-DD`
+   - Document changes under Added/Changed/Fixed/Removed
+
+3. **Create PR** with version bump and changelog
+
+4. **Merge PR** to main
+
+5. **Automatic publishing**:
+   - `auto-tag.yml` detects version change in `pyproject.toml`
+   - Creates git tag `vX.Y.Z`
+   - `publish.yml` triggers on the new tag
+   - Runs CI checks, builds package, publishes to PyPI
+
+### Version Numbering
+
+We follow [Semantic Versioning](https://semver.org/):
+
+- **MAJOR** (X.0.0): Breaking changes
+- **MINOR** (0.X.0): New features, backward compatible
+- **PATCH** (0.0.X): Bug fixes, backward compatible
+
+### Manual Release (Emergency)
+
+If auto-tagging fails, you can manually create a tag:
+
+```bash
+git tag -a v0.3.2 -m "Release v0.3.2"
+git push origin v0.3.2
+```
+
+This triggers the publish workflow.
+
+### Verifying a Release
+
+After merging a version bump:
+
+1. Check [GitHub Actions](https://github.com/littlebearapps/mcp-audit/actions) for workflow runs
+2. Verify tag was created: `git fetch --tags && git tag -l "v*"`
+3. Check [PyPI](https://pypi.org/project/mcp-audit/) for new version
 
 ---
 
