@@ -119,7 +119,7 @@ def sample_codex_cli_events():
 class TestCrossPlatformNormalization:
     """Test that different platforms normalize to same tool names"""
 
-    def test_claude_code_vs_codex_cli_normalization(self):
+    def test_claude_code_vs_codex_cli_normalization(self) -> None:
         """Test Claude Code and Codex CLI produce same normalized names"""
         # Claude Code format
         claude_tool = "mcp__zen__chat"
@@ -130,7 +130,7 @@ class TestCrossPlatformNormalization:
         assert normalize_tool_name(claude_tool) == normalize_tool_name(codex_tool)
         assert normalize_server_name(claude_tool) == normalize_server_name(codex_tool)
 
-    def test_normalized_tools_aggregate_correctly(self):
+    def test_normalized_tools_aggregate_correctly(self) -> None:
         """Test different platform formats aggregate to same tool"""
         tools = [
             "mcp__zen__chat",  # Claude Code
@@ -155,7 +155,7 @@ class TestCrossPlatformNormalization:
 class TestEventParsing:
     """Test event parsing across platforms"""
 
-    def test_claude_code_event_parsing(self, sample_claude_code_events, tmp_path):
+    def test_claude_code_event_parsing(self, sample_claude_code_events, tmp_path) -> None:
         """Test parsing Claude Code events"""
         adapter = ClaudeCodeAdapter(project="test", claude_dir=tmp_path)
 
@@ -167,7 +167,7 @@ class TestEventParsing:
                 assert tool_name.startswith("mcp__")
                 assert usage["input_tokens"] > 0
 
-    def test_codex_cli_event_parsing(self, sample_codex_cli_events):
+    def test_codex_cli_event_parsing(self, sample_codex_cli_events) -> None:
         """Test parsing Codex CLI events"""
         adapter = CodexCLIAdapter(project="test", codex_args=[])
 
@@ -180,7 +180,7 @@ class TestEventParsing:
                 assert "-mcp__" in tool_name  # Codex format
                 assert usage["input_tokens"] > 0
 
-    def test_unrecognized_event_handling(self, tmp_path):
+    def test_unrecognized_event_handling(self, tmp_path) -> None:
         """Test handling of unrecognized events"""
         adapter = ClaudeCodeAdapter(project="test", claude_dir=tmp_path)
 
@@ -201,7 +201,7 @@ class TestEventParsing:
 class TestSessionTracking:
     """Test complete session tracking workflow"""
 
-    def test_claude_code_session_tracking(self, sample_claude_code_events, tmp_path):
+    def test_claude_code_session_tracking(self, sample_claude_code_events, tmp_path) -> None:
         """Test complete Claude Code session tracking"""
         adapter = ClaudeCodeAdapter(project="test-project", claude_dir=tmp_path)
 
@@ -230,7 +230,7 @@ class TestSessionTracking:
         assert session.mcp_tool_calls.unique_tools == 2
         assert session.token_usage.total_tokens > 0
 
-    def test_codex_cli_session_tracking(self, sample_codex_cli_events):
+    def test_codex_cli_session_tracking(self, sample_codex_cli_events) -> None:
         """Test complete Codex CLI session tracking"""
         adapter = CodexCLIAdapter(project="test-project", codex_args=[])
 
@@ -270,7 +270,7 @@ class TestSessionTracking:
 class TestPersistence:
     """Test session persistence and recovery"""
 
-    def test_save_and_load_session(self, tmp_path, sample_claude_code_events):
+    def test_save_and_load_session(self, tmp_path, sample_claude_code_events) -> None:
         """Test saving and loading session"""
         # Create and track session
         adapter = ClaudeCodeAdapter(project="test-project", claude_dir=tmp_path)
@@ -302,7 +302,7 @@ class TestPersistence:
         assert loaded_session.platform == session.platform
         assert loaded_session.mcp_tool_calls.total_calls == session.mcp_tool_calls.total_calls
 
-    def test_schema_version_validation(self, tmp_path):
+    def test_schema_version_validation(self, tmp_path) -> None:
         """Test schema version validation on load"""
         manager = SessionManager(base_dir=tmp_path)
 
@@ -332,7 +332,7 @@ class TestPersistence:
 class TestDuplicateDetection:
     """Test duplicate tool call detection"""
 
-    def test_duplicate_detection(self, tmp_path):
+    def test_duplicate_detection(self, tmp_path) -> None:
         """Test duplicate calls are detected"""
         adapter = ClaudeCodeAdapter(project="test", claude_dir=tmp_path)
 
@@ -370,7 +370,7 @@ class TestDuplicateDetection:
 class TestAnomalyDetection:
     """Test anomaly detection in tool usage"""
 
-    def test_high_frequency_detection(self, tmp_path):
+    def test_high_frequency_detection(self, tmp_path) -> None:
         """Test high frequency anomaly detection"""
         adapter = ClaudeCodeAdapter(project="test", claude_dir=tmp_path)
 
@@ -386,7 +386,7 @@ class TestAnomalyDetection:
         assert anomalies[0]["tool"] == "mcp__zen__chat"
         assert anomalies[0]["calls"] == 15
 
-    def test_high_avg_tokens_detection(self, tmp_path):
+    def test_high_avg_tokens_detection(self, tmp_path) -> None:
         """Test high average tokens anomaly detection"""
         adapter = ClaudeCodeAdapter(project="test", claude_dir=tmp_path)
 
@@ -411,7 +411,7 @@ class TestAnomalyDetection:
 class TestMultiServerTracking:
     """Test tracking multiple MCP servers"""
 
-    def test_multiple_servers_tracked(self, tmp_path):
+    def test_multiple_servers_tracked(self, tmp_path) -> None:
         """Test multiple MCP servers tracked separately"""
         adapter = ClaudeCodeAdapter(project="test", claude_dir=tmp_path)
 
@@ -432,7 +432,7 @@ class TestMultiServerTracking:
         assert "brave-search" in session.server_sessions
         assert "context7" in session.server_sessions
 
-    def test_server_session_files_created(self, tmp_path):
+    def test_server_session_files_created(self, tmp_path) -> None:
         """Test per-server JSON files created"""
         adapter = ClaudeCodeAdapter(project="test", claude_dir=tmp_path)
 
@@ -459,7 +459,7 @@ class TestMultiServerTracking:
 class TestEndToEndWorkflow:
     """Complete end-to-end workflow tests"""
 
-    def test_complete_claude_code_workflow(self, tmp_path, sample_claude_code_events):
+    def test_complete_claude_code_workflow(self, tmp_path, sample_claude_code_events) -> None:
         """Test complete workflow: events → tracking → persistence → loading"""
         # 1. Create adapter
         adapter = ClaudeCodeAdapter(project="e2e-test", claude_dir=tmp_path)
@@ -498,7 +498,7 @@ class TestEndToEndWorkflow:
         assert "zen" in loaded_session.server_sessions
         assert "brave-search" in loaded_session.server_sessions
 
-    def test_complete_codex_cli_workflow(self, tmp_path, sample_codex_cli_events):
+    def test_complete_codex_cli_workflow(self, tmp_path, sample_codex_cli_events) -> None:
         """Test complete Codex CLI workflow with normalization"""
         # 1. Create adapter
         adapter = CodexCLIAdapter(project="codex-e2e-test", codex_args=[])
@@ -531,7 +531,7 @@ class TestEndToEndWorkflow:
         # Should be normalized (no -mcp suffix)
         assert "mcp__zen__chat" in zen_session.tools
 
-    def test_cross_session_analysis(self, tmp_path, sample_claude_code_events):
+    def test_cross_session_analysis(self, tmp_path, sample_claude_code_events) -> None:
         """Test analyzing multiple sessions"""
         manager = SessionManager(base_dir=tmp_path)
 

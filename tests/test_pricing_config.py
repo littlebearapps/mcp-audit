@@ -13,19 +13,19 @@ from mcp_audit.pricing_config import PricingConfig, load_pricing_config, get_mod
 class TestPricingConfigLoading:
     """Tests for configuration file loading"""
 
-    def test_load_default_config(self):
+    def test_load_default_config(self) -> None:
         """Test loading default mcp-analyze.toml"""
         config = PricingConfig()
         assert config.loaded == True
         assert len(config.pricing_data) > 0
 
-    def test_load_specific_path(self):
+    def test_load_specific_path(self) -> None:
         """Test loading from specific path"""
         config_path = Path("mcp-analyze.toml")
         config = PricingConfig(config_path)
         assert config.loaded == True
 
-    def test_missing_config_file(self):
+    def test_missing_config_file(self) -> None:
         """Test handling of missing config file"""
         config = PricingConfig(Path("nonexistent.toml"))
         assert config.loaded == False
@@ -34,7 +34,7 @@ class TestPricingConfigLoading:
 class TestModelPricingLookup:
     """Tests for model pricing retrieval"""
 
-    def test_get_claude_pricing(self):
+    def test_get_claude_pricing(self) -> None:
         """Test getting Claude model pricing"""
         config = PricingConfig()
         pricing = config.get_model_pricing("claude-sonnet-4-5-20250929")
@@ -45,7 +45,7 @@ class TestModelPricingLookup:
         assert pricing["input"] == 3.0
         assert pricing["output"] == 15.0
 
-    def test_get_openai_pricing(self):
+    def test_get_openai_pricing(self) -> None:
         """Test getting OpenAI model pricing"""
         config = PricingConfig()
         pricing = config.get_model_pricing("gpt-4o")
@@ -54,7 +54,7 @@ class TestModelPricingLookup:
         assert "input" in pricing
         assert pricing["output"] == 10.0
 
-    def test_get_pricing_with_vendor(self):
+    def test_get_pricing_with_vendor(self) -> None:
         """Test getting pricing with specific vendor"""
         config = PricingConfig()
         pricing = config.get_model_pricing("gpt-4o", vendor="openai")
@@ -62,7 +62,7 @@ class TestModelPricingLookup:
         assert pricing is not None
         assert pricing["input"] == 2.5
 
-    def test_unknown_model(self):
+    def test_unknown_model(self) -> None:
         """Test unknown model returns None with warning"""
         config = PricingConfig()
 
@@ -71,7 +71,7 @@ class TestModelPricingLookup:
 
         assert pricing is None
 
-    def test_cache_pricing_fields(self):
+    def test_cache_pricing_fields(self) -> None:
         """Test models with cache pricing"""
         config = PricingConfig()
         pricing = config.get_model_pricing("claude-sonnet-4-5-20250929")
@@ -85,7 +85,7 @@ class TestModelPricingLookup:
 class TestCostCalculation:
     """Tests for cost calculation"""
 
-    def test_basic_cost_calculation(self):
+    def test_basic_cost_calculation(self) -> None:
         """Test basic input/output token cost"""
         config = PricingConfig()
         cost = config.calculate_cost(
@@ -95,7 +95,7 @@ class TestCostCalculation:
         # 1M input @ $3.0 + 1M output @ $15.0 = $18.0
         assert cost == 18.0
 
-    def test_cost_with_cache(self):
+    def test_cost_with_cache(self) -> None:
         """Test cost calculation with cache tokens"""
         config = PricingConfig()
         cost = config.calculate_cost(
@@ -109,14 +109,14 @@ class TestCostCalculation:
         # = 0.03 + 0.075 + 0.015 = 0.12
         assert cost == pytest.approx(0.12, rel=1e-4)
 
-    def test_zero_tokens(self):
+    def test_zero_tokens(self) -> None:
         """Test cost calculation with zero tokens"""
         config = PricingConfig()
         cost = config.calculate_cost("claude-sonnet-4-5-20250929")
 
         assert cost == 0.0
 
-    def test_unknown_model_returns_zero(self):
+    def test_unknown_model_returns_zero(self) -> None:
         """Test unknown model returns zero cost"""
         config = PricingConfig()
 
@@ -125,7 +125,7 @@ class TestCostCalculation:
 
         assert cost == 0.0
 
-    def test_model_without_cache_pricing(self):
+    def test_model_without_cache_pricing(self) -> None:
         """Test model without cache pricing fields"""
         config = PricingConfig()
 
@@ -146,7 +146,7 @@ class TestCostCalculation:
 class TestModelListing:
     """Tests for listing available models"""
 
-    def test_list_all_models(self):
+    def test_list_all_models(self) -> None:
         """Test listing all configured models"""
         config = PricingConfig()
         models = config.list_models()
@@ -155,7 +155,7 @@ class TestModelListing:
         assert "claude-sonnet-4-5-20250929" in models
         assert "gpt-4o" in models
 
-    def test_list_claude_models(self):
+    def test_list_claude_models(self) -> None:
         """Test listing Claude models only"""
         config = PricingConfig()
         models = config.list_models("claude")
@@ -164,7 +164,7 @@ class TestModelListing:
         assert "claude-sonnet-4-5-20250929" in models
         assert "gpt-4o" not in models
 
-    def test_list_openai_models(self):
+    def test_list_openai_models(self) -> None:
         """Test listing OpenAI models only"""
         config = PricingConfig()
         models = config.list_models("openai")
@@ -173,7 +173,7 @@ class TestModelListing:
         assert "gpt-4o" in models
         assert "claude-sonnet-4-5-20250929" not in models
 
-    def test_list_custom_models(self):
+    def test_list_custom_models(self) -> None:
         """Test listing custom models (empty by default)"""
         config = PricingConfig()
         models = config.list_models("custom")
@@ -185,7 +185,7 @@ class TestModelListing:
 class TestValidation:
     """Tests for configuration validation"""
 
-    def test_validate_valid_config(self):
+    def test_validate_valid_config(self) -> None:
         """Test validation of valid configuration"""
         config = PricingConfig()
         result = config.validate()
@@ -193,7 +193,7 @@ class TestValidation:
         assert result["valid"] == True
         assert len(result["errors"]) == 0
 
-    def test_validate_checks_required_fields(self):
+    def test_validate_checks_required_fields(self) -> None:
         """Test validation warns about missing required fields"""
         config = PricingConfig()
         result = config.validate()
@@ -206,14 +206,14 @@ class TestValidation:
 class TestConvenienceFunctions:
     """Tests for convenience functions"""
 
-    def test_load_pricing_config(self):
+    def test_load_pricing_config(self) -> None:
         """Test convenience function for loading config"""
         config = load_pricing_config()
 
         assert config.loaded == True
         assert isinstance(config, PricingConfig)
 
-    def test_get_model_cost(self):
+    def test_get_model_cost(self) -> None:
         """Test convenience function for cost calculation"""
         cost = get_model_cost(
             "claude-sonnet-4-5-20250929", input_tokens=10_000, output_tokens=5_000
@@ -226,14 +226,14 @@ class TestConvenienceFunctions:
 class TestMetadata:
     """Tests for metadata handling"""
 
-    def test_metadata_loaded(self):
+    def test_metadata_loaded(self) -> None:
         """Test metadata is loaded from config"""
         config = PricingConfig()
 
         assert "currency" in config.metadata
         assert config.metadata["currency"] == "USD"
 
-    def test_exchange_rates(self):
+    def test_exchange_rates(self) -> None:
         """Test exchange rates in metadata"""
         config = PricingConfig()
 
@@ -245,7 +245,7 @@ class TestMetadata:
 class TestEdgeCases:
     """Tests for edge cases and error handling"""
 
-    def test_model_name_case_sensitivity(self):
+    def test_model_name_case_sensitivity(self) -> None:
         """Test that model names are case-sensitive"""
         config = PricingConfig()
 
@@ -258,14 +258,14 @@ class TestEdgeCases:
             pricing2 = config.get_model_pricing("CLAUDE-SONNET-4-5-20250929")
         assert pricing2 is None
 
-    def test_empty_vendor_namespace(self):
+    def test_empty_vendor_namespace(self) -> None:
         """Test handling of empty vendor namespace"""
         config = PricingConfig()
         models = config.list_models("nonexistent-vendor")
 
         assert models == []
 
-    def test_negative_tokens(self):
+    def test_negative_tokens(self) -> None:
         """Test cost calculation with negative tokens (edge case)"""
         config = PricingConfig()
 
@@ -286,7 +286,7 @@ class TestEdgeCases:
 class TestIntegration:
     """Integration tests for complete workflows"""
 
-    def test_complete_workflow(self):
+    def test_complete_workflow(self) -> None:
         """Test complete workflow: load → lookup → calculate"""
         # Load config
         config = load_pricing_config()
@@ -308,7 +308,7 @@ class TestIntegration:
         cost = config.calculate_cost(model, input_tokens=1000, output_tokens=500)
         assert cost >= 0.0
 
-    def test_all_configured_models_have_pricing(self):
+    def test_all_configured_models_have_pricing(self) -> None:
         """Test that all configured models have valid pricing"""
         config = PricingConfig()
 

@@ -63,7 +63,7 @@ def create_test_snapshot(
 class TestDisplaySnapshot:
     """Tests for DisplaySnapshot dataclass."""
 
-    def test_create_with_defaults(self):
+    def test_create_with_defaults(self) -> None:
         """Test creating snapshot with minimal values."""
         snapshot = DisplaySnapshot.create(
             project="test",
@@ -78,7 +78,7 @@ class TestDisplaySnapshot:
         assert snapshot.top_tools == ()
         assert snapshot.recent_events == ()
 
-    def test_create_with_all_fields(self):
+    def test_create_with_all_fields(self) -> None:
         """Test creating snapshot with all fields populated."""
         snapshot = create_test_snapshot()
         assert snapshot.project == "test-project"
@@ -88,13 +88,13 @@ class TestDisplaySnapshot:
         assert len(snapshot.top_tools) == 2
         assert len(snapshot.recent_events) == 1
 
-    def test_snapshot_is_frozen(self):
+    def test_snapshot_is_frozen(self) -> None:
         """Test that snapshot is immutable (frozen=True)."""
         snapshot = create_test_snapshot()
         with pytest.raises(AttributeError):
             snapshot.total_tokens = 2000  # type: ignore
 
-    def test_top_tools_tuple_conversion(self):
+    def test_top_tools_tuple_conversion(self) -> None:
         """Test that top_tools list is converted to tuple."""
         snapshot = DisplaySnapshot.create(
             project="test",
@@ -106,7 +106,7 @@ class TestDisplaySnapshot:
         assert isinstance(snapshot.top_tools, tuple)
         assert snapshot.top_tools == (("tool1", 1, 100, 100),)
 
-    def test_recent_events_tuple_conversion(self):
+    def test_recent_events_tuple_conversion(self) -> None:
         """Test that recent_events list is converted to tuple."""
         now = datetime.now()
         snapshot = DisplaySnapshot.create(
@@ -127,7 +127,7 @@ class TestDisplaySnapshot:
 class TestNullDisplay:
     """Tests for NullDisplay (silent mode)."""
 
-    def test_null_display_produces_no_output(self):
+    def test_null_display_produces_no_output(self) -> None:
         """Test that NullDisplay produces no output."""
         display = NullDisplay()
         snapshot = create_test_snapshot()
@@ -141,7 +141,7 @@ class TestNullDisplay:
 
         assert captured.getvalue() == ""
 
-    def test_null_display_context_manager(self):
+    def test_null_display_context_manager(self) -> None:
         """Test NullDisplay as context manager."""
         snapshot = create_test_snapshot()
         with NullDisplay() as display:
@@ -158,7 +158,7 @@ class TestNullDisplay:
 class TestPlainDisplay:
     """Tests for PlainDisplay (CI/logging mode)."""
 
-    def test_plain_display_start_prints_header(self):
+    def test_plain_display_start_prints_header(self) -> None:
         """Test PlainDisplay.start() prints header."""
         display = PlainDisplay()
         snapshot = create_test_snapshot()
@@ -172,7 +172,7 @@ class TestPlainDisplay:
         assert "claude-code" in output
         assert "test-project" in output
 
-    def test_plain_display_stop_prints_summary(self):
+    def test_plain_display_stop_prints_summary(self) -> None:
         """Test PlainDisplay.stop() prints summary."""
         display = PlainDisplay()
         snapshot = create_test_snapshot(total_tokens=1000, tool_calls=5)
@@ -186,7 +186,7 @@ class TestPlainDisplay:
         assert "1,000" in output  # total tokens
         assert "5" in output  # tool calls
 
-    def test_plain_display_on_event_prints_event(self):
+    def test_plain_display_on_event_prints_event(self) -> None:
         """Test PlainDisplay.on_event() prints event details."""
         display = PlainDisplay()
         event_time = datetime(2025, 1, 1, 12, 30, 45)
@@ -200,7 +200,7 @@ class TestPlainDisplay:
         assert "1,234" in output
         assert "12:30:45" in output
 
-    def test_plain_display_update_rate_limits(self):
+    def test_plain_display_update_rate_limits(self) -> None:
         """Test PlainDisplay.update() is rate-limited."""
         display = PlainDisplay(print_interval=1.0)
         snapshot = create_test_snapshot()
@@ -227,21 +227,21 @@ class TestPlainDisplay:
 class TestRichDisplay:
     """Tests for RichDisplay (TUI mode)."""
 
-    def test_rich_display_import(self):
+    def test_rich_display_import(self) -> None:
         """Test that RichDisplay can be imported when Rich is available."""
         from mcp_audit.display.rich_display import RichDisplay
 
         display = RichDisplay()
         assert display.refresh_rate == 0.5
 
-    def test_rich_display_custom_refresh_rate(self):
+    def test_rich_display_custom_refresh_rate(self) -> None:
         """Test RichDisplay with custom refresh rate."""
         from mcp_audit.display.rich_display import RichDisplay
 
         display = RichDisplay(refresh_rate=1.0)
         assert display.refresh_rate == 1.0
 
-    def test_rich_display_build_layout_structure(self):
+    def test_rich_display_build_layout_structure(self) -> None:
         """Test RichDisplay._build_layout() returns correct structure."""
         from mcp_audit.display.rich_display import RichDisplay
 
@@ -258,7 +258,7 @@ class TestRichDisplay:
         assert "activity" in child_names
         assert "footer" in child_names
 
-    def test_rich_display_format_duration(self):
+    def test_rich_display_format_duration(self) -> None:
         """Test RichDisplay._format_duration() formatting."""
         from mcp_audit.display.rich_display import RichDisplay
 
@@ -269,7 +269,7 @@ class TestRichDisplay:
         assert display._format_duration(60) == "00:01:00"
         assert display._format_duration(3661) == "01:01:01"
 
-    def test_rich_display_truncates_long_tool_names(self):
+    def test_rich_display_truncates_long_tool_names(self) -> None:
         """Test that long tool names are truncated in display."""
         from mcp_audit.display.rich_display import RichDisplay
 
@@ -296,23 +296,23 @@ class TestRichDisplay:
 class TestCreateDisplay:
     """Tests for create_display() factory function."""
 
-    def test_create_display_quiet_mode(self):
+    def test_create_display_quiet_mode(self) -> None:
         """Test create_display with quiet mode returns NullDisplay."""
         display = create_display(mode="quiet")
         assert isinstance(display, NullDisplay)
 
-    def test_create_display_plain_mode(self):
+    def test_create_display_plain_mode(self) -> None:
         """Test create_display with plain mode returns PlainDisplay."""
         display = create_display(mode="plain")
         assert isinstance(display, PlainDisplay)
 
-    def test_create_display_auto_mode_non_tty(self):
+    def test_create_display_auto_mode_non_tty(self) -> None:
         """Test create_display auto mode falls back to PlainDisplay when not TTY."""
         with patch.object(sys.stdout, "isatty", return_value=False):
             display = create_display(mode="auto")
             assert isinstance(display, PlainDisplay)
 
-    def test_create_display_tui_mode_non_tty_falls_back(self):
+    def test_create_display_tui_mode_non_tty_falls_back(self) -> None:
         """Test create_display tui mode falls back to plain with warning when not TTY."""
         with patch.object(sys.stdout, "isatty", return_value=False):
             captured = io.StringIO()
@@ -325,7 +325,7 @@ class TestCreateDisplay:
                     # Should print warning to stderr
                     assert "not a TTY" in mock_stderr.getvalue()
 
-    def test_create_display_tui_mode_with_tty(self):
+    def test_create_display_tui_mode_with_tty(self) -> None:
         """Test create_display tui mode returns RichDisplay when TTY available."""
         with patch.object(sys.stdout, "isatty", return_value=True):
             display = create_display(mode="tui")
@@ -334,12 +334,12 @@ class TestCreateDisplay:
 
             assert isinstance(display, RichDisplay)
 
-    def test_create_display_invalid_mode(self):
+    def test_create_display_invalid_mode(self) -> None:
         """Test create_display raises ValueError for invalid mode."""
         with pytest.raises(ValueError, match="Unknown display mode"):
             create_display(mode="invalid")  # type: ignore
 
-    def test_create_display_custom_refresh_rate(self):
+    def test_create_display_custom_refresh_rate(self) -> None:
         """Test create_display passes refresh_rate to RichDisplay."""
         with patch.object(sys.stdout, "isatty", return_value=True):
             display = create_display(mode="tui", refresh_rate=2.0)
@@ -357,7 +357,7 @@ class TestCreateDisplay:
 class TestDisplayIntegration:
     """Integration tests for display module."""
 
-    def test_display_lifecycle(self):
+    def test_display_lifecycle(self) -> None:
         """Test complete display lifecycle."""
         display = PlainDisplay()
         snapshot = create_test_snapshot()
@@ -375,7 +375,7 @@ class TestDisplayIntegration:
         assert "mcp__zen__chat" in output
         assert "Session Complete" in output
 
-    def test_multiple_displays_independent(self):
+    def test_multiple_displays_independent(self) -> None:
         """Test that multiple display instances are independent."""
         display1 = PlainDisplay()
         display2 = PlainDisplay()
@@ -405,7 +405,7 @@ class TestDisplayIntegration:
 class TestCLIDisplayIntegration:
     """Tests for CLI display flag combinations."""
 
-    def test_get_display_mode_quiet(self):
+    def test_get_display_mode_quiet(self) -> None:
         """Test get_display_mode returns 'quiet' when --quiet flag set."""
         from mcp_audit.cli import get_display_mode
 
@@ -416,7 +416,7 @@ class TestCLIDisplayIntegration:
 
         assert get_display_mode(MockArgs()) == "quiet"
 
-    def test_get_display_mode_plain(self):
+    def test_get_display_mode_plain(self) -> None:
         """Test get_display_mode returns 'plain' when --plain flag set."""
         from mcp_audit.cli import get_display_mode
 
@@ -427,7 +427,7 @@ class TestCLIDisplayIntegration:
 
         assert get_display_mode(MockArgs()) == "plain"
 
-    def test_get_display_mode_tui(self):
+    def test_get_display_mode_tui(self) -> None:
         """Test get_display_mode returns 'tui' when --tui flag set."""
         from mcp_audit.cli import get_display_mode
 
@@ -438,7 +438,7 @@ class TestCLIDisplayIntegration:
 
         assert get_display_mode(MockArgs()) == "tui"
 
-    def test_get_display_mode_auto_default(self):
+    def test_get_display_mode_auto_default(self) -> None:
         """Test get_display_mode returns 'auto' when no flags set."""
         from mcp_audit.cli import get_display_mode
 
@@ -449,7 +449,7 @@ class TestCLIDisplayIntegration:
 
         assert get_display_mode(MockArgs()) == "auto"
 
-    def test_get_display_mode_quiet_takes_precedence(self):
+    def test_get_display_mode_quiet_takes_precedence(self) -> None:
         """Test --quiet takes precedence over other flags."""
         from mcp_audit.cli import get_display_mode
 
@@ -461,7 +461,7 @@ class TestCLIDisplayIntegration:
         # Quiet should override everything
         assert get_display_mode(MockArgs()) == "quiet"
 
-    def test_get_display_mode_plain_before_tui(self):
+    def test_get_display_mode_plain_before_tui(self) -> None:
         """Test --plain takes precedence over --tui."""
         from mcp_audit.cli import get_display_mode
 

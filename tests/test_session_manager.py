@@ -77,18 +77,18 @@ def sample_session():
 class TestSessionManager:
     """Tests for SessionManager class"""
 
-    def test_initialization(self, temp_session_dir):
+    def test_initialization(self, temp_session_dir) -> None:
         """Test SessionManager initialization"""
         manager = SessionManager(base_dir=temp_session_dir)
         assert manager.base_dir == temp_session_dir
         assert temp_session_dir.exists()
 
-    def test_default_base_dir(self):
+    def test_default_base_dir(self) -> None:
         """Test default base directory creation"""
         manager = SessionManager()
         assert manager.base_dir == Path("logs/sessions")
 
-    def test_create_session_directory(self, temp_session_dir):
+    def test_create_session_directory(self, temp_session_dir) -> None:
         """Test session directory creation"""
         manager = SessionManager(base_dir=temp_session_dir)
         session_id = "test-session-001"
@@ -103,7 +103,7 @@ class TestSessionManager:
 class TestSessionPersistence:
     """Tests for session save/load functionality"""
 
-    def test_save_session(self, temp_session_dir, sample_session):
+    def test_save_session(self, temp_session_dir, sample_session) -> None:
         """Test saving session to disk"""
         manager = SessionManager(base_dir=temp_session_dir)
         session_dir = manager.create_session_directory(sample_session.session_id)
@@ -125,7 +125,7 @@ class TestSessionPersistence:
         assert data["session_id"] == "test-project-2025-11-24T10-30-00"
         assert data["token_usage"]["total_tokens"] == 6700
 
-    def test_load_session(self, temp_session_dir, sample_session):
+    def test_load_session(self, temp_session_dir, sample_session) -> None:
         """Test loading session from disk"""
         manager = SessionManager(base_dir=temp_session_dir)
         session_dir = manager.create_session_directory(sample_session.session_id)
@@ -140,7 +140,7 @@ class TestSessionPersistence:
         assert loaded_session.session_id == sample_session.session_id
         assert loaded_session.token_usage.total_tokens == 6700
 
-    def test_load_nonexistent_session(self, temp_session_dir):
+    def test_load_nonexistent_session(self, temp_session_dir) -> None:
         """Test loading session that doesn't exist"""
         manager = SessionManager(base_dir=temp_session_dir)
         nonexistent_dir = temp_session_dir / "nonexistent"
@@ -149,7 +149,7 @@ class TestSessionPersistence:
 
         assert loaded_session is None
 
-    def test_load_session_with_server_sessions(self, temp_session_dir, sample_session):
+    def test_load_session_with_server_sessions(self, temp_session_dir, sample_session) -> None:
         """Test loading session with server session data"""
         manager = SessionManager(base_dir=temp_session_dir)
         session_dir = manager.create_session_directory(sample_session.session_id)
@@ -168,28 +168,28 @@ class TestSessionPersistence:
 class TestSchemaVersionValidation:
     """Tests for schema version validation"""
 
-    def test_validate_schema_version_valid(self, temp_session_dir):
+    def test_validate_schema_version_valid(self, temp_session_dir) -> None:
         """Test validation of compatible schema version"""
         manager = SessionManager(base_dir=temp_session_dir)
 
         data = {"schema_version": SCHEMA_VERSION}
         assert manager._validate_schema_version(data) == True
 
-    def test_validate_schema_version_missing(self, temp_session_dir):
+    def test_validate_schema_version_missing(self, temp_session_dir) -> None:
         """Test validation fails when schema_version missing"""
         manager = SessionManager(base_dir=temp_session_dir)
 
         data = {}
         assert manager._validate_schema_version(data) == False
 
-    def test_validate_schema_version_incompatible_major(self, temp_session_dir):
+    def test_validate_schema_version_incompatible_major(self, temp_session_dir) -> None:
         """Test validation fails for incompatible major version"""
         manager = SessionManager(base_dir=temp_session_dir)
 
         data = {"schema_version": "2.0.0"}  # Different major version
         assert manager._validate_schema_version(data) == False
 
-    def test_validate_schema_version_older_minor(self, temp_session_dir):
+    def test_validate_schema_version_older_minor(self, temp_session_dir) -> None:
         """Test validation succeeds for older minor version (forward compatible)"""
         manager = SessionManager(base_dir=temp_session_dir)
 
@@ -197,7 +197,7 @@ class TestSchemaVersionValidation:
         data = {"schema_version": "1.0.0"}
         assert manager._validate_schema_version(data) == True
 
-    def test_parse_version(self, temp_session_dir):
+    def test_parse_version(self, temp_session_dir) -> None:
         """Test version string parsing"""
         manager = SessionManager(base_dir=temp_session_dir)
 
@@ -210,7 +210,7 @@ class TestSchemaVersionValidation:
 class TestSessionListing:
     """Tests for session listing and discovery"""
 
-    def test_list_sessions_empty(self, temp_session_dir):
+    def test_list_sessions_empty(self, temp_session_dir) -> None:
         """Test listing sessions in empty directory"""
         manager = SessionManager(base_dir=temp_session_dir)
 
@@ -218,7 +218,7 @@ class TestSessionListing:
 
         assert sessions == []
 
-    def test_list_sessions(self, temp_session_dir, sample_session):
+    def test_list_sessions(self, temp_session_dir, sample_session) -> None:
         """Test listing multiple sessions"""
         manager = SessionManager(base_dir=temp_session_dir)
 
@@ -233,7 +233,7 @@ class TestSessionListing:
 
         assert len(sessions) == 3
 
-    def test_list_sessions_sorted(self, temp_session_dir, sample_session):
+    def test_list_sessions_sorted(self, temp_session_dir, sample_session) -> None:
         """Test sessions are sorted by timestamp (newest first)"""
         manager = SessionManager(base_dir=temp_session_dir)
 
@@ -256,7 +256,7 @@ class TestSessionListing:
         assert sessions[1].name == "test-2025-11-22T10-00-00"
         assert sessions[2].name == "test-2025-11-20T10-00-00"
 
-    def test_list_sessions_with_limit(self, temp_session_dir, sample_session):
+    def test_list_sessions_with_limit(self, temp_session_dir, sample_session) -> None:
         """Test listing sessions with limit"""
         manager = SessionManager(base_dir=temp_session_dir)
 
@@ -275,7 +275,7 @@ class TestSessionListing:
 class TestIncompleteSessionDetection:
     """Tests for incomplete session detection and recovery"""
 
-    def test_find_incomplete_sessions(self, temp_session_dir):
+    def test_find_incomplete_sessions(self, temp_session_dir) -> None:
         """Test finding sessions missing required files"""
         manager = SessionManager(base_dir=temp_session_dir)
 
@@ -291,7 +291,7 @@ class TestIncompleteSessionDetection:
         assert len(incomplete) == 1
         assert incomplete[0].name == "incomplete-session"
 
-    def test_recover_from_events_no_file(self, temp_session_dir):
+    def test_recover_from_events_no_file(self, temp_session_dir) -> None:
         """Test recovery when events.jsonl doesn't exist"""
         manager = SessionManager(base_dir=temp_session_dir)
         session_dir = manager.create_session_directory("test-session")
@@ -304,7 +304,7 @@ class TestIncompleteSessionDetection:
 class TestSessionCleanup:
     """Tests for old session cleanup"""
 
-    def test_cleanup_old_sessions(self, temp_session_dir, sample_session):
+    def test_cleanup_old_sessions(self, temp_session_dir, sample_session) -> None:
         """Test cleaning up old sessions"""
         manager = SessionManager(base_dir=temp_session_dir)
 
@@ -331,7 +331,7 @@ class TestSessionCleanup:
 class TestConvenienceFunctions:
     """Tests for convenience functions"""
 
-    def test_save_session_function(self, temp_session_dir, sample_session):
+    def test_save_session_function(self, temp_session_dir, sample_session) -> None:
         """Test save_session convenience function"""
         session_dir = temp_session_dir / sample_session.session_id
         session_dir.mkdir(parents=True)
@@ -341,7 +341,7 @@ class TestConvenienceFunctions:
         assert "summary" in saved_files
         assert saved_files["summary"].exists()
 
-    def test_load_session_function(self, temp_session_dir, sample_session):
+    def test_load_session_function(self, temp_session_dir, sample_session) -> None:
         """Test load_session convenience function"""
         session_dir = temp_session_dir / sample_session.session_id
         session_dir.mkdir(parents=True)
@@ -357,7 +357,7 @@ class TestConvenienceFunctions:
 class TestEdgeCases:
     """Tests for edge cases and error handling"""
 
-    def test_load_corrupt_json(self, temp_session_dir):
+    def test_load_corrupt_json(self, temp_session_dir) -> None:
         """Test loading session with corrupt JSON"""
         manager = SessionManager(base_dir=temp_session_dir)
         session_dir = manager.create_session_directory("corrupt-session")
@@ -369,7 +369,7 @@ class TestEdgeCases:
 
         assert loaded_session is None
 
-    def test_load_missing_fields(self, temp_session_dir):
+    def test_load_missing_fields(self, temp_session_dir) -> None:
         """Test loading session with missing required fields"""
         manager = SessionManager(base_dir=temp_session_dir)
         session_dir = manager.create_session_directory("missing-fields")
@@ -390,7 +390,7 @@ class TestEdgeCases:
 class TestSessionManagerIntegration:
     """Integration tests for complete session lifecycle"""
 
-    def test_complete_session_lifecycle(self, temp_session_dir, sample_session):
+    def test_complete_session_lifecycle(self, temp_session_dir, sample_session) -> None:
         """Test complete save/load/list/cleanup lifecycle"""
         manager = SessionManager(base_dir=temp_session_dir)
 
@@ -411,7 +411,7 @@ class TestSessionManagerIntegration:
         incomplete = manager.find_incomplete_sessions()
         assert len(incomplete) == 0  # Session is complete
 
-    def test_multiple_server_sessions(self, temp_session_dir, sample_session):
+    def test_multiple_server_sessions(self, temp_session_dir, sample_session) -> None:
         """Test saving/loading session with multiple servers"""
         manager = SessionManager(base_dir=temp_session_dir)
 
