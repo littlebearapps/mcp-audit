@@ -1,10 +1,10 @@
 ---
 id: task-9
 title: Configure gpm Workflow & CI/CD Pipeline Hardening
-status: In Progress
+status: Done
 assignee: []
 created_date: '2025-11-25 05:53'
-updated_date: '2025-11-25 05:55'
+updated_date: '2025-11-25 06:14'
 labels:
   - ci-cd
   - gpm
@@ -36,14 +36,14 @@ Configure gpm (git-pr-manager) for proper PR workflow and harden CI/CD pipeline 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 gpm init --interactive completed or .gpm.yml manually updated
-- [ ] #2 Branch protection enabled requiring quality-gate check
-- [ ] #3 GitHub repo setting: deleteBranchOnMerge = true
-- [ ] #4 Publish workflow requires CI to pass (not just release trigger)
-- [ ] #5 CLAUDE.md updated with gpm workflow section (succinct)
-- [ ] #6 Feature branch workflow tested: gpm feature → gpm ship
-- [ ] #7 All lint/format errors fixed before merge
-- [ ] #8 PyPI publish only occurs after PR merged to main with passing CI
+- [x] #1 gpm init --interactive completed or .gpm.yml manually updated
+- [x] #2 Branch protection enabled requiring quality-gate check
+- [x] #3 GitHub repo setting: deleteBranchOnMerge = true
+- [x] #4 Publish workflow requires CI to pass (not just release trigger)
+- [x] #5 CLAUDE.md updated with gpm workflow section (succinct)
+- [x] #6 Feature branch workflow tested: gpm feature → gpm ship
+- [x] #7 All lint/format errors fixed before merge
+- [x] #8 PyPI publish only occurs after PR merged to main with passing CI
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -110,3 +110,28 @@ gpm ship                 # Create PR, wait CI, merge
 3. Run `gpm ship` to verify full workflow
 4. Verify branch auto-deleted after merge
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+### Completion Notes (2025-11-25)
+
+**PR #6 Merged Successfully:**
+- All CI checks passed (Security Scan, Quality Gate, CodeQL)
+- Branch auto-deleted after merge
+- Squash merged to main
+
+**gpm Compatibility Issue Found:**
+- `gpm verify` runs `mypy .` which ignores pyproject.toml's `files = ["src"]` setting
+- Workaround: Created Makefile with `typecheck` target that runs `mypy src/mcp_audit`
+- gpm uses Makefile targets when `verification.preferMakefile: true` in .gpm.yml
+
+**Files Changed:**
+- .github/workflows/publish.yml - CI-gated PyPI publishing
+- .gpm.yml - Branch protection enabled
+- CLAUDE.md - gpm workflow section added
+- Makefile - lint/typecheck/test/build targets
+- pyproject.toml - mypy files config
+- Removed duplicate test files from root
+- Added return type annotations to all test methods
+<!-- SECTION:NOTES:END -->

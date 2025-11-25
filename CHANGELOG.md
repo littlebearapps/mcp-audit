@@ -5,6 +5,22 @@ All notable changes to MCP Audit will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2025-11-25
+
+### Added
+- **GitHub topics** - 10 topics for discoverability (mcp, claude-code, codex-cli, etc.)
+- **CONTRIBUTING.md** - Root-level contributing guide (GitHub standard location)
+- **Makefile** - Build targets for gpm verify (lint, typecheck, test, build)
+
+### Changed
+- **README badges** - Updated to shields.io format with PyPI version/downloads
+- **Installation docs** - Added pipx as installation option
+- **CLAUDE.md** - Added explicit PR merge approval requirement
+
+### Fixed
+- **CI workflow** - Hardened publish.yml to require CI pass before PyPI publish
+- **gpm integration** - Fixed mypy verification to only check src/ directory
+
 ## [0.3.0] - 2025-11-25
 
 ### Added

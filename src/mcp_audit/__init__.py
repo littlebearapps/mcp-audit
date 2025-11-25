@@ -5,7 +5,7 @@ Track token usage, costs, and efficiency across AI coding sessions
 for Claude Code, Codex CLI, and other MCP-enabled tools.
 """
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 __author__ = "Little Bear Apps"
 __email__ = "contact@littlebearapps.com"
 

@@ -40,11 +40,13 @@ npm run mcp:analyze
 
 **All changes require PR with passing CI.** Never push directly to main.
 
+⚠️ **NEVER merge a PR without explicit user approval.** Always ask before merging.
+
 ```bash
 gpm feature my-feature   # Create feature branch
 # ... make changes ...
 gpm verify               # Run lint/test locally
-gpm ship                 # Create PR → wait CI → merge
+gpm ship                 # Create PR → wait CI → (ASK USER before merge)
 ```
 
 **PyPI Release** (after PR merged to main):
