@@ -521,11 +521,38 @@ mcp-audit/ (new public repo)
 
 ---
 
-### Phase 3: Platform Expansion (Weeks 7-12)
+### Phase 3: Platform Expansion & Context Analysis (Weeks 7-12)
 
-**Goal**: Add Gemini CLI and Ollama CLI support
+**Goal**: Add Gemini CLI and Ollama CLI support + Context visibility features
 
-#### Week 7-8: Gemini CLI Integration
+#### Week 7: Schema Enhancement & Starting Context
+
+**Goal**: Foundation for context analysis features
+
+**Deliverables**:
+- [ ] **⭐ Context Slices Data Model** (task-15) - Foundation for 5+ features ⭐ NEW
+  - [ ] Add `token_breakdown: Optional[TokenBreakdown]` to Call schema
+  - [ ] Fields: `input_total`, `output_total`, `cache`, `tool_results`, `thoughts`, `overhead_static`, `overhead_history`
+  - [ ] Populate from Gemini CLI directly (most complete data)
+  - [ ] Use heuristics for Claude Code and Codex CLI
+  - [ ] Leave `None` for fields not available (don't guess)
+- [ ] **⭐ Starting Context Tracking** (task-25) - "Floor cost" visibility ⭐ NEW
+  - [ ] Detect CLAUDE.md, AGENTS.md, GEMINI.md automatically
+  - [ ] Calculate static baseline tokens before first prompt
+  - [ ] Show in session header: "31,500 tokens static (15.8%)"
+  - [ ] Trend tracking over time (config drift detection)
+- [ ] **⭐ Static MCP Footprint Analyzer** (task-16) - Promote to CLI ⭐ NEW
+  - [ ] `mcp-analyze footprint` subcommand
+  - [ ] Add tiktoken dependency for accurate tokenization
+  - [ ] Cache results in `~/.mcp-audit/footprint-cache/`
+  - [ ] Auto-include summary in session reports
+
+**Success Criteria**:
+- ✅ Context slices schema backward compatible
+- ✅ Starting context calculated for 100% of sessions
+- ✅ Footprint analysis runs in <5 seconds for 10 servers
+
+#### Week 8: Gemini CLI Integration
 
 **Deliverables**:
 - [ ] Research Gemini CLI:
@@ -536,6 +563,7 @@ mcp-audit/ (new public repo)
   - [ ] Event parsing
   - [ ] Normalization logic
   - [ ] Token/cost tracking
+  - [ ] **Leverage `gemini_cli.api_response` for token breakdown** (most complete)
 - [ ] Create `docs/platforms/gemini-cli.md`:
   - [ ] Installation and setup
   - [ ] MCP configuration
@@ -552,7 +580,7 @@ mcp-audit/ (new public repo)
 - ✅ If MCP mature: Release v0.4.0-beta (3 platforms)
 - ⚠️ If MCP immature: Document limitations, release with "experimental" label
 
-#### Week 9-10: Ollama CLI Integration
+#### Week 9-10: Ollama CLI Integration + Saturation Metrics
 
 **Deliverables**:
 - [ ] Research Ollama CLI:
@@ -569,6 +597,12 @@ mcp-audit/ (new public repo)
 - [ ] Create `docs/platforms/ollama-cli.md`
 - [ ] Add example Ollama sessions
 - [ ] Test with Ollama community
+- [ ] **⭐ Context Saturation & Compression Metrics** (task-21) ⭐ NEW
+  - [ ] Track context utilization % per call
+  - [ ] Detect compression events (Gemini explicit, Claude/Codex inferred)
+  - [ ] Warning thresholds: approaching (70%), high (85%), critical (95%)
+  - [ ] Show utilization timeline in reports
+  - [ ] `--saturation` flag for report command
 
 **Kill Criteria** (evaluated at end of Week 10):
 - ❌ Log format too unstable, OR
@@ -577,10 +611,11 @@ mcp-audit/ (new public repo)
 
 **Success**:
 - ✅ Release v0.5.0-beta (4 platforms, some experimental)
+- ✅ Saturation warnings proactively alert users
 
-#### Week 11: Programmatic API & Plugin System
+#### Week 11: Programmatic API, Plugin System & Context Analysis
 
-**Goal**: Enable integration and enterprise adoption (moved from Phase 5)
+**Goal**: Enable integration, enterprise adoption, and context visibility
 
 **Deliverables**:
 - [ ] **⭐ CRITICAL: Programmatic API** - Integration surface ⭐ NEW
@@ -595,6 +630,26 @@ mcp-audit/ (new public repo)
   - [ ] **Python entrypoint** via setuptools extras (`mcp_audit.platforms` entry point group)
   - [ ] **Documentation** in `docs/contributing.md` - "Adding custom platform or server adapter"
   - [ ] **Example custom adapter** in `examples/custom-platform/`
+- [ ] **⭐ Context Bloat Sources Analysis** (task-14) - Core differentiator ⭐ NEW
+  - [ ] Track categories: system, instructions, MCP metadata, dynamic context
+  - [ ] Platform-specific bloat pattern detection
+  - [ ] Auto-generate recommendations based on thresholds
+  - [ ] "Top Context Hogs" tables in reports
+- [ ] **⭐ Context Categories in Reports** (task-17) - Actionable reports ⭐ NEW
+  - [ ] 7 standard categories: user_prompts, tool_outputs, mcp_tool_metadata, instructions_memory, thoughts, cache, other_history
+  - [ ] ASCII bar chart visualization
+  - [ ] `--context-breakdown` flag for report command
+  - [ ] Cross-platform consistency
+- [ ] **⭐ Cache Efficiency Drilldown** (task-19) ⭐ NEW
+  - [ ] Per-model, per-server, per-tool cache hit rates
+  - [ ] "Best performers" and "worst performers" tables
+  - [ ] Potential savings calculation if low-cache tools improved
+  - [ ] `--cache-analysis` flag for report command
+- [ ] **⭐ Compaction Tracking** (task-24) - Waste visibility ⭐ NEW
+  - [ ] Track what content was removed during compaction (LRU model)
+  - [ ] Attribute waste to specific servers and tools
+  - [ ] "Wasted by server" breakdown in reports
+  - [ ] Cost of removed content calculation
 - [ ] Cost forecasting (optional, can defer if timeline slips):
   - [ ] Predict future costs based on historical trends
   - [ ] Weekly/monthly cost projections
@@ -614,6 +669,8 @@ mcp-audit/ (new public repo)
 **Success Criteria**:
 - ✅ **Programmatic API functional and documented** ⭐ NEW
 - ✅ **Plugin system allows custom platforms** ⭐ NEW
+- ✅ **Context breakdown shows 80%+ token attribution** ⭐ NEW
+- ✅ **Users identify top bloat category in <10 seconds** ⭐ NEW
 - ✅ Release v0.6.0-beta (enhanced analysis + integration surface)
 - ✅ Positive feedback on new features from community
 
@@ -703,6 +760,38 @@ mcp-audit/ (new public repo)
 - Web dashboard UI (real-time, WebSocket updates)
 - Team collaboration features
 - Additional video tutorials (2+ more videos)
+
+**Deferred Context Analysis Features** (Tier 2 - Post-v1.0):
+
+- **What-If Simulations** (task-18) - CONDITIONAL
+  - "What if I removed server X?" hypothetical analysis
+  - Requires reliable static footprint baseline (depends on task-16)
+  - Complex UI for interactive exploration
+  - Lower priority: Can be achieved manually via server removal
+
+- **Cross-Platform Comparison** (task-22) - CONDITIONAL
+  - Side-by-side platform comparison dashboards
+  - Requires 3+ mature platforms with consistent data
+  - Depends on Gemini/Ollama viability (Phase 3 outcome)
+  - Add when platform count justifies comparison UX
+
+- **MCP Authoring Hints** (task-23) - CONDITIONAL
+  - Proactive guidance for MCP server authors
+  - Requires stable metrics and thresholds (needs 6+ months of data)
+  - Scope creep risk: Authoring is different from analysis
+  - Could be separate community-maintained guide instead
+
+- **Per-File Context Usage** (task-20) - CONDITIONAL
+  - Track which files/prompts consume most tokens
+  - Privacy complexity: Requires filename capture (opt-in)
+  - Gemini CLI-only initially (most complete data)
+  - Add if demand emerges post-v1.0
+
+- **Focus Server Mode** (task-26) - DEFER
+  - CLI mode to track single server in isolation
+  - Narrow use case: Debugging specific server only
+  - Workaround exists: Disable other servers manually
+  - Lowest ROI of all ideas
 
 ---
 
