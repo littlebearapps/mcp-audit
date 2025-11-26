@@ -44,13 +44,13 @@ pipx install mcp-audit
 
 ```bash
 # Track Claude Code session
-mcp-audit collect --platform claude_code
+mcp-audit collect --platform claude-code
 
 # Track Codex CLI session
-mcp-audit collect --platform codex_cli
+mcp-audit collect --platform codex-cli
 
 # Track Gemini CLI session (requires telemetry enabled)
-mcp-audit collect --platform gemini_cli
+mcp-audit collect --platform gemini-cli
 ```
 
 Sessions are automatically saved to `~/.mcp-audit/sessions/`.
@@ -58,14 +58,14 @@ Sessions are automatically saved to `~/.mcp-audit/sessions/`.
 ### 2. Generate a Report
 
 ```bash
-# View summary of recent sessions
-mcp-audit report
+# View summary of all sessions
+mcp-audit report ~/.mcp-audit/sessions/
 
 # Export detailed CSV
-mcp-audit report --format csv --output report.csv
+mcp-audit report ~/.mcp-audit/sessions/ --format csv --output report.csv
 
-# Analyze specific date range
-mcp-audit report --start 2025-11-01 --end 2025-11-30
+# Generate markdown report
+mcp-audit report ~/.mcp-audit/sessions/ --format markdown --output report.md
 ```
 
 ### 3. Review Results
@@ -103,7 +103,7 @@ Estimated Total Cost: $2.34 (across 15 sessions)
 Monitor your session as you work:
 
 ```bash
-mcp-audit collect --platform claude_code
+mcp-audit collect --platform claude-code
 ```
 
 ```
@@ -122,13 +122,13 @@ Recent: mcp__zen__chat (3,421 tokens)
 Aggregate insights across all your sessions:
 
 ```bash
-mcp-audit report --last 30
+mcp-audit report ~/.mcp-audit/sessions/ --aggregate
 ```
 
 - Top expensive tools by total tokens
 - Most frequently called tools
 - Anomaly detection (high variance, duplicates)
-- Trend analysis over time
+- Per-server cost breakdowns
 
 ### Duplicate Detection
 
@@ -197,7 +197,6 @@ mcp-audit --help
 Commands:
   collect   Track a live session
   report    Generate usage report
-  migrate   Migrate from v0.x format
 
 Options:
   --version  Show version
@@ -210,7 +209,7 @@ Options:
 mcp-audit collect [OPTIONS]
 
 Options:
-  --platform TEXT     Platform to track (claude_code, codex_cli, gemini_cli, auto)
+  --platform          Platform to track (claude-code, codex-cli, gemini-cli, auto)
   --project TEXT      Project name (auto-detected from directory)
   --output PATH       Output directory (default: logs/sessions)
   --tui               Use rich TUI display (default when TTY available)
@@ -231,15 +230,16 @@ MCP Audit automatically detects whether you're running in a terminal (TTY) and c
 ### report
 
 ```bash
-mcp-audit report [OPTIONS] [SESSION_DIR]
+mcp-audit report [OPTIONS] SESSION_DIR
+
+Arguments:
+  SESSION_DIR        Session directory or parent directory containing sessions
 
 Options:
-  --format TEXT      Output format: json, csv, markdown (default: markdown)
+  --format           Output format: json, csv, markdown (default: markdown)
   --output PATH      Output file (default: stdout)
-  --top INT          Number of top tools to show (default: 10)
-  --start DATE       Start date filter (YYYY-MM-DD)
-  --end DATE         End date filter (YYYY-MM-DD)
-  --last INT         Analyze last N days
+  --aggregate        Aggregate data across multiple sessions
+  --top-n INT        Number of top tools to show (default: 10)
 ```
 
 ---
@@ -296,7 +296,6 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 - [GitHub Repository](https://github.com/littlebearapps/mcp-audit)
 - [Issue Tracker](https://github.com/littlebearapps/mcp-audit/issues)
-- [Discussions](https://github.com/littlebearapps/mcp-audit/discussions)
 - [Changelog](CHANGELOG.md)
 
 ---

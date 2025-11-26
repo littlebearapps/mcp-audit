@@ -135,14 +135,22 @@ class SessionManager:
             True if compatible, False otherwise
         """
         if "schema_version" not in data:
-            print("Warning: Session data missing schema_version field")
-            return False
+            # Legacy data (pre-v1.0) - allow with warning
+            print("Warning: Legacy session data (pre-v1.0) - attempting to load")
+            # Add default schema version for legacy data
+            data["schema_version"] = "0.0.0"
+            return True
 
         session_version = data["schema_version"]
         major, minor, patch = self._parse_version(session_version)
         current_major, current_minor, _ = self._parse_version(SCHEMA_VERSION)
 
-        # Major version must match
+        # Legacy data (0.x.x) - allow with conversion attempt
+        if major == 0:
+            print("Warning: Legacy session data (v0.x) - attempting to load")
+            return True
+
+        # Major version must match for v1.0+
         if major != current_major:
             print(f"Error: Incompatible major version: {major} != {current_major}")
             return False
@@ -158,6 +166,48 @@ class SessionManager:
         parts = version_str.split(".")
         return (int(parts[0]), int(parts[1]), int(parts[2]))
 
+    def _convert_legacy_data(self, data: dict) -> dict:
+        """
+        Convert legacy (pre-v1.0) session data to v1.0 format.
+
+        Args:
+            data: Legacy session data dictionary
+
+        Returns:
+            Converted data in v1.0 format
+        """
+        # Extract from legacy nested structure
+        session_info = data.get("session", {})
+        tokens = data.get("tokens", {})
+        costs = data.get("costs", {})
+        mcp_summary = data.get("mcp_summary", {})
+
+        # Map legacy fields to v1.0 format
+        converted = {
+            "schema_version": "1.0.0",
+            "project": session_info.get("directory", "unknown"),
+            "platform": "claude_code",  # Assume Claude Code for legacy
+            "timestamp": session_info.get("start_time", datetime.now().isoformat()),
+            "session_id": f"legacy-{session_info.get('start_time', 'unknown')[:19].replace(':', '-')}",
+            "token_usage": {
+                "input_tokens": tokens.get("input", 0),
+                "output_tokens": tokens.get("output", 0),
+                "cache_created_tokens": tokens.get("cache_create", 0),
+                "cache_read_tokens": tokens.get("cache_read", 0),
+            },
+            "cost_estimate": costs.get("with_cache", {}).get("usd", 0.0),
+            "mcp_tool_calls": {
+                "total_calls": mcp_summary.get("total_calls", 0),
+                "unique_tools": len(mcp_summary.get("top_5_servers", [])),
+            },
+            "redundancy_analysis": data.get("redundancy_analysis"),
+            "anomalies": data.get("anomalies", {}).get("high_token_operations", []),
+            "end_timestamp": session_info.get("end_time"),
+            "duration_seconds": session_info.get("duration_seconds"),
+        }
+
+        return converted
+
     def _reconstruct_session(self, data: dict) -> Session:
         """
         Reconstruct Session object from dictionary.
@@ -170,6 +220,10 @@ class SessionManager:
         """
         # Import needed for type reconstruction
         from .base_tracker import TokenUsage, MCPToolCalls
+
+        # Check if legacy data needs conversion
+        if data.get("schema_version") == "0.0.0" or "session" in data:
+            data = self._convert_legacy_data(data)
 
         # Reconstruct timestamp
         timestamp = datetime.fromisoformat(data["timestamp"])
