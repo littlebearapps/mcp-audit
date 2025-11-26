@@ -176,11 +176,14 @@ class TestSchemaVersionValidation:
         assert manager._validate_schema_version(data) == True
 
     def test_validate_schema_version_missing(self, temp_session_dir) -> None:
-        """Test validation fails when schema_version missing"""
+        """Test validation succeeds for legacy data (missing schema_version)"""
         manager = SessionManager(base_dir=temp_session_dir)
 
         data = {}
-        assert manager._validate_schema_version(data) == False
+        # Legacy data without schema_version is allowed (returns True with warning)
+        assert manager._validate_schema_version(data) == True
+        # The method adds a default schema_version for legacy data
+        assert data["schema_version"] == "0.0.0"
 
     def test_validate_schema_version_incompatible_major(self, temp_session_dir) -> None:
         """Test validation fails for incompatible major version"""
