@@ -5,6 +5,13 @@ on:
   push:
     tags:
       - 'v*'
+  # Called by auto-tag workflow after creating tag
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Version tag to publish'
+        required: true
+        type: string
   # Manual trigger for testing
   workflow_dispatch:
     inputs:
@@ -27,6 +34,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Setup Python
         uses: actions/setup-python@v6
@@ -64,6 +73,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Setup Python
         uses: actions/setup-python@v6
@@ -121,6 +132,7 @@ jobs:
     needs: build
     if: |
       (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
+      (github.event_name == 'workflow_call') ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'pypi')
     environment:
       name: pypi
