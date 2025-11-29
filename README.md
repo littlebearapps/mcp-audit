@@ -14,9 +14,17 @@ Whether you're building MCP servers or using Claude Code, Codex CLI, or Gemini C
 <!-- TODO: Add hero image or GIF showing the TUI in action -->
 <!-- ![mcp-audit demo](docs/images/demo.gif) -->
 
-<p align="center">
-  <code>pip install mcp-audit</code>
-</p>
+<br>
+
+<div align="center">
+
+```bash
+pip install mcp-audit
+```
+
+</div>
+
+<br>
 
 | Track | Break Down | Optimize |
 |-------|------------|----------|
