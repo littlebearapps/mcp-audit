@@ -8,45 +8,11 @@ on:
 
 jobs:
   # ============================================================================
-  # JOB 1: Security Scan (gpm)
-  # ============================================================================
-  security:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Full history for secret scanning
-
-      - name: Setup Node.js for gpm
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Install git-pr-manager
-        run: npm install -g @littlebearapps/git-pr-manager
-
-      - name: Run security scan
-        run: gpm security --json > security-report.json
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true  # Don't block CI if gpm fails
-
-      - name: Upload security report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: security-report
-          path: security-report.json
-
-  # ============================================================================
-  # JOB 2: Quality Gate (Python testing)
+  # Quality Gate (Python testing)
   # ============================================================================
   quality-gate:
     name: Quality Gate
     runs-on: ubuntu-latest
-    needs: security  # Run after security scan
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

@@ -1,4 +1,4 @@
-# MCP Audit Makefile - used by gpm verify
+# MCP Audit Makefile
 
 .PHONY: lint typecheck test build clean format all
 

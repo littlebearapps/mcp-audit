@@ -36,17 +36,18 @@ npm run mcp:analyze
 
 ---
 
-## Git Workflow (gpm)
+## Git Workflow
 
 **All changes require PR with passing CI.** Never push directly to main.
 
 ⚠️ **NEVER merge a PR without explicit user approval.** Always ask before merging.
 
 ```bash
-gpm feature my-feature   # Create feature branch
+git checkout -b feat/my-feature   # Create feature branch
 # ... make changes ...
-gpm verify               # Run lint/test locally
-gpm ship                 # Create PR → wait CI → (ASK USER before merge)
+make all                          # Run lint/typecheck/test locally
+git push -u origin feat/my-feature
+gh pr create                      # Create PR → wait CI → (ASK USER before merge)
 ```
 
 **PyPI Release** (after PR merged to main):
@@ -54,7 +55,7 @@ gpm ship                 # Create PR → wait CI → (ASK USER before merge)
 git tag v0.3.1 && git push --tags  # Triggers publish workflow
 ```
 
-**CI Requirements**: security scan, pytest, mypy, ruff, black
+**CI Requirements**: pytest, mypy, ruff, black
 
 ---
 

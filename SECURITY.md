@@ -84,8 +84,8 @@ We provide built-in privacy utilities (`privacy.py`) for:
 - ✅ **Schema versioning** for safe data format evolution
 - ✅ **Input validation** on all user-supplied data
 - ✅ **Type checking** with mypy strict mode
-- ✅ **Dependency scanning** (via gpm security)
-- ✅ **Secret scanning** (via gpm security)
+- ✅ **Static analysis** (via GitHub CodeQL)
+- ✅ **Secret scanning** (via GitHub secret scanning)
 
 ### Planned
 
