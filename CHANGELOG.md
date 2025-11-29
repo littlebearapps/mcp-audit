@@ -5,6 +5,18 @@ All notable changes to MCP Audit will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.4] - 2025-11-29
+
+### Changed
+- **Codebase cleanup** - Removed 12 legacy Python scripts from root directory (now in src/mcp_audit/)
+- **Documentation updates** - Updated all docs to use `mcp-audit` CLI instead of npm scripts
+- **PyPI keywords** - Updated keywords for better discoverability (context-window, token-tracking, llm-cost)
+
+### Fixed
+- **Type annotations** - Fixed all mypy strict mode errors in session_manager.py, cli.py, and storage.py
+- **Project name detection** - Now correctly detects git worktree setups (project-name/main → project-name)
+- **Troubleshooting docs** - Complete rewrite to use `mcp-audit` CLI commands
+
 ## [0.3.2] - 2025-11-25
 
 ### Added

@@ -8,7 +8,7 @@ This guide explains how to configure model pricing for cost calculation in MCP A
 
 ## Overview
 
-MCP Audit uses `mcp-analyze.toml` to define pricing for AI models. This allows accurate cost estimation for your sessions.
+MCP Audit uses `mcp-audit.toml` to define pricing for AI models. This allows accurate cost estimation for your sessions.
 
 **Key Features**:
 - User-configurable pricing for any model
@@ -20,7 +20,7 @@ MCP Audit uses `mcp-analyze.toml` to define pricing for AI models. This allows a
 
 ## Configuration File Location
 
-**Default**: `mcp-analyze.toml` in project root
+**Default**: `mcp-audit.toml` in project root
 
 The configuration file is automatically loaded when you run MCP Audit tools.
 
@@ -93,7 +93,7 @@ MCP Audit warns when a model has no pricing configured:
 
 ```
 ⚠️ WARNING: No pricing configured for model: my-new-model
-   Add pricing to mcp-analyze.toml under [pricing.custom]
+   Add pricing to mcp-audit.toml under [pricing.custom]
 ```
 
 ### Manual Validation
@@ -106,7 +106,7 @@ python3 pricing_config.py
 
 Expected output:
 ```
-✓ Loaded config from mcp-analyze.toml
+✓ Loaded config from mcp-audit.toml
 Validation: ✓ PASS
 ```
 
@@ -190,10 +190,10 @@ pip install toml
 
 ### Issue 2: "Config file not found"
 
-**Solution**: Ensure `mcp-analyze.toml` exists in project root:
+**Solution**: Ensure `mcp-audit.toml` exists in project root:
 
 ```bash
-ls mcp-analyze.toml
+ls mcp-audit.toml
 ```
 
 ### Issue 3: Invalid TOML syntax
@@ -246,13 +246,13 @@ If you previously used `model-pricing.json`, the TOML format is equivalent:
 2. **Document custom models**: Add comments explaining your custom model pricing
 3. **Use vendor namespaces**: Group models by provider for organization
 4. **Validate after editing**: Run `python3 pricing_config.py` to test changes
-5. **Version control**: Commit `mcp-analyze.toml` to git for team consistency
+5. **Version control**: Commit `mcp-audit.toml` to git for team consistency
 
 ---
 
 ## Example Configuration
 
-See the default `mcp-analyze.toml` for a complete example with:
+See the default `mcp-audit.toml` for a complete example with:
 - Claude models (Opus, Sonnet, Haiku)
 - OpenAI models (GPT-4o, O1, O3)
 - Custom model template

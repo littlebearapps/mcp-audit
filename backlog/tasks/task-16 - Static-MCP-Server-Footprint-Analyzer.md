@@ -15,7 +15,7 @@ priority: high
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-Promote existing analyze-mcp-efficiency.py to a first-class CLI subcommand that analyzes MCP server metadata token costs, caches results, and surfaces findings in session reports automatically. Adds `mcp-analyze footprint` command with cached results and session report integration.
+Promote existing analyze-mcp-efficiency.py to a first-class CLI subcommand that analyzes MCP server metadata token costs, caches results, and surfaces findings in session reports automatically. Adds `mcp-audit footprint` command with cached results and session report integration.
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria

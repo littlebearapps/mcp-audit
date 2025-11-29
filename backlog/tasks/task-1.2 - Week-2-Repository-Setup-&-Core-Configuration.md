@@ -19,7 +19,7 @@ Create standalone public repository with critical pricing configuration system. 
 **CRITICAL**: Pricing configuration system is moved to Week 2 (from Week 11 in original plan) because we cannot launch a cost tracker without configurable model pricing.
 
 **Key Deliverables**:
-- Pricing configuration system (mcp-analyze.toml)
+- Pricing configuration system (mcp-audit.toml)
 - New standalone GitHub repository (separate from claude-code-tools)
 - CI/CD pipeline with GitHub Actions
 - Repository templates (issues, PRs, CODE_OF_CONDUCT, SECURITY)
@@ -34,7 +34,7 @@ Create standalone public repository with critical pricing configuration system. 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [x] #1 CRITICAL: Pricing configuration system implemented in mcp-analyze.toml
+- [x] #1 CRITICAL: Pricing configuration system implemented in mcp-audit.toml
 - [x] #2 [pricing] section created - maps model_name to cost_per_input_token and cost_per_output_token
 - [x] #3 Support for custom models - users can define costs for any model/alias
 - [x] #4 Documentation added for configuring pricing for new models
@@ -50,8 +50,8 @@ Create standalone public repository with critical pricing configuration system. 
 - [x] #14 PR template created
 - [x] #15 CODE_OF_CONDUCT.md added
 - [x] #16 SECURITY.md added
-- [x] #17 Basic CLI interface implemented: mcp-analyze collect
-- [x] #18 Basic CLI interface implemented: mcp-analyze report
+- [x] #17 Basic CLI interface implemented: mcp-audit collect
+- [x] #18 Basic CLI interface implemented: mcp-audit report
 - [x] #19 --help documentation added for all commands
 - [x] #20 Update this task with daily progress notes in Implementation Notes
 - [x] #21 Test all deliverables: pricing config, CI/CD, CLI commands
@@ -68,7 +68,7 @@ Create standalone public repository with critical pricing configuration system. 
 **Status**: ✅ AC #1-5 COMPLETE (Pricing configuration system)
 
 **Deliverables**:
-- `mcp-analyze.toml` - User-configurable pricing file (TOML format)
+- `mcp-audit.toml` - User-configurable pricing file (TOML format)
   - [pricing.claude] section with 3 models (Opus, Sonnet, Haiku)
   - [pricing.openai] section with 5 models (GPT-4o variants, O series)
   - [pricing.custom] section for user-defined models (with examples)
@@ -139,9 +139,9 @@ Create standalone public repository with critical pricing configuration system. 
 - Usage examples for common workflows
 
 **Validation**:
-- ✓ Main help tested: mcp-analyze --help
-- ✓ collect help tested: mcp-analyze collect --help
-- ✓ report help tested: mcp-analyze report --help
+- ✓ Main help tested: mcp-audit --help
+- ✓ collect help tested: mcp-audit collect --help
+- ✓ report help tested: mcp-audit report --help
 - ✓ All options display correctly
 
 **Features**:
@@ -246,7 +246,7 @@ Create standalone public repository with critical pricing configuration system. 
 
 **Final Deliverables**:
 1. **Pricing Configuration System** (AC #1-5)
-   - mcp-analyze.toml with Claude, OpenAI, and custom model support
+   - mcp-audit.toml with Claude, OpenAI, and custom model support
    - pricing_config.py module with validation
    - Comprehensive test suite (40+ tests)
    - Complete user documentation
@@ -260,8 +260,8 @@ Create standalone public repository with critical pricing configuration system. 
    - All community standards (LICENSE, CODE_OF_CONDUCT, SECURITY, templates)
 
 3. **CLI Interface** (AC #17-19)
-   - mcp-analyze collect (real-time session tracking)
-   - mcp-analyze report (cross-session analysis)
+   - mcp-audit collect (real-time session tracking)
+   - mcp-audit report (cross-session analysis)
    - Complete --help documentation
 
 4. **Code Quality Improvements** (AC #7, #21, #23)

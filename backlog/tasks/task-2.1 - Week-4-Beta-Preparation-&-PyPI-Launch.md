@@ -76,7 +76,7 @@ Make tool pip-installable BEFORE beta launch. This is CRITICAL and moved from We
 - ✅ All 227 tests pass
 - ✅ Package builds successfully (python -m build)
 - ✅ Local installation test successful (pip install -e .)
-- ✅ CLI command mcp-analyze --version works
+- ✅ CLI command mcp-audit --version works
 
 ### BLOCKED - Waiting for PyPI Approval
 - ⏳ **littlebearapps PyPI organization** - registration pending approval

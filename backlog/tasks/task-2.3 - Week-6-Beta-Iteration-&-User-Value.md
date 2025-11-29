@@ -44,7 +44,7 @@ Iterate on beta feedback and demonstrate clear day-1 value with concrete workflo
 - [ ] #4 Day 1 Value Recipe 2: Compare two weeks before/after refactor
 - [ ] #5 Step-by-step tutorial with screenshots created
 - [ ] #6 Sample reports showing value included in docs
-- [ ] #7 Non-interactive mode documented: mcp-analyze report --input --output
+- [ ] #7 Non-interactive mode documented: mcp-audit report --input --output
 - [ ] #8 GitHub Actions example: .github/workflows/weekly-mcp-report.yml
 - [ ] #9 Export to S3/Slack example scripts in examples/ci-cd/
 - [ ] #10 Cron usage examples for weekly report generation

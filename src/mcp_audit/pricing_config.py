@@ -2,7 +2,7 @@
 """
 Pricing Configuration Module - Model pricing loader and validator
 
-Loads pricing data from mcp-analyze.toml configuration file.
+Loads pricing data from mcp-audit.toml configuration file.
 Provides validation and warnings for missing pricing.
 """
 
@@ -33,7 +33,7 @@ class PricingConfig:
     """
     Pricing configuration loader and validator.
 
-    Loads model pricing from mcp-analyze.toml and provides
+    Loads model pricing from mcp-audit.toml and provides
     utilities for cost calculation and validation.
     """
 
@@ -42,9 +42,9 @@ class PricingConfig:
         Initialize pricing configuration.
 
         Args:
-            config_path: Path to mcp-analyze.toml (default: ./mcp-analyze.toml)
+            config_path: Path to mcp-audit.toml (default: ./mcp-audit.toml)
         """
-        self.config_path = config_path or Path("mcp-analyze.toml")
+        self.config_path = config_path or Path("mcp-audit.toml")
         self.pricing_data: Dict[str, Dict[str, Any]] = {}
         self.metadata: Dict[str, Any] = {}
         self.loaded = False
@@ -242,7 +242,7 @@ def load_pricing_config(config_path: Optional[Path] = None) -> PricingConfig:
     Convenience function to load pricing configuration.
 
     Args:
-        config_path: Path to mcp-analyze.toml
+        config_path: Path to mcp-audit.toml
 
     Returns:
         PricingConfig instance

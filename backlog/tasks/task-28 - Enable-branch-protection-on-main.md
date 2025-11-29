@@ -1,9 +1,10 @@
 ---
 id: task-28
 title: Enable branch protection on main
-status: Roadmap
+status: Done
 assignee: []
 created_date: '2025-11-29 06:52'
+updated_date: '2025-11-29 07:01'
 labels:
   - github
   - maintenance
@@ -35,10 +36,34 @@ Enable GitHub branch protection rules for main branch to prevent accidental dire
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Enable branch protection on main branch
-- [ ] #2 Require Quality Gate status check to pass
-- [ ] #3 Require CodeQL status check to pass
-- [ ] #4 Do NOT require PR reviews (solo dev)
-- [ ] #5 Allow admin bypass for emergencies
-- [ ] #6 Test by creating a PR and verifying protection works
+- [x] #1 Enable branch protection on main branch
+- [x] #2 Require Quality Gate status check to pass
+- [x] #3 Require CodeQL status check to pass
+- [x] #4 Do NOT require PR reviews (solo dev)
+- [x] #5 Allow admin bypass for emergencies
+- [x] #6 Test by creating a PR and verifying protection works
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Implementation (2025-11-29)
+
+**Branch Protection Configured:**
+- Required status checks: `Quality Gate`, `Analyze (python)`
+- Strict mode: Branches must be up to date before merging
+- Admin bypass: Enabled (enforce_admins: false)
+- PR reviews: Not required (solo dev)
+- Force pushes: Disabled
+- Branch deletion: Disabled
+
+**Status Check Name Fix:**
+- CodeQL workflow with matrix creates check named `Analyze (python)` not `Analyze`
+- Updated branch protection to match actual check name
+
+**Verification:**
+- Created PR #15 to test protection
+- Confirmed PR was BLOCKED until checks passed
+- Confirmed PR became CLEAN after all checks passed
+- Branch protection working as expected
+<!-- SECTION:NOTES:END -->

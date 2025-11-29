@@ -87,7 +87,7 @@ This is a prerequisite for several high-value ideas. The `token_breakdown` schem
 **Roadmap Fit**: Phase 2 (Week 6) or Phase 3 (Week 7)
 
 **Assessment**:
-This is a quick win that can ship early. The existing `analyze-mcp-efficiency.py` has most of the logic. Promoting to `mcp-analyze footprint` subcommand provides immediate "Day 1 Value" - users can see their floor cost before any session.
+This is a quick win that can ship early. The existing `analyze-mcp-efficiency.py` has most of the logic. Promoting to `mcp-audit footprint` subcommand provides immediate "Day 1 Value" - users can see their floor cost before any session.
 
 **Why Implement**:
 - ~50% of the code already exists
@@ -274,7 +274,7 @@ Authoring hints help MCP server authors optimize their servers, which benefits a
 1. Start with "similar tools" detection (highest impact)
 2. Add "verbose description" warnings second
 3. Keep recommendations actionable and specific
-4. Consider separate `mcp-analyze hints` subcommand
+4. Consider separate `mcp-audit hints` subcommand
 
 **Dependencies**: Static Footprint Analyzer (task-16), Usage tracking
 

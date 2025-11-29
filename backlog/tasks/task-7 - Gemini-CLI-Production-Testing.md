@@ -46,7 +46,7 @@ End-to-end validation of mcp-audit with real Gemini CLI sessions.
 - [ ] #1 Gemini CLI installed and authenticated
 - [ ] #2 Telemetry enabled and verified (check ~/.gemini/telemetry.log grows)
 - [ ] #3 MCP servers configured (zen, brave-search, or similar)
-- [ ] #4 mcp-analyze collect --platform gemini-cli starts successfully
+- [ ] #4 mcp-audit collect --platform gemini-cli starts successfully
 - [ ] #5 MCP tool calls tracked correctly (filtered by tool_type: mcp)
 - [ ] #6 Token usage matches Gemini CLI reporting
 - [ ] #7 Thinking tokens captured in platform_data.thoughts_tokens

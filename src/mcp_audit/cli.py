@@ -8,10 +8,12 @@ Provides commands for collecting MCP session data and generating reports.
 import argparse
 import contextlib
 import sys
+from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Literal
 
 if TYPE_CHECKING:
+    from .base_tracker import BaseTracker, Session
     from .display import DisplaySnapshot
 
 from . import __version__
@@ -179,7 +181,7 @@ This command analyzes session data and produces reports in various formats
 # ============================================================================
 
 
-def get_display_mode(args) -> str:
+def get_display_mode(args: argparse.Namespace) -> Literal["auto", "tui", "plain", "quiet"]:
     """Determine display mode from CLI args."""
     if args.quiet:
         return "quiet"
@@ -190,10 +192,8 @@ def get_display_mode(args) -> str:
     return "auto"  # Will use TUI if TTY, else plain
 
 
-def cmd_collect(args) -> int:
+def cmd_collect(args: argparse.Namespace) -> int:
     """Execute collect command."""
-    from datetime import datetime
-
     from .display import DisplaySnapshot, create_display
 
     # Determine display mode
@@ -226,30 +226,26 @@ def cmd_collect(args) -> int:
     # Start display
     display.start(initial_snapshot)
 
-    # Import appropriate tracker
-    if platform == "claude-code":
-        from .claude_code_adapter import ClaudeCodeAdapter
-
-        tracker_class = ClaudeCodeAdapter
-    elif platform == "codex-cli":
-        from .codex_cli_adapter import CodexCLIAdapter
-
-        tracker_class = CodexCLIAdapter
-    elif platform == "gemini-cli":
-        from .gemini_cli_adapter import GeminiCLIAdapter
-
-        tracker_class = GeminiCLIAdapter
-    else:
-        display.stop(initial_snapshot)
-        print(f"Error: Platform '{platform}' not yet implemented")
-        print("Supported platforms: claude-code, codex-cli, gemini-cli")
-        return 1
-
-    # Create tracker instance
+    # Import appropriate tracker and create instance
     try:
-        tracker = tracker_class(
-            project=project,
-        )
+        tracker: BaseTracker
+        if platform == "claude-code":
+            from .claude_code_adapter import ClaudeCodeAdapter
+
+            tracker = ClaudeCodeAdapter(project=project)
+        elif platform == "codex-cli":
+            from .codex_cli_adapter import CodexCLIAdapter
+
+            tracker = CodexCLIAdapter(project=project)
+        elif platform == "gemini-cli":
+            from .gemini_cli_adapter import GeminiCLIAdapter
+
+            tracker = GeminiCLIAdapter(project=project)
+        else:
+            display.stop(initial_snapshot)
+            print(f"Error: Platform '{platform}' not yet implemented")
+            print("Supported platforms: claude-code, codex-cli, gemini-cli")
+            return 1
 
         # Start tracking
         tracker.start()
@@ -284,10 +280,8 @@ def cmd_collect(args) -> int:
         return 1
 
 
-def _build_snapshot_from_session(session, start_time) -> "DisplaySnapshot":
+def _build_snapshot_from_session(session: "Session", start_time: datetime) -> "DisplaySnapshot":
     """Build DisplaySnapshot from a Session object."""
-    from datetime import datetime
-
     from .display import DisplaySnapshot
 
     # Calculate duration
@@ -327,7 +321,7 @@ def _build_snapshot_from_session(session, start_time) -> "DisplaySnapshot":
     )
 
 
-def cmd_report(args) -> int:
+def cmd_report(args: argparse.Namespace) -> int:
     """Execute report command."""
     print("=" * 70)
     print("MCP Analyze - Generate Report")
@@ -393,18 +387,25 @@ def cmd_report(args) -> int:
 # ============================================================================
 
 
-def generate_json_report(sessions, args) -> int:
+def generate_json_report(sessions: List["Session"], args: argparse.Namespace) -> int:
     """Generate JSON report."""
     import json
     from datetime import datetime
+    from typing import Any, Dict
+    from typing import List as TList
 
     from . import __version__
 
     # Build report data
-    report = {"generated": datetime.now().isoformat(), "version": __version__, "sessions": []}
-
+    sessions_list: TList[Dict[str, Any]] = []
     for session in sessions:
-        report["sessions"].append(session.to_dict())
+        sessions_list.append(session.to_dict())
+
+    report: Dict[str, Any] = {
+        "generated": datetime.now().isoformat(),
+        "version": __version__,
+        "sessions": sessions_list,
+    }
 
     # Output to file or stdout
     output_path = args.output
@@ -418,7 +419,7 @@ def generate_json_report(sessions, args) -> int:
     return 0
 
 
-def generate_markdown_report(sessions, args) -> int:
+def generate_markdown_report(sessions: List["Session"], args: argparse.Namespace) -> int:
     """Generate Markdown report."""
     from datetime import datetime
 
@@ -489,26 +490,27 @@ def generate_markdown_report(sessions, args) -> int:
     return 0
 
 
-def generate_csv_report(sessions, args) -> int:
+def generate_csv_report(sessions: List["Session"], args: argparse.Namespace) -> int:
     """Generate CSV report."""
     import csv
+    from typing import Any, Dict
 
     # Collect tool statistics across all sessions
-    tool_stats = {}
+    aggregated_stats: Dict[str, Dict[str, int]] = {}
 
     for session in sessions:
         for _server_name, server_session in session.server_sessions.items():
-            for tool_name, stats in server_session.tools.items():
-                if tool_name not in tool_stats:
-                    tool_stats[tool_name] = {"calls": 0, "total_tokens": 0}
+            for tool_name, tool_stats in server_session.tools.items():
+                if tool_name not in aggregated_stats:
+                    aggregated_stats[tool_name] = {"calls": 0, "total_tokens": 0}
 
-                tool_stats[tool_name]["calls"] += stats.calls
-                tool_stats[tool_name]["total_tokens"] += stats.total_tokens
+                aggregated_stats[tool_name]["calls"] += tool_stats.calls
+                aggregated_stats[tool_name]["total_tokens"] += tool_stats.total_tokens
 
     # Build CSV rows
-    rows = []
+    rows: List[Dict[str, Any]] = []
     for tool_name, stats in sorted(
-        tool_stats.items(), key=lambda x: x[1]["total_tokens"], reverse=True
+        aggregated_stats.items(), key=lambda x: x[1]["total_tokens"], reverse=True
     ):
         rows.append(
             {
@@ -554,9 +556,36 @@ def detect_platform() -> str:
 
 
 def detect_project_name() -> str:
-    """Detect project name from current directory."""
+    """
+    Detect project name from current directory.
+
+    Handles git worktree setups where directory structure is:
+        project-name/
+        ├── .bare/          # Bare git repository
+        └── main/           # Working directory (worktree)
+
+    In this case, returns "project-name" instead of just "main".
+    """
     cwd = Path.cwd()
-    return cwd.name
+    current_name = cwd.name
+    parent = cwd.parent
+
+    # Common branch/worktree directory names that indicate we're in a worktree
+    worktree_indicators = {"main", "master", "develop", "dev", "staging", "production"}
+
+    # Check if we're likely in a git worktree setup
+    if current_name.lower() in worktree_indicators:
+        # Check for .bare directory in parent (bare repo pattern)
+        bare_dir = parent / ".bare"
+        if bare_dir.exists() and bare_dir.is_dir():
+            return parent.name
+
+        # Check if .git is a file (not directory) - indicates worktree
+        git_path = cwd / ".git"
+        if git_path.exists() and git_path.is_file():
+            return parent.name
+
+    return current_name
 
 
 if __name__ == "__main__":

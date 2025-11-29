@@ -31,7 +31,7 @@ Users working across multiple AI coding assistants want to know:
 #### 1. Per-Hour Normalized Comparison
 
 ```bash
-mcp-analyze report --compare-platforms --last 7
+mcp-audit report --compare-platforms --last 7
 ```
 
 Output:
@@ -57,7 +57,7 @@ Key Insights:
 Compare sessions doing similar work:
 
 ```bash
-mcp-analyze report --compare-platforms --tag "code-review"
+mcp-audit report --compare-platforms --tag "code-review"
 ```
 
 Output:
@@ -80,7 +80,7 @@ Winner by efficiency: Codex CLI (2,533 tokens/min)
 #### 3. MCP Server Efficiency by Platform
 
 ```bash
-mcp-analyze report --compare-platforms --by-server
+mcp-audit report --compare-platforms --by-server
 ```
 
 Output:
@@ -305,22 +305,22 @@ def generate_comparison_report(comparison: PlatformComparison) -> str:
 
 ```bash
 # Basic comparison (last 7 days)
-mcp-analyze report --compare-platforms
+mcp-audit report --compare-platforms
 
 # Custom time range
-mcp-analyze report --compare-platforms --last 30
+mcp-audit report --compare-platforms --last 30
 
 # Filter by tag/task type
-mcp-analyze report --compare-platforms --tag "refactoring"
+mcp-audit report --compare-platforms --tag "refactoring"
 
 # Compare specific platforms
-mcp-analyze report --compare-platforms --platforms claude_code,gemini_cli
+mcp-audit report --compare-platforms --platforms claude_code,gemini_cli
 
 # Compare by MCP server
-mcp-analyze report --compare-platforms --by-server
+mcp-audit report --compare-platforms --by-server
 
 # Export comparison data
-mcp-analyze report --compare-platforms --format json > comparison.json
+mcp-audit report --compare-platforms --format json > comparison.json
 ```
 
 ---

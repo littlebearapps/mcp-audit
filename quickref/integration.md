@@ -60,8 +60,8 @@ npm run mcp:analyze
 ### Modern CLI Interface
 
 **Recommended Usage:**
-- Use `mcp-analyze collect` for real-time session tracking
-- Use `mcp-analyze report` for cross-session analysis
+- Use `mcp-audit collect` for real-time session tracking
+- Use `mcp-audit report` for cross-session analysis
 - Python-based with platform auto-detection
 - Replaces all legacy project-specific scripts
 

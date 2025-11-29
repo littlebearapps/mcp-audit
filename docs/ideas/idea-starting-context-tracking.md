@@ -279,16 +279,16 @@ Impact:
 
 ```bash
 # Show starting context for current session
-mcp-analyze starting-context
+mcp-audit starting-context
 
 # Compare starting context over time
-mcp-analyze starting-context --history
+mcp-audit starting-context --history
 
 # Show what-if scenarios
-mcp-analyze starting-context --what-if remove=mcp__omnisearch
+mcp-audit starting-context --what-if remove=mcp__omnisearch
 
 # Export for tracking
-mcp-analyze starting-context --format json >> context-history.jsonl
+mcp-audit starting-context --format json >> context-history.jsonl
 ```
 
 ---

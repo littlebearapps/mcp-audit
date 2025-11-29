@@ -293,16 +293,16 @@ Recommendations
 
 ```bash
 # Include file analysis in report
-mcp-analyze report --file-analysis
+mcp-audit report --file-analysis
 
 # Show only files above threshold
-mcp-analyze report --file-analysis --min-tokens 1000
+mcp-audit report --file-analysis --min-tokens 1000
 
 # Group by directory
-mcp-analyze report --file-analysis --group-by-dir
+mcp-audit report --file-analysis --group-by-dir
 
 # Export file data
-mcp-analyze report --file-analysis --format csv > files.csv
+mcp-audit report --file-analysis --format csv > files.csv
 ```
 
 ---

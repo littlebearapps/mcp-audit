@@ -41,7 +41,7 @@ Implement Gemini CLI platform adapter for mcp-audit using the built-in OpenTelem
 - [x] #3 Token usage captured (input, output, cache, thought types)
 - [x] #4 Per-tool latency tracked via gemini_cli.tool.call.latency metric
 - [x] #5 Thinking tokens stored in platform_data.thoughts_tokens
-- [x] #6 Gemini model pricing configured in mcp-analyze.toml
+- [x] #6 Gemini model pricing configured in mcp-audit.toml
 - [x] #7 Session summary generated on Ctrl+C (signal handling)
 - [x] #8 Unit tests pass for telemetry parsing and adapter methods
 - [x] #9 Integration tests pass with real Gemini CLI telemetry file
@@ -62,7 +62,7 @@ Implement Gemini CLI platform adapter for mcp-audit using the built-in OpenTelem
 
 ### Files Modified
 - `src/mcp_audit/__init__.py` - Added GeminiCLIAdapter export
-- `mcp-analyze.toml` - Added Gemini model pricing (7 models)
+- `mcp-audit.toml` - Added Gemini model pricing (7 models)
 - `README.md` - Updated platform support, examples, CLI reference
 
 ### Key Features

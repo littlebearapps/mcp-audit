@@ -22,37 +22,36 @@ mcp-audit/main/
 │   ├── claude-code-session/
 │   └── codex-cli-session/
 │
-├── # Core Modules (Phase 1)
-├── storage.py                          # JSONL storage with indexing (650 lines)
-├── base_tracker.py                     # Platform abstraction (520 lines)
-├── pricing_config.py                   # Model pricing config (360 lines)
-├── mcp_analyze_cli.py                  # CLI interface (540 lines)
+├── src/mcp_audit/                      # Main package (installed via pip)
+│   ├── __init__.py                     # Package exports
+│   ├── cli.py                          # CLI interface (mcp-audit command)
+│   ├── storage.py                      # JSONL storage with indexing
+│   ├── base_tracker.py                 # Platform abstraction layer
+│   ├── pricing_config.py               # Model pricing config
+│   ├── claude_code_adapter.py          # Claude Code tracker
+│   ├── codex_cli_adapter.py            # Codex CLI tracker
+│   ├── gemini_cli_adapter.py           # Gemini CLI tracker
+│   ├── normalization.py                # Server/tool name normalization
+│   ├── session_manager.py              # Session lifecycle management
+│   ├── privacy.py                      # Data redaction/sanitization
+│   └── display/                        # Display adapters
+│       ├── __init__.py                 # Factory function, TTY detection
+│       ├── base.py                     # DisplayAdapter ABC
+│       ├── snapshot.py                 # DisplaySnapshot dataclass
+│       ├── rich_display.py             # Rich TUI implementation
+│       ├── plain_display.py            # CI/logging fallback
+│       └── null_display.py             # Silent mode
 │
-├── # Platform Adapters
-├── claude_code_adapter.py              # Claude Code tracker (300 lines)
-├── codex_cli_adapter.py                # Codex CLI tracker (220 lines)
-│
-├── # Display Module
-├── display/
-│   ├── __init__.py                     # Factory function, TTY detection
-│   ├── base.py                         # DisplayAdapter ABC
-│   ├── snapshot.py                     # DisplaySnapshot dataclass
-│   ├── rich_display.py                 # Rich TUI implementation
-│   ├── plain_display.py                # CI/logging fallback
-│   └── null_display.py                 # Silent mode
-│
-├── # Utilities
-├── normalization.py                    # Server/tool name normalization
-├── session_manager.py                  # Session lifecycle management
-├── privacy.py                          # Data redaction/sanitization
+├── tests/                              # Test suite
+│   ├── test_storage.py                 # Storage tests (57 tests)
+│   ├── test_base_tracker.py            # Tracker tests
+│   └── ...                             # Additional test files
 │
 ├── # Configuration
-├── mcp-analyze.toml                    # User pricing config
+├── mcp-audit.toml                      # User pricing config
 ├── pyproject.toml                      # Project config (pytest, mypy, ruff)
 ├── .github/workflows/ci.yml            # CI/CD pipeline
 │
-├── # Tests
-├── test_storage.py                     # Storage tests (57 tests)
 └── README.md                           # User-facing documentation
 ```
 
@@ -60,44 +59,42 @@ mcp-audit/main/
 
 ## Key Files
 
-### Core Modules (Phase 1)
+### Core Modules (src/mcp_audit/)
 
-**storage.py** - JSONL session storage with indexing (650 lines)
+**cli.py** - CLI interface (mcp-audit command)
+- `mcp-audit collect` - Real-time session tracking
+- `mcp-audit report` - Cross-session analysis
+- Auto-platform detection
+- Multiple output formats (JSON, Markdown, CSV)
+
+**storage.py** - JSONL session storage with indexing
 - Directory structure: `~/.mcp-audit/sessions/<platform>/<YYYY-MM-DD>/`
 - SessionIndex, DailyIndex, PlatformIndex for efficient queries
 - StorageManager class with full CRUD operations
 - Migration helpers for v0.x to v1.x format
-- 57 tests in test_storage.py
 
-**base_tracker.py** - Platform abstraction layer (520 lines)
+**base_tracker.py** - Platform abstraction layer
 - Abstract adapter interface for platform trackers
 - Core data structures (Session, ServerSession, Call, ToolStats)
 - Schema v1.0.0 with versioning
 - Duplicate detection, anomaly analysis
 - Signal handling for graceful shutdown
 
-**pricing_config.py** - Configurable model pricing (360 lines)
-- TOML-based configuration (mcp-analyze.toml)
+**pricing_config.py** - Configurable model pricing
+- TOML-based configuration (mcp-audit.toml)
 - Claude, OpenAI, and custom model support
 - Validation with warnings for unknown models
 - Cost calculation with cache token handling
 
-**mcp_analyze_cli.py** - CLI interface (540 lines)
-- `mcp-analyze collect` - Real-time session tracking
-- `mcp-analyze report` - Cross-session analysis
-- Auto-platform detection
-- Multiple output formats (JSON, Markdown, CSV)
-
 ---
 
-### Platform Adapters
+### Platform Adapters (src/mcp_audit/)
 
-**claude_code_adapter.py** - Claude Code tracker (300 lines)
+**claude_code_adapter.py** - Claude Code tracker
 - File watcher approach (monitors debug.log)
 - Inherits from BaseTracker
-- 77% code reduction from legacy tracker
 
-**codex_cli_adapter.py** - Codex CLI tracker (220 lines)
+**codex_cli_adapter.py** - Codex CLI tracker
 - Process wrapper approach (stdout/stderr)
 - Automatic `-mcp` suffix normalization
 - 77% code reduction from legacy tracker

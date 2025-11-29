@@ -218,13 +218,13 @@ def generate_context_report(session: Session) -> str:
 
 ```bash
 # Include context breakdown in report
-mcp-analyze report --context-breakdown
+mcp-audit report --context-breakdown
 
 # Show only categories above threshold
-mcp-analyze report --context-breakdown --min-share 5%
+mcp-audit report --context-breakdown --min-share 5%
 
 # Output as JSON for further processing
-mcp-analyze report --context-breakdown --format json
+mcp-audit report --context-breakdown --format json
 ```
 
 ---

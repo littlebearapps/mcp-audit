@@ -47,7 +47,7 @@ Fix critical bugs from community feedback and demonstrate clear day-1 value thro
 - [ ] #7 DAY 1 VALUE: Recipe 2 created - 'Compare two weeks before/after tools refactor'
 - [ ] #8 DAY 1 VALUE: Step-by-step tutorial with screenshots created
 - [ ] #9 DAY 1 VALUE: Example output with sample reports created
-- [ ] #10 TEAM/CI: Non-interactive mode implemented - mcp-analyze report --input /logs --output team-report.md
+- [ ] #10 TEAM/CI: Non-interactive mode implemented - mcp-audit report --input /logs --output team-report.md
 - [ ] #11 TEAM/CI: GitHub Actions example created - .github/workflows/weekly-mcp-report.yml
 - [ ] #12 TEAM/CI: Export to S3/Slack examples created in examples/ci-cd/
 - [ ] #13 TEAM/CI: Cron usage examples documented for weekly report generation

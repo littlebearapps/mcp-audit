@@ -33,7 +33,7 @@ MCP Audit is designed with three core principles:
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                      CLI Interface                          │
-│                   (mcp-analyze collect/report)              │
+│                   (mcp-audit collect/report)              │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -90,7 +90,7 @@ MCP Audit stores session data in a standardized directory structure:
 │   └── custom/                        # Custom platform sessions
 │       └── ...
 └── config/
-    └── mcp-analyze.toml               # User configuration
+    └── mcp-audit.toml               # User configuration
 ```
 
 ### Session File Format
@@ -564,10 +564,10 @@ The storage format changed significantly between v0.x and v1.x:
 
 ```bash
 # Migrate all sessions from v0.x location
-mcp-analyze migrate --from logs/sessions/ --platform claude_code
+mcp-audit migrate --from logs/sessions/ --platform claude_code
 
 # Dry run (preview without changes)
-mcp-analyze migrate --from logs/sessions/ --dry-run
+mcp-audit migrate --from logs/sessions/ --dry-run
 ```
 
 ### Programmatic Migration

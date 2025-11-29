@@ -66,7 +66,7 @@ We provide built-in privacy utilities (`privacy.py`) for:
 **Best Practices**:
 
 1. **API Keys**: Never commit API keys or tokens to git
-2. **Pricing Data**: Keep `mcp-analyze.toml` out of public repos if pricing is proprietary
+2. **Pricing Data**: Keep `mcp-audit.toml` out of public repos if pricing is proprietary
 3. **Session Logs**: Review session logs before sharing (may contain sensitive context)
 4. **File Permissions**: Ensure log files are only readable by your user
 

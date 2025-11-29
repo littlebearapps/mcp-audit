@@ -6,12 +6,11 @@ Handles session creation, lifecycle management, and persistence to disk.
 """
 
 import json
-from pathlib import Path
 from datetime import datetime
-from typing import Optional, Dict, Any, List
-from dataclasses import asdict
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
-from .base_tracker import Session, ServerSession, SCHEMA_VERSION
+from .base_tracker import SCHEMA_VERSION, ServerSession, Session
 
 
 class SessionManager:
@@ -26,7 +25,7 @@ class SessionManager:
     - Recovery from incomplete sessions
     """
 
-    def __init__(self, base_dir: Path = None):
+    def __init__(self, base_dir: Optional[Path] = None):
         """
         Initialize session manager.
 
@@ -101,7 +100,7 @@ class SessionManager:
             return None
 
         try:
-            with open(summary_path, "r") as f:
+            with open(summary_path) as f:
                 data = json.load(f)
 
             # Validate schema version
@@ -124,7 +123,7 @@ class SessionManager:
             print(f"Error loading session from {session_dir}: {e}")
             return None
 
-    def _validate_schema_version(self, data: dict) -> bool:
+    def _validate_schema_version(self, data: Dict[str, Any]) -> bool:
         """
         Validate schema version compatibility.
 
@@ -161,12 +160,12 @@ class SessionManager:
 
         return True
 
-    def _parse_version(self, version_str: str) -> tuple:
+    def _parse_version(self, version_str: str) -> Tuple[int, int, int]:
         """Parse version string into (major, minor, patch) tuple"""
         parts = version_str.split(".")
         return (int(parts[0]), int(parts[1]), int(parts[2]))
 
-    def _convert_legacy_data(self, data: dict) -> dict:
+    def _convert_legacy_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Convert legacy (pre-v1.0) session data to v1.0 format.
 
@@ -208,7 +207,7 @@ class SessionManager:
 
         return converted
 
-    def _reconstruct_session(self, data: dict) -> Session:
+    def _reconstruct_session(self, data: Dict[str, Any]) -> Session:
         """
         Reconstruct Session object from dictionary.
 
@@ -219,7 +218,7 @@ class SessionManager:
             Session object
         """
         # Import needed for type reconstruction
-        from .base_tracker import TokenUsage, MCPToolCalls
+        from .base_tracker import MCPToolCalls, TokenUsage
 
         # Check if legacy data needs conversion
         if data.get("schema_version") == "0.0.0" or "session" in data:
@@ -267,11 +266,11 @@ class SessionManager:
             ServerSession object if successful, None otherwise
         """
         try:
-            with open(server_file, "r") as f:
+            with open(server_file) as f:
                 data = json.load(f)
 
             # Import needed for type reconstruction
-            from .base_tracker import ToolStats, Call
+            from .base_tracker import Call, ToolStats
 
             # Reconstruct ToolStats for each tool
             tools = {}

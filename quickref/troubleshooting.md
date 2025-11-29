@@ -7,33 +7,31 @@ Common issues and solutions for MCP Audit tools.
 ## Missing Session Data
 
 ### Symptoms
-- Can't find session directory in `logs/sessions/`
+- Can't find session directory in `~/.mcp-audit/sessions/`
 - Empty session directory
-- Missing `summary.json` or `mcp-*.json` files
+- Missing session JSONL files
 
 ### Solutions
 
 **Check Session Directory Location:**
 ```bash
 # List all sessions
-ls -la logs/sessions/
+ls -la ~/.mcp-audit/sessions/
 
-# Check specific session
-ls -la logs/sessions/mcp-audit-2025-11-23T14-30-45/
+# Check specific platform
+ls -la ~/.mcp-audit/sessions/claude_code/
 ```
 
 **Look for events.jsonl (Recovery Source):**
 ```bash
-# Check if events.jsonl exists
-cat logs/sessions/mcp-audit-2025-11-23T14-30-45/events.jsonl | wc -l
-
-# Should show number of events (e.g., 234)
+# Check if session file exists
+ls ~/.mcp-audit/sessions/claude_code/2025-11-29/
 ```
 
-**Run Analyzer with Auto-Recovery:**
+**Run Report with Auto-Recovery:**
 ```bash
-# Analyzer auto-recovers from events.jsonl
-npm run mcp:analyze
+# Report auto-recovers from events.jsonl
+mcp-audit report ~/.mcp-audit/sessions/
 
 # Watch for recovery messages:
 # ✓ Recovered 2 MCP files from events.jsonl (505,123 tokens)
@@ -42,23 +40,23 @@ npm run mcp:analyze
 ### Prevention
 - ✅ Always use Ctrl+C to stop tracker (don't kill -9)
 - ✅ Wait for "Session data saved" message before closing terminal
-- ✅ Check `logs/sessions/` after each tracking session
+- ✅ Check `~/.mcp-audit/sessions/` after each tracking session
 
 ---
 
 ## Incomplete Sessions
 
 ### Symptoms
-- Analyzer warns: "Incomplete session found"
+- Report warns: "Incomplete session found"
 - Missing MCP files but events.jsonl exists
 - Session interrupted before completion
 
 ### Solutions
 
-**Let Analyzer Auto-Recover:**
+**Let Report Auto-Recover:**
 ```bash
-# Analyzer automatically recovers from events.jsonl
-npm run mcp:analyze
+# Report automatically recovers from events.jsonl
+mcp-audit report ~/.mcp-audit/sessions/
 
 # Output should show:
 # ⚠️  WARNING: Incomplete session found
@@ -66,20 +64,8 @@ npm run mcp:analyze
 # ✓ Recovered 2 MCP files from events.jsonl
 ```
 
-**Manual Recovery (If Needed):**
-```bash
-# 1. Navigate to incomplete session
-cd logs/sessions/mcp-audit-2025-11-23T14-30-45/
-
-# 2. Check what files exist
-ls -la
-
-# 3. If events.jsonl exists, recovery is possible
-# Let analyzer handle it automatically
-```
-
 **Signal Handler Verification:**
-- ✅ Both trackers handle Ctrl+C gracefully (v2025-11-23+)
+- ✅ All trackers handle Ctrl+C gracefully
 - ✅ Signal handler completes summary before exit
 - ✅ Writes all MCP data before termination
 - ✅ No data loss on manual termination
@@ -91,78 +77,54 @@ ls -la
 
 ---
 
-## npm Script Errors
+## CLI Not Found
 
 ### Symptoms
-- `npm run cc:live` → "command not found"
-- `npm run mcp:analyze` → "no such file"
-- Scripts run but Python errors
+- `mcp-audit` → "command not found"
+- `pip install mcp-audit` → version mismatch
 
 ### Solutions
 
-**Verify Scripts Exist in package.json:**
+**Install via pip or pipx:**
 ```bash
-# Check package.json scripts section
-cat package.json | grep -A 10 '"scripts"'
+# Install globally
+pip install mcp-audit
 
-# Should show:
-# "scripts": {
-#   "cc:live": "bash live-session-tracker.sh live-cc-session-tracker.py",
-#   "mcp:analyze": "python3 analyze-mcp-efficiency.py",
-#   ...
-# }
+# Or install with pipx (recommended for CLI tools)
+pipx install mcp-audit
+
+# Verify installation
+mcp-audit --version
 ```
 
-**Add Missing Scripts:**
-```json
-{
-  "scripts": {
-    "cc:live": "bash live-session-tracker.sh live-cc-session-tracker.py",
-    "cc:live:quiet": "bash live-session-tracker.sh live-cc-session-tracker.py --quiet",
-    "cc:live:no-logs": "bash live-session-tracker.sh live-cc-session-tracker.py --no-logs",
-    "cc:help": "python3 live-cc-session-tracker.py --help",
-    "codex:live": "bash live-session-tracker.sh live-codex-session-tracker.py",
-    "codex:help": "python3 live-codex-session-tracker.py --help",
-    "mcp:analyze": "python3 analyze-mcp-efficiency.py",
-    "mcp:help": "python3 analyze-mcp-efficiency.py --help"
-  }
-}
+**Check PATH:**
+```bash
+# Check if pip bin is in PATH
+which mcp-audit
+
+# If not found, add to PATH
+export PATH="$HOME/.local/bin:$PATH"
 ```
 
-**Check Python Script Paths (Relative to Project Root):**
+**Upgrade to Latest:**
 ```bash
-# Verify scripts exist
-ls -la live-cc-session-tracker.py
-ls -la live-codex-session-tracker.py
-ls -la analyze-mcp-efficiency.py
-
-# Should show files with execute permissions
-```
-
-**Ensure Python 3 Installed:**
-```bash
-# Check Python version
-python3 --version
-
-# Should show: Python 3.x.x (3.8+ recommended)
-
-# If not installed:
-# macOS: brew install python3
-# Linux: apt-get install python3
+pip install --upgrade mcp-audit
+# or
+pipx upgrade mcp-audit
 ```
 
 ### Prevention
-- ✅ Use npm scripts (not direct Python invocation)
-- ✅ Keep scripts in project root (relative paths work)
-- ✅ Test new project setup with `npm run cc:help`
+- ✅ Use pipx for isolated CLI installations
+- ✅ Ensure `~/.local/bin` is in PATH
+- ✅ Check version: `mcp-audit --version`
 
 ---
 
 ## Python Environment Issues
 
 ### Symptoms
-- `ModuleNotFoundError: No module named 'json'`
-- Import errors for standard library modules
+- `ModuleNotFoundError: No module named 'rich'`
+- Import errors for dependencies
 - Script runs but produces no output
 
 ### Solutions
@@ -172,33 +134,24 @@ python3 --version
 # Check Python 3 path
 which python3
 
-# Check if standard library accessible
-python3 -c "import json; print('OK')"
-
-# Should output: OK
+# Check version (3.8+ required)
+python3 --version
 ```
 
-**Check Script Permissions:**
+**Reinstall with Dependencies:**
 ```bash
-# Make scripts executable
-chmod +x live-cc-session-tracker.py
-chmod +x live-codex-session-tracker.py
-chmod +x analyze-mcp-efficiency.py
-chmod +x live-session-tracker.sh
-```
+# Reinstall mcp-audit
+pip uninstall mcp-audit
+pip install mcp-audit
 
-**Test Direct Invocation:**
-```bash
-# Test without npm script
-python3 live-cc-session-tracker.py --help
-
-# Should show help message
+# Check rich is installed
+python3 -c "import rich; print('OK')"
 ```
 
 ### Prevention
-- ✅ Use Python 3.8+ (built-in json, pathlib, signal modules)
-- ✅ No external dependencies required (pure stdlib)
-- ✅ Scripts are cross-platform (macOS, Linux, Windows WSL)
+- ✅ Use Python 3.8+
+- ✅ Use pip or pipx for installation
+- ✅ Don't manually copy source files
 
 ---
 
@@ -206,8 +159,8 @@ python3 live-cc-session-tracker.py --help
 
 ### Symptoms
 - Tracker runs but shows 0 MCP tool calls
-- No `mcp-*.json` files generated
 - Real-time display shows no MCP activity
+- No session data collected
 
 ### Solutions
 
@@ -241,20 +194,20 @@ cat .mcp.json
 **Verify Tracker Is Monitoring Correct Stream:**
 - Claude Code tracker: Monitors `~/.claude/cache/*/debug.log`
 - Codex CLI tracker: Monitors Codex API stream
-- Check that stream exists and is active
+- Gemini CLI tracker: Monitors telemetry output
 
 ### Prevention
-- ✅ Start tracker BEFORE starting Claude Code/Codex session
+- ✅ Start tracker BEFORE starting Claude Code/Codex/Gemini session
 - ✅ Verify MCP servers configured in project
 - ✅ Test MCP tools to confirm connectivity
 
 ---
 
-## Analyzer No Sessions Found
+## No Sessions Found
 
 ### Symptoms
-- `npm run mcp:analyze` → "No sessions found"
-- Empty `logs/sessions/` directory
+- `mcp-audit report` → "No sessions found"
+- Empty `~/.mcp-audit/sessions/` directory
 - Analysis runs but shows 0 sessions
 
 ### Solutions
@@ -262,38 +215,30 @@ cat .mcp.json
 **Run Tracker First:**
 ```bash
 # Track at least one session
-npm run cc:live
+mcp-audit collect --platform claude-code
 
 # Work in Claude Code for a few minutes
 # Stop with Ctrl+C
 
-# Then run analyzer
-npm run mcp:analyze
+# Then run report
+mcp-audit report ~/.mcp-audit/sessions/
 ```
 
 **Check Session Directory Structure:**
 ```bash
 # List session directories
-ls -la logs/sessions/
+ls -la ~/.mcp-audit/sessions/
 
-# Should show directories like:
-# mcp-audit-2025-11-23T14-30-45/
-
-# If empty, no sessions have been tracked yet
-```
-
-**Verify Working Directory:**
-```bash
-# Analyzer looks in ./logs/sessions/ relative to CWD
-pwd
-
-# Should be in project root (where package.json is)
+# Should show platform directories:
+# claude_code/
+# codex_cli/
+# gemini_cli/
 ```
 
 ### Prevention
-- ✅ Track at least 5-10 sessions before analyzing
-- ✅ Run analyzer from project root
-- ✅ Don't delete `logs/sessions/` directory
+- ✅ Track at least a few sessions before analyzing
+- ✅ Check sessions saved after Ctrl+C
+- ✅ Don't delete `~/.mcp-audit/sessions/` directory
 
 ---
 
@@ -308,35 +253,27 @@ pwd
 
 **Review MCP Tool Calls:**
 ```bash
-# Check which tools used most tokens
-cat logs/sessions/*/mcp-zen.json
+# Generate detailed report
+mcp-audit report ~/.mcp-audit/sessions/ --format markdown
 
 # Look for high avg_tokens tools
 ```
 
-**Identify Duplicate Calls:**
+**Identify Patterns:**
 ```bash
-# Check redundancy_analysis in summary.json
-cat logs/sessions/*/summary.json | grep -A 5 "redundancy_analysis"
-
-# Shows potential savings from duplicates
-```
-
-**Run Cross-Session Analysis:**
-```bash
-# Identify outliers and patterns
-npm run mcp:analyze
+# Export to CSV for analysis
+mcp-audit report ~/.mcp-audit/sessions/ --format csv --output analysis.csv
 
 # Look for:
 # - High average tokens (>100K per call)
 # - High frequency tools (>10 calls/session)
-# - High variance (>5x standard deviation)
+# - Repeated identical calls
 ```
 
 **Check Model Pricing:**
 ```bash
-# Verify pricing data is current
-cat model-pricing.json
+# Verify pricing config
+cat ~/.mcp-audit/config/mcp-audit.toml
 
 # Update if model pricing changed
 ```
@@ -352,7 +289,7 @@ cat model-pricing.json
 ## CSV Export Fails
 
 ### Symptoms
-- `npm run mcp:analyze` runs but no CSV generated
+- `mcp-audit report --format csv` runs but no CSV generated
 - CSV file empty or corrupt
 - Import errors in spreadsheet
 
@@ -360,24 +297,16 @@ cat model-pricing.json
 
 **Check File Permissions:**
 ```bash
-# Verify analyzer can write to current directory
+# Verify can write to output location
 touch test.csv && rm test.csv
 
 # Should work without errors
 ```
 
-**Run with Verbose Output:**
+**Specify Output Path:**
 ```bash
-# Check for error messages
-python3 analyze-mcp-efficiency.py --verbose
-
-# Look for write errors or exceptions
-```
-
-**Specify Custom Output Path:**
-```bash
-# Try writing to different location
-python3 analyze-mcp-efficiency.py --output ~/Desktop/mcp-report.csv
+# Export to specific location
+mcp-audit report ~/.mcp-audit/sessions/ --format csv --output ~/Desktop/mcp-report.csv
 
 # Check if file created
 ls -la ~/Desktop/mcp-report.csv
@@ -386,22 +315,21 @@ ls -la ~/Desktop/mcp-report.csv
 **Verify CSV Format:**
 ```bash
 # Check first few lines
-head -5 mcp-efficiency-report.csv
+head -5 ~/Desktop/mcp-report.csv
 
 # Should show header + data rows
 ```
 
 ### Prevention
-- ✅ Run analyzer from project root (write permissions)
-- ✅ Don't run with sudo (permission issues)
-- ✅ Check disk space before analysis
+- ✅ Specify output path with --output
+- ✅ Check disk space before export
+- ✅ Use absolute paths for output
 
 ---
 
 ## Related Documentation
 
-- **quickref/commands.md** - npm scripts and workflows
+- **quickref/commands.md** - CLI commands and workflows
 - **quickref/architecture.md** - File descriptions and data structures
 - **quickref/features.md** - Feature details and capabilities
-- **README.md** - Comprehensive tool documentation
-- **docs/CODEX-MCP-TRACKING-IMPLEMENTATION.md** - Implementation details
+- **README.md** - User-facing documentation

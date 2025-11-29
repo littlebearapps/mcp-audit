@@ -2,7 +2,7 @@
 
 **MCP tools eating context and you don't know which ones?**
 
-Whether you're building MCP servers or using them daily, mcp-audit shows you exactly where tokens go—per server, per tool, in real-time.
+Whether you're building MCP servers or using Claude Code, Codex CLI, or Gemini CLI daily, mcp-audit shows you exactly where tokens go—per server, per tool, in real-time.
 
 [![PyPI version](https://img.shields.io/pypi/v/mcp-audit.svg)](https://pypi.org/project/mcp-audit/)
 [![PyPI downloads](https://img.shields.io/pypi/dm/mcp-audit.svg)](https://pypi.org/project/mcp-audit/)
@@ -14,13 +14,13 @@ Whether you're building MCP servers or using them daily, mcp-audit shows you exa
 <!-- TODO: Add hero image or GIF showing the TUI in action -->
 <!-- ![mcp-audit demo](docs/images/demo.gif) -->
 
+<p align="center">
+  <code>pip install mcp-audit</code>
+</p>
+
 | Track | Break Down | Optimize |
 |-------|------------|----------|
 | Watch tokens flow in real-time | See it by server, then by tool | Tune your tools—or pick better ones |
-
-```bash
-pip install mcp-audit
-```
 
 ---
 

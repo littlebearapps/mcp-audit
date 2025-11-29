@@ -30,7 +30,7 @@ assignees: ''
 
 ```bash
 # Example command or code
-mcp-analyze --new-feature
+mcp-audit --new-feature
 ```
 
 **Expected Output**:

@@ -54,8 +54,8 @@ Launch mcp-audit publicly and establish community presence. Focus on announcemen
 - [ ] #15 Response SLA established (<24 hours for community questions)
 
 - [x] #16 PREREQ: Install mcp-audit locally via pip/pipx and verify all CLI commands work
-- [ ] #17 PREREQ: Run mcp-analyze collect on a real Claude Code session and verify output
-- [x] #18 PREREQ: Run mcp-analyze report and verify report generation
+- [ ] #17 PREREQ: Run mcp-audit collect on a real Claude Code session and verify output
+- [x] #18 PREREQ: Run mcp-audit report and verify report generation
 
 - [x] #19 PREREQ: Review and improve README.md for public audience - clear value prop, installation, quick start
 - [ ] #20 PREREQ: Ensure README renders correctly on GitHub and PyPI
