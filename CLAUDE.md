@@ -1,6 +1,6 @@
 # CLAUDE.md - MCP Audit
 
-**Last Updated**: 2025-11-25
+**Last Updated**: 2025-11-29
 
 ---
 
@@ -8,12 +8,18 @@
 
 Open-source MCP efficiency analyzer. Tracks token usage and costs across AI coding sessions.
 
+**Distribution**: Free, open-source tool released via public GitHub repo and PyPI.
+
+**Audiences**: MCP tool developers (optimize their implementations) + session users (understand context usage).
+
 **Purpose**: Development Tools & Analytics
-- Real-time session tracking (Claude Code + Codex CLI)
+- Real-time session tracking (Claude Code + Codex CLI + Gemini CLI)
+- Per-server, per-tool token breakdown
 - Cross-session pattern analysis
-- Token efficiency measurement
-- MCP tool cost optimization
+- MCP tool optimization with real usage data
 - **Status**: Phase 1 Complete ✅ | v1.0 target: Week 14
+
+**See**: @./quickref/messaging.md for target audiences and value props
 
 ---
 

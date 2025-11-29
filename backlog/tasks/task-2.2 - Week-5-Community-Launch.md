@@ -4,7 +4,7 @@ title: 'Week 5: Community Launch'
 status: Ready
 assignee: []
 created_date: '2025-11-26 06:02'
-updated_date: '2025-11-26 06:10'
+updated_date: '2025-11-29 04:50'
 labels:
   - phase-2
   - community
@@ -40,7 +40,7 @@ Launch mcp-audit publicly and establish community presence. Focus on announcemen
 - [ ] #1 GitHub repo confirmed public with proper description and topics
 - [ ] #2 v0.3.0-beta release created with comprehensive release notes
 - [ ] #3 Release notes include: features, known issues, installation instructions, changelog
-- [ ] #4 Blog post or README announcement section written
+- [x] #4 Blog post or README announcement section written
 - [ ] #5 Twitter/X thread drafted and posted
 - [ ] #6 Reddit posts created (r/LocalLLaMA, r/ClaudeAI, r/OpenAI)
 - [ ] #7 Hacker News submission prepared
@@ -55,7 +55,7 @@ Launch mcp-audit publicly and establish community presence. Focus on announcemen
 
 - [x] #16 PREREQ: Install mcp-audit locally via pip/pipx and verify all CLI commands work
 - [ ] #17 PREREQ: Run mcp-analyze collect on a real Claude Code session and verify output
-- [ ] #18 PREREQ: Run mcp-analyze report and verify report generation
+- [x] #18 PREREQ: Run mcp-analyze report and verify report generation
 
 - [x] #19 PREREQ: Review and improve README.md for public audience - clear value prop, installation, quick start
 - [ ] #20 PREREQ: Ensure README renders correctly on GitHub and PyPI
@@ -73,11 +73,21 @@ Launch mcp-audit publicly and establish community presence. Focus on announcemen
 - `mcp-audit collect --help` works
 - `mcp-audit report --help` works
 
-### Report Command ❌ ISSUE FOUND
-- Legacy session data (pre-v1.0) fails: 'Session data missing schema_version field'
-- Example sessions also fail: 'No valid sessions found'
-- **Action needed**: Fix report command to handle legacy formats or improve error messaging
-- **Workaround**: Need to generate fresh session with `mcp-audit collect` to test report
+### Report Command ✅ FIXED
+- ~~Legacy session data (pre-v1.0) fails: 'Session data missing schema_version field'~~
+- ~~Example sessions also fail: 'No valid sessions found'~~
+- **Fixed 2025-11-26**: Consolidated storage to JSONL format only
+  - Removed legacy `logs/sessions/` directory structure
+  - Updated `BaseTracker` to use `StorageManager` (JSONL)
+  - Updated `cmd_report()` to load JSONL files via `StorageManager`
+  - Deprecated `SessionManager` class with deprecation warning
+  - Verified: `mcp-audit report examples/` loads all 3 example sessions correctly
+
+### Storage Consolidation (2025-11-26)
+- **Before**: Two formats - legacy `logs/sessions/{id}/summary.json` + JSONL `~/.mcp-audit/`
+- **After**: Single JSONL format only (`~/.mcp-audit/sessions/<platform>/<date>/*.jsonl`)
+- BaseTracker now writes events directly to JSONL via StorageManager
+- Session reconstruction from JSONL events implemented in `_session_from_events()`
 
 ## README Fixes (2025-11-26)
 
@@ -94,4 +104,25 @@ Launch mcp-audit publicly and establish community presence. Focus on announcemen
 - Installation instructions correct
 - Quick start guide tested
 - Platform support matrix accurate
+
+## 2025-11-29 Messaging Refresh
+
+- Created subtask task-2.2.1 for messaging/README refresh
+- Two primary audiences identified:
+  1. MCP Tool Developers - need per-tool metrics to optimize their implementations
+  2. Session Users - want to understand what's eating context
+- Lead with tool-builder angle (unique positioning)
+- Pain-point hook + scannable table + immediate pip install
+- See task-2.2.1 for detailed acceptance criteria
+
+## 2025-11-29 README Refresh Complete (task-2.2.1)
+
+- New pain-point hook: "MCP tools eating context and you don't know which ones?"
+- Added hero image/gif placeholder (user to provide asset)
+- Added 3-column value prop table: Track → Break Down → Optimize
+- Added "Who Is This For?" section with both audiences
+- Created quickref/messaging.md for consistent messaging reference
+- Updated CLAUDE.md with audience clarity
+- AC #4 (README announcement section): Satisfied by new intro + "Who Is This For?" section
+- AC #20 still needs verification on GitHub/PyPI
 <!-- SECTION:NOTES:END -->

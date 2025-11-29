@@ -1,8 +1,8 @@
 # MCP Audit
 
-**Track and optimize your AI coding assistant costs.**
+**MCP tools eating context and you don't know which ones?**
 
-MCP Audit measures token usage and costs across AI coding sessions, helping you identify expensive MCP tools and optimize your workflow.
+Whether you're building MCP servers or using them daily, mcp-audit shows you exactly where tokens go—per server, per tool, in real-time.
 
 [![PyPI version](https://img.shields.io/pypi/v/mcp-audit.svg)](https://pypi.org/project/mcp-audit/)
 [![PyPI downloads](https://img.shields.io/pypi/dm/mcp-audit.svg)](https://pypi.org/project/mcp-audit/)
@@ -11,30 +11,26 @@ MCP Audit measures token usage and costs across AI coding sessions, helping you 
 [![CodeQL](https://img.shields.io/github/actions/workflow/status/littlebearapps/mcp-audit/codeql.yml?branch=main&label=CodeQL)](https://github.com/littlebearapps/mcp-audit/actions/workflows/codeql.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
----
+<!-- TODO: Add hero image or GIF showing the TUI in action -->
+<!-- ![mcp-audit demo](docs/images/demo.gif) -->
 
-## Why MCP Audit?
-
-AI coding assistants like Claude Code, Codex CLI, and Gemini CLI use MCP (Model Context Protocol) servers that can significantly impact your token usage and costs. MCP Audit helps you:
-
-- **Find expensive tools** - Identify which MCP tools consume the most tokens
-- **Detect duplicates** - Spot redundant tool calls wasting tokens
-- **Track trends** - Monitor usage patterns across sessions
-- **Optimize costs** - Make data-driven decisions to reduce spending
-
----
-
-## Installation
+| Track | Break Down | Optimize |
+|-------|------------|----------|
+| Watch tokens flow in real-time | See it by server, then by tool | Tune your tools—or pick better ones |
 
 ```bash
-# Install from PyPI
 pip install mcp-audit
-
-# Or install with pipx (isolated environment)
-pipx install mcp-audit
 ```
 
-**Requirements**: Python 3.8+
+---
+
+## Who Is This For?
+
+**MCP Tool Developers**
+You built an MCP server (hand-coded or via Claude/Codex). Now you need to know: how efficient are your tools? Which ones bloat context? mcp-audit gives you per-tool token metrics so you can optimize before shipping.
+
+**AI Coding Power Users**
+You use Claude Code, Codex CLI, or Gemini CLI daily. You've hit context limits or seen costs spike. mcp-audit breaks down exactly which MCP servers and tools are responsible.
 
 ---
 
