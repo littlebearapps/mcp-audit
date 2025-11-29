@@ -184,7 +184,7 @@ class StorageManager:
         │   └── gemini_cli/
         │       └── ...
         └── config/
-            └── mcp-analyze.toml             # User configuration
+            └── mcp-audit.toml             # User configuration
 
     File Formats:
         - .jsonl files: Line-delimited JSON events (one event per line)
@@ -496,12 +496,6 @@ class StorageManager:
             platform_index.dates.append(date_str)
             platform_index.dates.sort()
 
-        platform_index.total_sessions = sum(
-            1
-            for d in platform_index.dates
-            if (idx := self.load_daily_index(platform, datetime.strptime(d, "%Y-%m-%d").date()))
-            for _ in (idx.sessions if idx else [])
-        )
         platform_index.first_session_date = (
             platform_index.dates[0] if platform_index.dates else None
         )
@@ -639,34 +633,36 @@ class StorageManager:
         Returns:
             Dictionary with storage statistics
         """
-        stats = {
-            "base_dir": str(self.base_dir),
-            "platforms": {},
-            "total_sessions": 0,
-            "total_size_bytes": 0,
-        }
+        platforms_dict: Dict[str, Dict[str, int]] = {}
+        total_sessions = 0
+        total_size_bytes = 0
 
         for platform in self.list_platforms():
-            platform_stats = {
-                "session_count": 0,
-                "date_count": 0,
-                "size_bytes": 0,
-            }
+            session_count = 0
+            size_bytes = 0
 
             dates = self.list_dates(platform)
-            platform_stats["date_count"] = len(dates)
 
             for session_date in dates:
                 date_dir = self.get_date_dir(platform, session_date)
                 for session_file in date_dir.glob("*.jsonl"):
-                    platform_stats["session_count"] += 1
-                    platform_stats["size_bytes"] += session_file.stat().st_size
+                    session_count += 1
+                    size_bytes += session_file.stat().st_size
 
-            stats["platforms"][platform] = platform_stats
-            stats["total_sessions"] += platform_stats["session_count"]
-            stats["total_size_bytes"] += platform_stats["size_bytes"]
+            platforms_dict[platform] = {
+                "session_count": session_count,
+                "date_count": len(dates),
+                "size_bytes": size_bytes,
+            }
+            total_sessions += session_count
+            total_size_bytes += size_bytes
 
-        return stats
+        return {
+            "base_dir": str(self.base_dir),
+            "platforms": platforms_dict,
+            "total_sessions": total_sessions,
+            "total_size_bytes": total_size_bytes,
+        }
 
 
 # =============================================================================
@@ -779,22 +775,26 @@ def migrate_all_v0_sessions(
     Returns:
         Migration results dictionary
     """
-    results = {
-        "total": 0,
-        "migrated": 0,
-        "failed": 0,
-        "skipped": 0,
-        "errors": [],
-    }
+    total = 0
+    migrated = 0
+    failed = 0
+    skipped = 0
+    errors: List[str] = []
 
     if not v0_base_dir.exists():
-        return results
+        return {
+            "total": total,
+            "migrated": migrated,
+            "failed": failed,
+            "skipped": skipped,
+            "errors": errors,
+        }
 
     for session_dir in v0_base_dir.iterdir():
         if not session_dir.is_dir():
             continue
 
-        results["total"] += 1
+        total += 1
 
         # Detect platform from directory name if possible
         detected_platform = platform
@@ -808,14 +808,20 @@ def migrate_all_v0_sessions(
         try:
             new_path = migrate_v0_session(session_dir, storage, detected_platform)
             if new_path:
-                results["migrated"] += 1
+                migrated += 1
             else:
-                results["skipped"] += 1
+                skipped += 1
         except Exception as e:
-            results["failed"] += 1
-            results["errors"].append(f"{session_dir.name}: {e}")
+            failed += 1
+            errors.append(f"{session_dir.name}: {e}")
 
-    return results
+    return {
+        "total": total,
+        "migrated": migrated,
+        "failed": failed,
+        "skipped": skipped,
+        "errors": errors,
+    }
 
 
 # =============================================================================
@@ -843,7 +849,7 @@ if __name__ == "__main__":
         print(f"✓ Created session file: {session_path}")
 
         # Test 3: Write events
-        events = [
+        events: List[Dict[str, Any]] = [
             {"type": "start", "timestamp": datetime.now().isoformat()},
             {"type": "tool_call", "tool": "mcp__zen__chat", "tokens": 1000},
             {"type": "end", "timestamp": datetime.now().isoformat()},

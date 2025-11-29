@@ -342,16 +342,16 @@ Recommendations
 
 ```bash
 # Include compaction analysis
-mcp-analyze report --compaction
+mcp-audit report --compaction
 
 # Detailed per-event breakdown
-mcp-analyze report --compaction --detail
+mcp-audit report --compaction --detail
 
 # Focus on specific server's waste
-mcp-analyze report --compaction --server mcp__docs
+mcp-audit report --compaction --server mcp__docs
 
 # Export for analysis
-mcp-analyze report --compaction --format json
+mcp-audit report --compaction --format json
 ```
 
 ---

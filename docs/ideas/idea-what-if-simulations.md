@@ -31,16 +31,16 @@ What-if simulations let users experiment safely with data they already have.
 
 ```bash
 # Simulate disabling specific servers
-mcp-analyze report --what-if disable=mcp__omnisearch,mcp__github
+mcp-audit report --what-if disable=mcp__omnisearch,mcp__github
 
 # Simulate trimming tool descriptions
-mcp-analyze report --what-if trim-descriptions=0.5
+mcp-audit report --what-if trim-descriptions=0.5
 
 # Combine simulations
-mcp-analyze report --what-if disable=mcp__docs --what-if trim-descriptions=0.3
+mcp-audit report --what-if disable=mcp__docs --what-if trim-descriptions=0.3
 
 # Compare original vs simulated
-mcp-analyze report --what-if disable=mcp__omnisearch --compare
+mcp-audit report --what-if disable=mcp__omnisearch --compare
 ```
 
 ### Simulation Types

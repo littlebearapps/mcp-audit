@@ -36,7 +36,7 @@ Not nested in claude-code-tools
 **Recommendation**: Keep but add deprecation notice at top:
 ```bash
 # DEPRECATED: Legacy script for historical WP Navigator Pro data access
-# Use mcp-analyze CLI for new sessions
+# Use mcp-audit CLI for new sessions
 ```
 
 #### 2. Live Session Trackers (2 files - UPDATE)

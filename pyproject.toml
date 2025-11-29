@@ -4,14 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mcp-audit"
-version = "0.3.3"
+version = "0.3.4"
 description = "MCP efficiency analyzer for tracking token usage and costs across AI coding sessions"
 readme = "README.md"
 license = "MIT"
 authors = [
     { name = "Little Bear Apps", email = "contact@littlebearapps.com" }
 ]
-keywords = ["mcp", "audit", "tokens", "cost", "claude", "codex", "ai", "llm", "model-context-protocol"]
+keywords = ["mcp", "model-context-protocol", "token-tracking", "context-window", "claude-code", "codex-cli", "gemini-cli", "llm-cost", "ai-coding", "token-usage"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -121,12 +121,6 @@ target-version = "py38"
 line-length = 100
 exclude = [
     "test_*.py",
-    "analyze-mcp-efficiency.py",
-    "mcp_analyze_cli.py",
-    "investigate-codex-format.py",
-    "live-cc-session-tracker.py",
-    "live-codex-session-tracker.py",
-    "session_manager.py",
 ]
 
 [tool.ruff.lint]

@@ -286,19 +286,19 @@ def generate_hints_report(hints: List[AuthoringHint], server: str) -> str:
 
 ```bash
 # Analyze all configured MCP servers
-mcp-analyze hints
+mcp-audit hints
 
 # Analyze specific server
-mcp-analyze hints --server mcp__omnisearch
+mcp-audit hints --server mcp__omnisearch
 
 # Include usage data for unused tool detection
-mcp-analyze hints --with-usage --last 7
+mcp-audit hints --with-usage --last 7
 
 # Output as JSON for automation
-mcp-analyze hints --format json
+mcp-audit hints --format json
 
 # Only show high-impact hints
-mcp-analyze hints --severity high
+mcp-audit hints --severity high
 ```
 
 ---

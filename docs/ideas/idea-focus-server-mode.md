@@ -31,16 +31,16 @@ The same data is collected; this is a filtering/presentation enhancement.
 
 ```bash
 # Focus on single server
-mcp-analyze report --focus-server mcp__omnisearch
+mcp-audit report --focus-server mcp__omnisearch
 
 # Compare two servers
-mcp-analyze report --compare-servers mcp__zen,mcp__brave-search
+mcp-audit report --compare-servers mcp__zen,mcp__brave-search
 
 # Exclude servers from report
-mcp-analyze report --exclude-server mcp__debug
+mcp-audit report --exclude-server mcp__debug
 
 # Filter by time range
-mcp-analyze report --focus-server mcp__docs --last 7
+mcp-audit report --focus-server mcp__docs --last 7
 ```
 
 ### Focused Report Output
@@ -121,7 +121,7 @@ Recommendations for mcp__omnisearch
 ### Server Comparison Mode
 
 ```bash
-mcp-analyze report --compare-servers mcp__zen,mcp__brave-search
+mcp-audit report --compare-servers mcp__zen,mcp__brave-search
 ```
 
 Output:
@@ -267,7 +267,7 @@ def report(
 
 ```bash
 # "How efficient is my server across all my users' sessions?"
-mcp-analyze report --focus-server mcp__myserver --last 30
+mcp-audit report --focus-server mcp__myserver --last 30
 ```
 
 Get detailed metrics on:
@@ -281,7 +281,7 @@ Get detailed metrics on:
 
 ```bash
 # "Is mcp__omnisearch worth the context cost?"
-mcp-analyze report --focus-server mcp__omnisearch --last 7
+mcp-audit report --focus-server mcp__omnisearch --last 7
 ```
 
 See:
@@ -294,13 +294,13 @@ See:
 
 ```bash
 # Week before optimization
-mcp-analyze report --focus-server mcp__docs --days-ago 14 --days 7
+mcp-audit report --focus-server mcp__docs --days-ago 14 --days 7
 
 # Week after optimization
-mcp-analyze report --focus-server mcp__docs --last 7
+mcp-audit report --focus-server mcp__docs --last 7
 
 # Compare
-mcp-analyze report --focus-server mcp__docs --compare-periods "14-7,7-0"
+mcp-audit report --focus-server mcp__docs --compare-periods "14-7,7-0"
 ```
 
 ---

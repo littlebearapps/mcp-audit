@@ -272,16 +272,16 @@ Recommendations:
 
 ```bash
 # Include cache drilldown in report
-mcp-analyze report --cache-analysis
+mcp-audit report --cache-analysis
 
 # Focus on specific model
-mcp-analyze report --cache-analysis --model claude-sonnet-4-5
+mcp-audit report --cache-analysis --model claude-sonnet-4-5
 
 # Show only low-cache tools
-mcp-analyze report --cache-analysis --low-cache-only
+mcp-audit report --cache-analysis --low-cache-only
 
 # Export for further analysis
-mcp-analyze report --cache-analysis --format csv > cache-report.csv
+mcp-audit report --cache-analysis --format csv > cache-report.csv
 ```
 
 ---

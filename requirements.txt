@@ -4,7 +4,7 @@
 # (uses built-in tomllib for TOML parsing)
 #
 # For Python 3.8-3.10, the toml package is optional but recommended
-# for pricing configuration support. Without it, mcp-analyze.toml
+# for pricing configuration support. Without it, mcp-audit.toml
 # won't be loaded and cost calculations will return 0.
 
 # Optional: TOML parsing for Python 3.8-3.10

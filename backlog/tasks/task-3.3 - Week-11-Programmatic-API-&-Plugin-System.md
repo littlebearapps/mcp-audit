@@ -37,7 +37,7 @@ Enable integration and enterprise adoption through programmatic API and plugin s
 - [ ] #2 CRITICAL: summarize_sessions(sessions, ...) implemented - returns dataclasses or dicts
 - [ ] #3 Python API documentation created with examples
 - [ ] #4 Use cases documented: Integration with Splunk, BigQuery, Prometheus, custom dashboards
-- [ ] #5 CRITICAL: Config-based custom platform hook in mcp-analyze.toml
+- [ ] #5 CRITICAL: Config-based custom platform hook in mcp-audit.toml
 - [ ] #6 Plugin config: platform = 'custom' with command / log_path
 - [ ] #7 Plugin config: Regex or JSON-path templates to map to Call fields
 - [ ] #8 Python entrypoint via setuptools extras (mcp_audit.platforms entry point group)

@@ -195,13 +195,13 @@ MCP Audit provides migration helpers for upgrading between versions:
 
 ```bash
 # Check for sessions needing migration
-mcp-analyze migrate --check
+mcp-audit migrate --check
 
 # Migrate from v0.x format to v1.x
-mcp-analyze migrate --from logs/sessions/
+mcp-audit migrate --from logs/sessions/
 
 # Dry run (preview without changes)
-mcp-analyze migrate --from logs/sessions/ --dry-run
+mcp-audit migrate --from logs/sessions/ --dry-run
 ```
 
 ### Programmatic Migration

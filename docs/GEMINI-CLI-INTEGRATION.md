@@ -548,7 +548,7 @@ def _correlate_tokens_to_tools(self) -> None:
 
 ### 4.2 Phase 2: Pricing & Configuration (1 day)
 
-Update `mcp-analyze.toml`:
+Update `mcp-audit.toml`:
 
 ```toml
 [pricing.gemini]
@@ -605,7 +605,7 @@ export GEMINI_TELEMETRY_OUTFILE=~/.gemini/telemetry.log
 
 ## Start Tracking
 ```bash
-mcp-analyze collect --platform gemini-cli
+mcp-audit collect --platform gemini-cli
 ```
 
 ## Metrics Captured
@@ -721,7 +721,7 @@ export GEMINI_TELEMETRY_ENABLED=true
 export GEMINI_TELEMETRY_OUTFILE=~/.gemini/telemetry.log
 
 # 2. Start mcp-audit tracking
-mcp-analyze collect --platform gemini-cli
+mcp-audit collect --platform gemini-cli
 
 # 3. In another terminal, use Gemini CLI with MCP
 gemini
@@ -733,7 +733,7 @@ gemini
 cat ~/.mcp-audit/sessions/gemini-cli/*/summary.json
 
 # 6. Generate report
-mcp-analyze report --platform gemini-cli
+mcp-audit report --platform gemini-cli
 ```
 
 ---

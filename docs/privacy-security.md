@@ -283,7 +283,7 @@ def hash_project_name(name: str) -> str:
 
 ### Configuration File
 
-Enable custom redaction in `~/.mcp-audit/config/mcp-analyze.toml`:
+Enable custom redaction in `~/.mcp-audit/config/mcp-audit.toml`:
 
 ```toml
 [privacy]
@@ -308,7 +308,7 @@ Choose a redaction level based on your needs:
 | **detailed** | + Project names, paths | Full analysis |
 | **custom** | Your redaction hooks | Specific requirements |
 
-Configure in `mcp-analyze.toml`:
+Configure in `mcp-audit.toml`:
 
 ```toml
 [privacy]
@@ -343,10 +343,10 @@ For additional security, you can specify a custom location:
 
 ```bash
 # Use encrypted volume
-mcp-analyze collect --output /Volumes/EncryptedDrive/mcp-audit/
+mcp-audit collect --output /Volumes/EncryptedDrive/mcp-audit/
 
 # Use per-project storage
-mcp-analyze collect --output ./local-audit/
+mcp-audit collect --output ./local-audit/
 ```
 
 ### Encryption
@@ -394,10 +394,10 @@ Use the built-in sanitization tool:
 
 ```bash
 # Sanitize a session for sharing
-mcp-analyze sanitize session.jsonl --output sanitized.jsonl
+mcp-audit sanitize session.jsonl --output sanitized.jsonl
 
 # Options
-mcp-analyze sanitize session.jsonl \
+mcp-audit sanitize session.jsonl \
     --anonymize-projects \
     --strip-paths \
     --strip-timestamps \
@@ -432,7 +432,7 @@ mcp-analyze sanitize session.jsonl \
 
 ### Privacy-Related Settings
 
-`~/.mcp-audit/config/mcp-analyze.toml`:
+`~/.mcp-audit/config/mcp-audit.toml`:
 
 ```toml
 [privacy]

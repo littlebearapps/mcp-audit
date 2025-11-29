@@ -285,16 +285,16 @@ Recommendations
 
 ```bash
 # Include saturation analysis
-mcp-analyze report --saturation
+mcp-audit report --saturation
 
 # Show compression timeline
-mcp-analyze report --saturation --timeline
+mcp-audit report --saturation --timeline
 
 # Warn when approaching threshold
-mcp-analyze report --saturation --warn-at 70
+mcp-audit report --saturation --warn-at 70
 
 # Export timeline data
-mcp-analyze report --saturation --format json > saturation.json
+mcp-audit report --saturation --format json > saturation.json
 ```
 
 ---

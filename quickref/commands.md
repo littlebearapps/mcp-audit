@@ -1,6 +1,6 @@
 # Commands & Workflows - MCP Audit
 
-Quick reference for all npm scripts and common workflows.
+Quick reference for mcp-audit CLI commands and common workflows.
 
 ---
 
@@ -8,16 +8,16 @@ Quick reference for all npm scripts and common workflows.
 
 ```bash
 # Standard mode - full output with session logging
-mcp-audit collect --platform claude_code
+mcp-audit collect --platform claude-code
 
 # With Rich TUI display (auto-detected for TTY)
-mcp-audit collect --platform claude_code --tui
+mcp-audit collect --platform claude-code --tui
 
 # Plain text output (for CI/pipes)
-mcp-audit collect --platform claude_code --plain
+mcp-audit collect --platform claude-code --plain
 
 # Silent mode (logs only, no display)
-mcp-audit collect --platform claude_code --quiet
+mcp-audit collect --platform claude-code --quiet
 ```
 
 ---
@@ -35,7 +35,7 @@ MCP Audit auto-detects TTY and chooses the best display:
 
 ```bash
 # Custom refresh rate for TUI (default: 0.5s)
-mcp-audit collect --platform claude_code --refresh-rate 1.0
+mcp-audit collect --platform claude-code --refresh-rate 1.0
 ```
 
 ---
@@ -44,23 +44,38 @@ mcp-audit collect --platform claude_code --refresh-rate 1.0
 
 ```bash
 # Start Codex tracking
-mcp-audit collect --platform codex_cli
+mcp-audit collect --platform codex-cli
 
 # With display options (same as Claude Code)
-mcp-audit collect --platform codex_cli --tui
-mcp-audit collect --platform codex_cli --plain
+mcp-audit collect --platform codex-cli --tui
+mcp-audit collect --platform codex-cli --plain
 ```
 
 ---
 
-## Analyze All Sessions
+## Track Gemini CLI Session
+
+```bash
+# Requires telemetry enabled in Gemini CLI
+mcp-audit collect --platform gemini-cli
+```
+
+---
+
+## Generate Reports
 
 ```bash
 # Analyze collected sessions
-npm run mcp:analyze
+mcp-audit report ~/.mcp-audit/sessions/
 
-# Show analyzer help
-npm run mcp:help
+# Export as CSV
+mcp-audit report ~/.mcp-audit/sessions/ --format csv --output report.csv
+
+# Generate markdown report
+mcp-audit report ~/.mcp-audit/sessions/ --format markdown --output report.md
+
+# Show help
+mcp-audit report --help
 ```
 
 ---
@@ -70,23 +85,20 @@ npm run mcp:help
 ### Single Session Analysis
 
 ```bash
-# 1. Start tracking
-npm run cc:live
+# 1. Start tracking (run in a separate terminal)
+mcp-audit collect --platform claude-code
 
 # 2. Work normally in Claude Code
 # (Real-time stats displayed in terminal)
 
 # 3. Stop tracking (Ctrl+C)
-# Session saved to logs/sessions/{project}-{timestamp}/
+# Session saved to ~/.mcp-audit/sessions/claude_code/{date}/
 
 # 4. Review session data
-cat logs/sessions/*/summary.json
+mcp-audit report ~/.mcp-audit/sessions/
 ```
 
-**Output Location**: `logs/sessions/{project}-{timestamp}/`
-- `summary.json` - Session totals, redundancy analysis, anomalies
-- `mcp-{server}.json` - Per-server tool statistics
-- `events.jsonl` - Event stream (for recovery)
+**Output Location**: `~/.mcp-audit/sessions/<platform>/<date>/<session-id>.jsonl`
 
 ---
 
@@ -97,83 +109,53 @@ cat logs/sessions/*/summary.json
 # (Repeat single session workflow multiple times)
 
 # 2. Run cross-session analysis
-npm run mcp:analyze
+mcp-audit report ~/.mcp-audit/sessions/
 
-# 3. Review terminal output + CSV
-open mcp-efficiency-report.csv
+# 3. Export to CSV for further analysis
+mcp-audit report ~/.mcp-audit/sessions/ --format csv --output mcp-report.csv
 
 # 4. Identify optimization targets
 # - High-token tools (>100K avg tokens)
-# - Duplicates (redundancy_analysis)
-# - High-variance tools (>5x variance)
+# - High-frequency tools
+# - High-variance tools (>5x standard deviation)
 ```
-
-**Analysis Output**:
-- Top 10 most expensive tools (total tokens)
-- Top 10 most frequent tools (call count)
-- Outlier warnings (high frequency >10 calls/session, high variance)
-- CSV export: `mcp-efficiency-report.csv`
 
 ---
 
-### Add to New Project
+### Using in Any Project
+
+Since mcp-audit is installed via pip, you can use it from any directory:
 
 ```bash
-# 1. Copy scripts to target project
-cp -r ~/claude-code-tools/lba/apps/devtools/mcp-audit/main/* /path/to/project/
+# Install globally (recommended)
+pip install mcp-audit
 
-# 2. Add npm scripts to package.json
-# (See COMMANDS.md for reference scripts)
+# Or with pipx (isolated environment)
+pipx install mcp-audit
 
-# 3. Test connectivity
-npm run cc:help
-
-# 4. Run first session
-npm run cc:live
+# Works from any Claude Code working directory
+cd /path/to/your/project
+mcp-audit collect --platform claude-code
 ```
 
-**Required npm Scripts** (add to package.json):
-```json
-{
-  "scripts": {
-    "cc:live": "bash live-session-tracker.sh live-cc-session-tracker.py",
-    "cc:live:quiet": "bash live-session-tracker.sh live-cc-session-tracker.py --quiet",
-    "cc:live:no-logs": "bash live-session-tracker.sh live-cc-session-tracker.py --no-logs",
-    "cc:help": "python3 live-cc-session-tracker.py --help",
-    "codex:live": "bash live-session-tracker.sh live-codex-session-tracker.py",
-    "codex:help": "python3 live-codex-session-tracker.py --help",
-    "mcp:analyze": "python3 analyze-mcp-efficiency.py",
-    "mcp:help": "python3 analyze-mcp-efficiency.py --help"
-  }
-}
-```
+No project-specific setup required!
 
 ---
 
 ## Session Data Structure
 
 ### Location
-`logs/sessions/{project}-{timestamp}/`
+`~/.mcp-audit/sessions/<platform>/<YYYY-MM-DD>/<session-id>.jsonl`
 
-Example: `logs/sessions/mcp-audit-2025-11-23T14-30-45/`
+Example: `~/.mcp-audit/sessions/claude_code/2025-11-29/session-20251129T143045-abc123.jsonl`
 
-### Files Generated
+### What's Tracked
 
-**summary.json** - Session totals and analysis
 - Token counts (input, output, cache created/read)
-- Total cost estimate
-- Redundancy analysis (duplicate tool calls)
-- Anomaly detection (high frequency, high variance)
-
-**mcp-{server}.json** - Per-server statistics
-- `mcp-zen.json` - Zen MCP server tools
-- `mcp-brave-search.json` - Brave Search MCP tools
-- Per-tool token tracking and call counts
-
-**events.jsonl** - Event stream (optional)
-- Used for recovery if session interrupted
-- Line-delimited JSON (one event per line)
-- Auto-recovery by analyzer if MCP files missing
+- Cost estimates based on model pricing
+- MCP tool calls (per server, per tool)
+- Timestamps and durations
+- Anomaly detection (high frequency, duplicates)
 
 ---
 
@@ -203,73 +185,63 @@ MCP Tool Calls
   Most called: mcp__zen__chat (15 calls)
 ```
 
-### Cross-Session Analysis (Terminal)
+### Report Output
 
 ```
-=== MCP Efficiency Analysis ===
+Top 10 Most Expensive Tools (Total Tokens)
+═══════════════════════════════════════════════════════════════
+Tool                              Calls    Tokens    Avg/Call
+mcp__zen__thinkdeep                  12   450,231      37,519
+mcp__brave-search__web               45   123,456       2,743
+mcp__zen__chat                       89    98,765       1,109
 
-Loaded 8 sessions from logs/sessions/
-
-Top 10 Most Expensive Tools (Total Tokens):
-1. mcp__zen__thinkdeep          - 1,234,567 tokens (8 calls)
-2. mcp__zen__consensus          - 987,654 tokens (5 calls)
-3. mcp__brave-search__web       - 456,789 tokens (23 calls)
-...
-
-Top 10 Most Frequent Tools:
-1. mcp__zen__chat               - 45 calls
-2. mcp__brave-search__web       - 23 calls
-3. mcp__zen__debug              - 18 calls
-...
+Estimated Total Cost: $2.34 (across 15 sessions)
 
 ⚠️  OUTLIERS DETECTED:
-- mcp__zen__thinkdeep: High average tokens (154,321 per call)
-- mcp__zen__chat: High frequency (45 calls across 8 sessions)
-
-CSV exported to: mcp-efficiency-report.csv
+- mcp__zen__thinkdeep: High average tokens (37,519 per call)
+- mcp__zen__chat: High frequency (89 calls across 15 sessions)
 ```
 
 ---
 
 ## Advanced Usage
 
-### Custom Session Tracking
+### Custom Output Directory
 
 ```bash
-# Run tracker with custom project name
-PROJECT_NAME="my-feature" npm run cc:live
-
-# Track with no logs (real-time only)
-npm run cc:live:no-logs
+# Save sessions to a custom location
+mcp-audit collect --platform claude-code --output /path/to/custom/dir
 ```
 
-### Session Recovery
+### Custom Project Name
 
 ```bash
-# If session was interrupted, analyzer auto-recovers
-npm run mcp:analyze
-
-# Manual recovery: check events.jsonl
-cat logs/sessions/mcp-audit-2025-11-23T14-30-45/events.jsonl
+# Override auto-detected project name
+mcp-audit collect --platform claude-code --project my-feature
 ```
 
-### Filter Analysis
+---
+
+## CLI Reference
 
 ```bash
-# Analyze only recent sessions
-npm run mcp:analyze -- --recent 5
+# Show main help
+mcp-audit --help
 
-# Export to custom CSV location
-npm run mcp:analyze -- --output ./reports/mcp-analysis.csv
+# Show version
+mcp-audit --version
+
+# Show collect help
+mcp-audit collect --help
+
+# Show report help
+mcp-audit report --help
 ```
-
-**Note**: Custom flags depend on analyzer implementation. Check `npm run mcp:help` for current options.
 
 ---
 
 ## Related Documentation
 
-- **COMMANDS.md** - Quick command reference card
 - **README.md** - Comprehensive tool documentation
 - **quickref/architecture.md** - File descriptions and data structures
 - **quickref/troubleshooting.md** - Common issues and solutions

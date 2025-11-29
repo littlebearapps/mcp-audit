@@ -350,7 +350,7 @@ mcp-audit/ (new public repo)
 #### Week 2: Repository Setup & Core Configuration
 
 **Deliverables**:
-- [ ] **⭐ CRITICAL: Pricing Configuration System** - `mcp-analyze.toml` with user-supplied model pricing ⭐ NEW
+- [ ] **⭐ CRITICAL: Pricing Configuration System** - `mcp-audit.toml` with user-supplied model pricing ⭐ NEW
   - [ ] **`[pricing]` section** - Map `model_name` → `cost_per_input_token`, `cost_per_output_token`
   - [ ] **Support custom models** - Users can define costs for any model/alias
   - [ ] **Documentation** - How to configure pricing for new models
@@ -369,8 +369,8 @@ mcp-audit/ (new public repo)
   - [ ] CODE_OF_CONDUCT.md
   - [ ] SECURITY.md
 - [ ] Add basic CLI interface:
-  - [ ] `mcp-analyze collect` - Run under CLI, capture events
-  - [ ] `mcp-analyze report` - Generate per-session JSON/Markdown
+  - [ ] `mcp-audit collect` - Run under CLI, capture events
+  - [ ] `mcp-audit report` - Generate per-session JSON/Markdown
   - [ ] `--help` documentation for all commands
 
 **Success Criteria**:
@@ -502,7 +502,7 @@ mcp-audit/ (new public repo)
   - [ ] **Tutorial**: Step-by-step walkthrough with screenshots
   - [ ] **Example output**: Sample reports showing value
 - [ ] **⭐ Team/CI Usage Examples** - Non-interactive automation ⭐ NEW
-  - [ ] **Non-interactive mode**: `mcp-analyze report --input /logs/... --output team-report.md`
+  - [ ] **Non-interactive mode**: `mcp-audit report --input /logs/... --output team-report.md`
   - [ ] **GitHub Actions example**: `.github/workflows/weekly-mcp-report.yml`
   - [ ] **Export to S3/Slack**: Example scripts in `examples/ci-cd/`
   - [ ] **Cron usage**: Weekly report generation examples
@@ -542,7 +542,7 @@ mcp-audit/ (new public repo)
   - [ ] Show in session header: "31,500 tokens static (15.8%)"
   - [ ] Trend tracking over time (config drift detection)
 - [ ] **⭐ Static MCP Footprint Analyzer** (task-16) - Promote to CLI ⭐ NEW
-  - [ ] `mcp-analyze footprint` subcommand
+  - [ ] `mcp-audit footprint` subcommand
   - [ ] Add tiktoken dependency for accurate tokenization
   - [ ] Cache results in `~/.mcp-audit/footprint-cache/`
   - [ ] Auto-include summary in session reports
@@ -624,7 +624,7 @@ mcp-audit/ (new public repo)
   - [ ] **Python API documentation** with examples
   - [ ] **Use cases**: Integration with Splunk, BigQuery, Prometheus, custom dashboards
 - [ ] **⭐ CRITICAL: Plugin System for v1.0** - MOVED FROM PHASE 5 ⭐ NEW
-  - [ ] **Config-based custom platform hook** in `mcp-analyze.toml`:
+  - [ ] **Config-based custom platform hook** in `mcp-audit.toml`:
     - [ ] `platform = "custom"` with `command` / `log_path`
     - [ ] Regex or JSON-path templates to map to Call fields
   - [ ] **Python entrypoint** via setuptools extras (`mcp_audit.platforms` entry point group)
@@ -1161,8 +1161,8 @@ If starting implementation today, focus on:
    - Unit tests for all known formats
 
 4. **Add Basic CLI** (Day 8-10)
-   - `mcp-analyze collect` - Capture events
-   - `mcp-analyze report` - Generate JSON/Markdown
+   - `mcp-audit collect` - Capture events
+   - `mcp-audit report` - Generate JSON/Markdown
    - `--help` documentation
 
 5. **Write Minimal Docs** (Day 11-15)

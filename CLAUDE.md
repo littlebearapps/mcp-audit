@@ -29,13 +29,13 @@ Open-source MCP efficiency analyzer. Tracks token usage and costs across AI codi
 
 ```bash
 # Track Claude Code session
-npm run cc:live
+mcp-audit collect --platform claude-code
 
 # Track Codex CLI session
-npm run codex:live
+mcp-audit collect --platform codex-cli
 
-# Analyze all sessions
-npm run mcp:analyze
+# Generate a report
+mcp-audit report ~/.mcp-audit/sessions/
 ```
 
 **See**: @./quickref/commands.md for all commands and workflows
@@ -63,19 +63,24 @@ git tag v0.3.1 && git push --tags  # Triggers publish workflow
 
 **CI Requirements**: pytest, mypy, ruff, black
 
+**Note**: Branches auto-delete on merge. No cleanup needed.
+
 ---
 
 ## Key Files
 
-### Core Modules (Phase 1)
-- `storage.py` - JSONL session storage with indexing (650 lines)
-- `base_tracker.py` - Platform abstraction layer (520 lines)
-- `pricing_config.py` - Configurable model pricing (360 lines)
-- `mcp_analyze_cli.py` - CLI interface (collect, report commands)
+All source code is in `src/mcp_audit/` (installed via `pip install mcp-audit`).
+
+### Core Modules
+- `cli.py` - CLI interface (mcp-audit command)
+- `storage.py` - JSONL session storage with indexing
+- `base_tracker.py` - Platform abstraction layer
+- `pricing_config.py` - Configurable model pricing
 
 ### Platform Adapters
-- `claude_code_adapter.py` - Claude Code tracker (300 lines)
-- `codex_cli_adapter.py` - Codex CLI tracker (220 lines)
+- `claude_code_adapter.py` - Claude Code tracker
+- `codex_cli_adapter.py` - Codex CLI tracker
+- `gemini_cli_adapter.py` - Gemini CLI tracker
 
 ### Display Module
 - `display/__init__.py` - Factory function with TTY detection
@@ -131,17 +136,16 @@ git tag v0.3.1 && git push --tags  # Triggers publish workflow
 ## Common Issues
 
 ### Missing Session Data
-- Check `logs/sessions/{project}-{timestamp}/`
-- Run `npm run mcp:analyze` (auto-recovers from events.jsonl)
+- Check `~/.mcp-audit/sessions/<platform>/<date>/`
+- Run `mcp-audit report ~/.mcp-audit/sessions/` (auto-recovers from events.jsonl)
 
 ### Incomplete Sessions
 - Signal handler writes summary on Ctrl+C
 - Auto-recovery from events.jsonl if MCP files missing
 
-### npm Script Errors
-- Verify scripts exist in package.json
-- Check Python script paths (relative to project root)
-- Ensure Python 3 installed (`python3 --version`)
+### CLI Not Found
+- Ensure installed: `pip install mcp-audit` or `pipx install mcp-audit`
+- Check Python 3 installed: `python3 --version`
 
 **See**: @./quickref/troubleshooting.md for comprehensive solutions
 
@@ -180,6 +184,7 @@ git tag v0.3.1 && git push --tags  # Triggers publish workflow
 - `docs/privacy-security.md` - Data handling policies
 - `docs/platforms/claude-code.md` - Claude Code setup
 - `docs/platforms/codex-cli.md` - Codex CLI setup
+- `docs/platforms/gemini-cli.md` - Gemini CLI setup
 
 **Planning**:
 - `docs/ROADMAP.md` - 14-week plan (consensus-validated)

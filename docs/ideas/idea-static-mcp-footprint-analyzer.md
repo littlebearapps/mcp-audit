@@ -29,17 +29,17 @@ MCP tool definitions consume significant context before any conversation begins.
 
 ```bash
 # Analyze all configured MCP servers
-mcp-analyze footprint
+mcp-audit footprint
 
 # Analyze specific server
-mcp-analyze footprint --server mcp__omnisearch
+mcp-audit footprint --server mcp__omnisearch
 
 # Analyze from config file
-mcp-analyze footprint --config ~/.claude.json
+mcp-audit footprint --config ~/.claude.json
 
 # Output formats
-mcp-analyze footprint --format json
-mcp-analyze footprint --format table
+mcp-audit footprint --format json
+mcp-audit footprint --format table
 ```
 
 ### Cached Results

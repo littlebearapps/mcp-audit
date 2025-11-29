@@ -14,14 +14,14 @@ class TestPricingConfigLoading:
     """Tests for configuration file loading"""
 
     def test_load_default_config(self) -> None:
-        """Test loading default mcp-analyze.toml"""
+        """Test loading default mcp-audit.toml"""
         config = PricingConfig()
         assert config.loaded == True
         assert len(config.pricing_data) > 0
 
     def test_load_specific_path(self) -> None:
         """Test loading from specific path"""
-        config_path = Path("mcp-analyze.toml")
+        config_path = Path("mcp-audit.toml")
         config = PricingConfig(config_path)
         assert config.loaded == True
 
