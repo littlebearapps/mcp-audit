@@ -533,6 +533,67 @@ class TestEventParsing:
         # Built-in tool was processed in-place (task-72.1)
         assert adapter._builtin_tool_calls == 1
 
+    def test_builtin_tool_token_estimation(self, adapter: GeminiCLIAdapter) -> None:
+        """Test built-in tools get token estimation like MCP tools (task-69.24).
+
+        Per Task 69 validated plan: "Built-in vs MCP Tools: No difference in
+        accuracy approach. Both are function calls to the model and use the
+        same estimation method."
+        """
+        msg = GeminiMessage(
+            id="msg-builtin-tokens",
+            timestamp=datetime.now(tz=timezone.utc),
+            message_type="gemini",
+            content="Search results",
+            model="gemini-2.5-pro",
+            tool_calls=[
+                {
+                    "id": "call-001",
+                    "name": "google_web_search",  # Built-in tool
+                    "args": {"query": "MCP protocol documentation"},
+                    "result": [
+                        {
+                            "functionResponse": {
+                                "response": "Found 10 results for MCP protocol documentation..."
+                            }
+                        }
+                    ],
+                    "status": "success",
+                }
+            ],
+            tokens={
+                "input": 100,
+                "output": 50,
+                "cached": 0,
+                "thoughts": 0,
+                "tool": 0,  # Native tool field is always 0
+                "total": 150,
+            },
+        )
+
+        adapter.parse_event(msg)
+
+        # Built-in tool should have token estimation
+        assert adapter._builtin_tool_calls == 1
+        assert adapter._estimated_tool_calls == 1  # Built-in tools now estimated
+
+        # Check that the tool call was recorded with estimation
+        # Built-in tools use "builtin" as server name (not __builtin__)
+        assert "builtin" in adapter.server_sessions
+        builtin_session = adapter.server_sessions["builtin"]
+        assert "builtin__google_web_search" in builtin_session.tools
+
+        tool_stats = builtin_session.tools["builtin__google_web_search"]
+        assert len(tool_stats.call_history) == 1
+        call = tool_stats.call_history[0]
+        assert call.input_tokens > 0  # Estimated from args
+        assert call.output_tokens > 0  # Estimated from result
+        # Token estimation metadata (task-69.24)
+        # Method depends on available tokenizers (sentencepiece preferred, tiktoken fallback)
+        assert call.is_estimated is True
+        assert call.estimation_method in ("sentencepiece", "tiktoken", "character")
+        assert call.estimation_encoding is not None
+
     def test_multiple_tool_calls_in_single_message(self, adapter: GeminiCLIAdapter) -> None:
         """Test ALL tool calls in a message are processed, not just the first (task-72.1).
 
@@ -915,6 +976,114 @@ class TestGitMetadata:
         assert "branch" in adapter._git_metadata
         assert "commit_short" in adapter._git_metadata
         assert "status" in adapter._git_metadata
+
+
+class TestGeminiMcpToolDetection:
+    """Tests for Gemini CLI MCP tool detection (task-69.28).
+
+    Gemini CLI uses <server>__<tool> format for MCP tools, not mcp__<server>__<tool>.
+    This test class verifies the _is_gemini_mcp_tool helper method correctly
+    identifies MCP tools and distinguishes them from built-in tools.
+    """
+
+    def test_is_gemini_mcp_tool_detects_mcp_tools(self, adapter: GeminiCLIAdapter) -> None:
+        """Test MCP tools with <server>__<tool> format are detected."""
+        # These should all be detected as MCP tools
+        assert adapter._is_gemini_mcp_tool("fs__read_file") is True
+        assert adapter._is_gemini_mcp_tool("fs__list_directory") is True
+        assert adapter._is_gemini_mcp_tool("brave__search") is True
+        assert adapter._is_gemini_mcp_tool("github__list_repos") is True
+        assert adapter._is_gemini_mcp_tool("zen__chat") is True
+
+    def test_is_gemini_mcp_tool_rejects_builtin_tools(self, adapter: GeminiCLIAdapter) -> None:
+        """Test built-in tools are NOT detected as MCP tools."""
+        from mcp_audit.gemini_cli_adapter import GEMINI_BUILTIN_TOOLS
+
+        # All built-in tools should return False
+        for tool in GEMINI_BUILTIN_TOOLS:
+            assert adapter._is_gemini_mcp_tool(tool) is False, f"{tool} should not be MCP tool"
+
+    def test_is_gemini_mcp_tool_rejects_internal_markers(self, adapter: GeminiCLIAdapter) -> None:
+        """Test internal markers are NOT detected as MCP tools."""
+        assert adapter._is_gemini_mcp_tool("__session__") is False
+        assert adapter._is_gemini_mcp_tool("__builtin__") is False
+        assert adapter._is_gemini_mcp_tool("__internal__:test") is False
+
+    def test_is_gemini_mcp_tool_rejects_simple_names(self, adapter: GeminiCLIAdapter) -> None:
+        """Test simple tool names without __ are NOT detected as MCP tools."""
+        assert adapter._is_gemini_mcp_tool("search") is False
+        assert adapter._is_gemini_mcp_tool("read") is False
+        assert adapter._is_gemini_mcp_tool("unknown_tool") is False
+
+    def test_mcp_tool_call_parsed_and_normalized(self, adapter: GeminiCLIAdapter) -> None:
+        """Test Gemini MCP tool calls are parsed and normalized to mcp__ format (task-69.28)."""
+        msg = GeminiMessage(
+            id="msg-mcp",
+            timestamp=datetime.now(tz=timezone.utc),
+            message_type="gemini",
+            content="Result",
+            model="gemini-2.5-pro",
+            tool_calls=[
+                {
+                    "id": "call-mcp-001",
+                    "name": "fs__read_file",  # Gemini MCP format
+                    "args": {"path": "/test/file.txt"},
+                    "status": "success",
+                    "result": [{"functionResponse": {"response": {"output": "file content"}}}],
+                }
+            ],
+            tokens={
+                "input": 100,
+                "output": 50,
+                "cached": 0,
+                "thoughts": 0,
+                "tool": 10,
+                "total": 160,
+            },
+        )
+
+        # Process the message
+        adapter.parse_event(msg)
+
+        # Verify MCP tool was detected and normalized
+        # The tool should be stored under the server name "fs" with normalized tool name
+        assert "fs" in adapter.server_sessions, "MCP server 'fs' should be tracked"
+        assert (
+            "mcp__fs__read_file" in adapter.server_sessions["fs"].tools
+        ), "Tool should be normalized to mcp__fs__read_file"
+
+    def test_mcp_tool_token_estimation_applied(self, adapter: GeminiCLIAdapter) -> None:
+        """Test token estimation is applied to Gemini MCP tools (task-69.28)."""
+        msg = GeminiMessage(
+            id="msg-mcp-est",
+            timestamp=datetime.now(tz=timezone.utc),
+            message_type="gemini",
+            content="Result",
+            model="gemini-2.5-pro",
+            tool_calls=[
+                {
+                    "id": "call-mcp-002",
+                    "name": "fs__read_file",
+                    "args": {"path": "/pyproject.toml"},
+                    "status": "success",
+                    "result": [{"functionResponse": {"response": {"output": "test content"}}}],
+                }
+            ],
+            tokens={
+                "input": 100,
+                "output": 50,
+                "cached": 0,
+                "thoughts": 0,
+                "tool": 0,  # No native tool tokens
+                "total": 150,
+            },
+        )
+
+        # Process the message
+        adapter.parse_event(msg)
+
+        # Verify token estimation was applied
+        assert adapter._estimated_tool_calls >= 1, "Should have at least 1 estimated tool call"
 
 
 class TestBuiltinToolTracking:
@@ -1324,6 +1493,167 @@ class TestSourceFilesTracking:
 
         expected_source_files = sorted([session_file.name, file_path_1, file_path_2, dir_path_1])
         assert session.source_files == expected_source_files
+
+
+# ============================================================================
+# Cost Calculation Tests (Task 97)
+# ============================================================================
+
+
+class TestCostCalculation:
+    """Tests for cost calculation - verifying cache_read is subset of input_tokens."""
+
+    def test_cost_calculation_cache_as_subset(self, tmp_path: Path) -> None:
+        """
+        Test that cost calculation treats cache_read as SUBSET of input_tokens.
+
+        In Gemini CLI:
+        - input_tokens = total input/prompt tokens
+        - cache_read = portion of input_tokens served from cache (NOT additive)
+        - fresh_input = input_tokens - cache_read
+
+        Cost formula should be:
+        - cost_with_cache = (fresh_input * input_rate) + (cache_read * cache_rate) + (output * output_rate)
+        - cost_no_cache = (input_tokens * input_rate) + (output * output_rate)
+        """
+        # Create session with known token values
+        session_data = {
+            "sessionId": "cost-test-session",
+            "projectHash": "a" * 64,
+            "startTime": "2025-12-08T01:00:00.000Z",
+            "lastUpdated": "2025-12-08T01:10:00.000Z",
+            "messages": [
+                {
+                    "id": "msg-001",
+                    "type": "user",
+                    "content": "Test",
+                    "timestamp": "2025-12-08T01:00:00.000Z",
+                },
+                {
+                    "id": "msg-002",
+                    "type": "gemini",
+                    "content": "Response",
+                    "model": "gemini-2.5-pro",  # $1.25/M input, $10/M output, $0.125/M cache
+                    "tokens": {
+                        "input": 1_000_000,  # 1M total input tokens
+                        "output": 100_000,  # 100K output tokens
+                        "cached": 800_000,  # 800K of the 1M came from cache
+                        "thoughts": 0,
+                        "tool": 0,
+                        "total": 1_100_000,
+                    },
+                    "timestamp": "2025-12-08T01:05:00.000Z",
+                },
+            ],
+        }
+
+        chats_dir = tmp_path / ".gemini" / "tmp" / ("a" * 64) / "chats"
+        chats_dir.mkdir(parents=True)
+        session_file = chats_dir / "session-2025-12-08T01-00-test.json"
+        session_file.write_text(json.dumps(session_data))
+
+        adapter = GeminiCLIAdapter(
+            project="cost-test",
+            gemini_dir=tmp_path / ".gemini",
+            session_file=session_file,
+            from_start=True,
+        )
+
+        adapter.process_session_file_batch(session_file)
+        # _build_display_snapshot calculates and stores costs in session
+        adapter._start_time = datetime.now()  # Set for snapshot (naive)
+        adapter._build_display_snapshot()
+        session = adapter.finalize_session()
+
+        # Expected costs with gemini-2.5-pro pricing:
+        # input: $1.25/M, output: $10.0/M, cache_read: $0.125/M
+        #
+        # fresh_input = 1,000,000 - 800,000 = 200,000
+        # cost_with_cache = (200K * $1.25/M) + (800K * $0.125/M) + (100K * $10/M)
+        #                 = $0.25 + $0.10 + $1.00 = $1.35
+        #
+        # cost_no_cache = (1M * $1.25/M) + (100K * $10/M)
+        #               = $1.25 + $1.00 = $2.25
+        #
+        # savings = $2.25 - $1.35 = $0.90
+
+        expected_cost_with_cache = 1.35
+        expected_cost_no_cache = 2.25
+        expected_savings = 0.90
+
+        assert abs(session.cost_estimate - expected_cost_with_cache) < 0.01, (
+            f"cost_estimate should be ~${expected_cost_with_cache:.2f}, "
+            f"got ${session.cost_estimate:.2f}"
+        )
+        assert abs(session.cost_no_cache - expected_cost_no_cache) < 0.01, (
+            f"cost_no_cache should be ~${expected_cost_no_cache:.2f}, "
+            f"got ${session.cost_no_cache:.2f}"
+        )
+        assert abs(session.cache_savings_usd - expected_savings) < 0.01, (
+            f"cache_savings should be ~${expected_savings:.2f}, "
+            f"got ${session.cache_savings_usd:.2f}"
+        )
+
+    def test_cost_calculation_no_cache(self, tmp_path: Path) -> None:
+        """Test cost calculation when there's no caching (cache_read = 0)."""
+        session_data = {
+            "sessionId": "no-cache-test",
+            "projectHash": "b" * 64,
+            "startTime": "2025-12-08T02:00:00.000Z",
+            "lastUpdated": "2025-12-08T02:10:00.000Z",
+            "messages": [
+                {
+                    "id": "msg-001",
+                    "type": "user",
+                    "content": "Test",
+                    "timestamp": "2025-12-08T02:00:00.000Z",
+                },
+                {
+                    "id": "msg-002",
+                    "type": "gemini",
+                    "content": "Response",
+                    "model": "gemini-2.5-pro",
+                    "tokens": {
+                        "input": 500_000,
+                        "output": 50_000,
+                        "cached": 0,  # No caching
+                        "thoughts": 0,
+                        "tool": 0,
+                        "total": 550_000,
+                    },
+                    "timestamp": "2025-12-08T02:05:00.000Z",
+                },
+            ],
+        }
+
+        chats_dir = tmp_path / ".gemini" / "tmp" / ("b" * 64) / "chats"
+        chats_dir.mkdir(parents=True)
+        session_file = chats_dir / "session-2025-12-08T02-00-test.json"
+        session_file.write_text(json.dumps(session_data))
+
+        adapter = GeminiCLIAdapter(
+            project="no-cache-test",
+            gemini_dir=tmp_path / ".gemini",
+            session_file=session_file,
+            from_start=True,
+        )
+
+        adapter.process_session_file_batch(session_file)
+        # _build_display_snapshot calculates and stores costs in session
+        adapter._start_time = datetime.now()  # Set for snapshot (naive)
+        adapter._build_display_snapshot()
+        session = adapter.finalize_session()
+
+        # With no caching:
+        # cost = (500K * $1.25/M) + (50K * $10/M) = $0.625 + $0.50 = $1.125
+        # cost_no_cache should equal cost_with_cache
+        # savings = 0
+
+        expected_cost = 1.125
+
+        assert abs(session.cost_estimate - expected_cost) < 0.01
+        assert abs(session.cost_no_cache - expected_cost) < 0.01
+        assert abs(session.cache_savings_usd) < 0.01  # No savings
 
 
 if __name__ == "__main__":

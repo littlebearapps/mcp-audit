@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 from . import __version__
 
 # Schema version (see docs/data-contract.md for compatibility guarantees)
-SCHEMA_VERSION = "1.3.0"
+SCHEMA_VERSION = "1.4.0"
 
 
 def _now_with_timezone() -> datetime:
@@ -77,10 +77,14 @@ class Call:
     duration_ms: int = 0  # 0 if not available
     content_hash: Optional[str] = None
     platform_data: Optional[Dict[str, Any]] = None
+    # Token estimation metadata (v1.4.0)
+    is_estimated: bool = False  # True for Codex/Gemini MCP tools
+    estimation_method: Optional[str] = None  # "tiktoken", "sentencepiece", or "character"
+    estimation_encoding: Optional[str] = None  # e.g., "o200k_base", "sentencepiece:gemma"
 
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to JSON-serializable dict for v1.1.0 format"""
-        return {
+        """Convert to JSON-serializable dict for v1.4.0 format"""
+        result: Dict[str, Any] = {
             "index": self.index,
             "timestamp": _format_timestamp(self.timestamp),
             "tool": self.tool_name,
@@ -93,6 +97,13 @@ class Call:
             "duration_ms": self.duration_ms if self.duration_ms > 0 else None,
             "content_hash": self.content_hash,
         }
+        # v1.4.0: Add estimation fields only when tokens are estimated
+        # Omit when False to minimize file size for Claude Code sessions
+        if self.is_estimated:
+            result["is_estimated"] = True
+            result["estimation_method"] = self.estimation_method
+            result["estimation_encoding"] = self.estimation_encoding
+        return result
 
     def to_dict_v1_0(self) -> Dict[str, Any]:
         """Convert to JSON-serializable dict for v1.0.0 backward compatibility"""
@@ -368,10 +379,20 @@ class Session:
         return data
 
     def _build_mcp_summary(self) -> MCPSummary:
-        """Build pre-computed MCP summary"""
+        """Build pre-computed MCP summary.
+
+        Note: Excludes "builtin" pseudo-server (task-95.2). Built-in tools
+        (shell_command, update_plan, etc.) are tracked separately in
+        builtin_tool_summary.
+        """
         all_tools: List[Tuple[str, str, int, int]] = []  # (tool, server, tokens, calls)
 
-        for server_name, server_session in self.server_sessions.items():
+        # Filter out "builtin" pseudo-server - these are NOT MCP tools (task-95.2)
+        mcp_servers = {
+            name: session for name, session in self.server_sessions.items() if name != "builtin"
+        }
+
+        for server_name, server_session in mcp_servers.items():
             for tool_name, tool_stats in server_session.tools.items():
                 all_tools.append(
                     (tool_name, server_name, tool_stats.total_tokens, tool_stats.calls)
@@ -390,10 +411,10 @@ class Session:
         ]
 
         return MCPSummary(
-            total_calls=sum(ss.total_calls for ss in self.server_sessions.values()),
+            total_calls=sum(ss.total_calls for ss in mcp_servers.values()),
             unique_tools=len({t[0] for t in all_tools}),
-            unique_servers=len(self.server_sessions),
-            servers_used=list(self.server_sessions.keys()),
+            unique_servers=len(mcp_servers),
+            servers_used=list(mcp_servers.keys()),
             top_by_tokens=top_by_tokens,
             top_by_calls=top_by_calls,
         )
@@ -670,7 +691,8 @@ class BaseTracker(ABC):
             "mcp__zen__chat" → "zen"
             "mcp__zen-mcp__chat" → "zen" (Codex CLI format)
             "mcp__brave-search__web" → "brave-search"
-            "builtin__read_file" → "builtin" (task-78)
+            "builtin__read_file" → "builtin" (Gemini CLI format, task-78)
+            "__builtin__:shell_command" → "builtin" (Codex CLI format, task-69.31.2)
 
         Args:
             tool_name: Full MCP tool name or built-in tool name
@@ -678,8 +700,12 @@ class BaseTracker(ABC):
         Returns:
             Normalized server name
         """
-        # Handle built-in tools (task-78)
+        # Handle built-in tools (task-78, task-69.31.2)
+        # Gemini CLI format: builtin__tool_name
         if tool_name.startswith("builtin__"):
+            return "builtin"
+        # Codex CLI format: __builtin__:tool_name
+        if tool_name.startswith("__builtin__:"):
             return "builtin"
 
         if not tool_name.startswith("mcp__"):
@@ -734,6 +760,9 @@ class BaseTracker(ABC):
         duration_ms: int = 0,
         content_hash: Optional[str] = None,
         platform_data: Optional[Dict[str, Any]] = None,
+        is_estimated: bool = False,
+        estimation_method: Optional[str] = None,
+        estimation_encoding: Optional[str] = None,
     ) -> None:
         """
         Record a single MCP tool call.
@@ -747,6 +776,9 @@ class BaseTracker(ABC):
             duration_ms: Call duration in milliseconds (0 if not available)
             content_hash: SHA256 hash of input (for duplicate detection)
             platform_data: Platform-specific metadata
+            is_estimated: True if token counts are estimated (v1.4.0)
+            estimation_method: "tiktoken", "sentencepiece", or "character" (v1.4.0)
+            estimation_encoding: e.g., "o200k_base", "sentencepiece:gemma" (v1.4.0)
         """
         # Normalize tool name
         normalized_tool = self.normalize_tool_name(tool_name)
@@ -768,6 +800,10 @@ class BaseTracker(ABC):
             duration_ms=duration_ms,
             content_hash=content_hash,
             platform_data=platform_data,
+            # v1.4.0: Token estimation metadata
+            is_estimated=is_estimated,
+            estimation_method=estimation_method,
+            estimation_encoding=estimation_encoding,
         )
 
         # Track duplicate calls

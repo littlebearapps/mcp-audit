@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Tuple
 
 from .base_tracker import BaseTracker
 from .pricing_config import PricingConfig
+from .token_estimator import TokenEstimator
 
 if TYPE_CHECKING:
     from .display import DisplayAdapter, DisplaySnapshot
@@ -144,9 +145,17 @@ class CodexCLIAdapter(BaseTracker):
         self._builtin_tool_counts: Dict[str, int] = {}
         self._builtin_tool_total_calls: int = 0
 
-        # Pending tool calls for duration tracking (task-68.5)
+        # Pending tool calls for duration tracking (task-68.5) and token estimation (task-69.8)
         # Maps call_id to tool call info, waiting for function_call_output
         self._pending_tool_calls: Dict[str, Dict[str, Any]] = {}
+
+        # Token estimator for MCP tool calls (task-69.8)
+        # Codex CLI uses tiktoken o200k_base for ~99-100% accuracy
+        self._estimator = TokenEstimator.for_platform("codex-cli")
+
+        # Token estimation tracking (task-69.10)
+        # Counts MCP tool calls that use estimated tokens
+        self._estimated_tool_calls: int = 0
 
     # ========================================================================
     # Session File Discovery (Task 60.9)
@@ -380,9 +389,13 @@ class CodexCLIAdapter(BaseTracker):
         cache_efficiency = cache_read / total_input if total_input > 0 else 0.0
 
         # Build top tools list (use self.server_sessions for live tracking - task-66.9)
+        # Exclude "builtin" pseudo-server from MCP stats (task-69.32.1)
         top_tools = []
         total_mcp_calls = 0
-        for server_session in self.server_sessions.values():
+        for server_name, server_session in self.server_sessions.items():
+            # Skip builtin pseudo-server - these are tracked separately (task-69.32.1)
+            if server_name == "builtin":
+                continue
             total_mcp_calls += server_session.total_calls
             for tool_name, tool_stats in server_session.tools.items():
                 avg_tokens = (
@@ -396,17 +409,19 @@ class CodexCLIAdapter(BaseTracker):
         model_id = self.detected_model or ""
 
         # Calculate costs
+        # NOTE: For OpenAI/Codex API, input_tokens INCLUDES cache_read_tokens as a subset.
+        # So: non_cached_input = input_tokens - cache_read_tokens (task-69.32.2)
         cost_with_cache = 0.0
         cost_without_cache = 0.0
         if pricing.loaded and model_id:
-            # Cost with cache
+            # Cost with cache: charge non-cached at input_rate, cached at cache_rate
+            non_cached_input = input_tokens - cache_read
             cost_with_cache = pricing.calculate_cost(
-                model_id, input_tokens, output_tokens, cache_created, cache_read
+                model_id, non_cached_input, output_tokens, cache_created, cache_read
             )
-            # Cost without cache (all cache_read would be regular input)
-            cost_without_cache = pricing.calculate_cost(
-                model_id, input_tokens + cache_read, output_tokens, 0, 0
-            )
+            # Cost without cache: all input at full input_rate (no cache_read)
+            # input_tokens already represents total input, so no addition needed
+            cost_without_cache = pricing.calculate_cost(model_id, input_tokens, output_tokens, 0, 0)
 
             # Save costs to session for persistence (task-66.8)
             self.session.cost_estimate = cost_with_cache
@@ -414,8 +429,12 @@ class CodexCLIAdapter(BaseTracker):
             self.session.cache_savings_usd = cost_without_cache - cost_with_cache
 
         # Build server hierarchy for live TUI display (task-68.1)
+        # Exclude "builtin" pseudo-server - built-in tools are shown separately (task-69.32.1)
         server_hierarchy: List[Tuple[str, int, int, int, List[Tuple[str, int, int, float]]]] = []
         for server_name, server_session in self.server_sessions.items():
+            # Skip builtin pseudo-server - these are tracked in builtin_tool_calls (task-69.32.1)
+            if server_name == "builtin":
+                continue
             server_calls = server_session.total_calls
             server_tokens = server_session.total_tokens
             server_avg = server_tokens // server_calls if server_calls > 0 else 0
@@ -466,6 +485,10 @@ class CodexCLIAdapter(BaseTracker):
             builtin_tool_tokens=0,  # Codex CLI doesn't provide per-tool tokens
             # Server hierarchy for live TUI (task-68.1)
             server_hierarchy=server_hierarchy,
+            # Token estimation tracking (task-69.10)
+            estimated_tool_calls=self._estimated_tool_calls,
+            estimation_method=self._estimator.method_name,
+            estimation_encoding=self._estimator.encoding_name,
         )
 
     def _start_file_tracking(self) -> None:
@@ -692,110 +715,132 @@ class CodexCLIAdapter(BaseTracker):
         Parse function_call event for tool calls.
 
         Handles both MCP tools (name starts with "mcp__") and built-in tools.
-        MCP tools are recorded immediately; duration is updated later via function_call_output.
-        Built-in tools are counted separately.
+        Both are stored pending until function_call_output provides the result
+        for token estimation (task-69.8, task-69.24).
+
+        Per Task 69 validated plan: "Built-in vs MCP Tools: No difference in accuracy
+        approach. Both are function calls to the model and use the same estimation method."
 
         Args:
             payload: The event payload with tool call info
 
         Returns:
-            Tuple of (tool_name, usage_dict) for MCP tool calls, None for built-in tools
-            (built-in tools are tracked internally via _builtin_tool_counts)
+            None - All tool calls are recorded when function_call_output is received
         """
         tool_name = payload.get("name", "")
         call_id = payload.get("call_id")
 
-        # Track built-in tools separately (task-68.3, task-78)
-        # Known tools documented in CODEX_BUILTIN_TOOLS; pattern catches any new ones
-        if not tool_name.startswith("mcp__"):
-            # Increment built-in tool counters
+        is_builtin = not tool_name.startswith("mcp__")
+
+        # Track built-in tool counters (task-68.3, task-78)
+        if is_builtin:
             if tool_name not in self._builtin_tool_counts:
                 self._builtin_tool_counts[tool_name] = 0
             self._builtin_tool_counts[tool_name] += 1
             self._builtin_tool_total_calls += 1
 
-            # Update session's builtin_tool_stats for persistence (task-78)
-            # Note: Codex CLI doesn't provide per-tool token counts
+            # Initialize session's builtin_tool_stats for persistence (task-78)
+            # Token count will be updated when function_call_output arrives (task-69.24)
             if tool_name not in self.session.builtin_tool_stats:
                 self.session.builtin_tool_stats[tool_name] = {"calls": 0, "tokens": 0}
             self.session.builtin_tool_stats[tool_name]["calls"] += 1
-            # tokens remain 0 as Codex doesn't provide per-tool token attribution
 
-            return None
-
-        # Parse arguments if available
+        # Get arguments string for token estimation (task-69.8, task-69.24)
         arguments_str = payload.get("arguments", "{}")
-        try:
-            tool_params = json.loads(arguments_str)
-        except json.JSONDecodeError:
-            tool_params = {}
 
-        # Store call_id mapping for duration update (task-68.5)
-        # Duration will be updated when function_call_output is received
+        # Store call info for token estimation when function_call_output arrives
+        # Both MCP and built-in tools need estimation (task-69.24)
         if call_id:
             self._pending_tool_calls[call_id] = {
                 "tool_name": tool_name,
+                "arguments_str": arguments_str,  # Store raw args for estimation
+                "is_builtin": is_builtin,  # Track for correct routing in output handler
             }
 
-        # MCP tool calls don't include token usage directly
-        # Tokens are tracked separately via token_count events
-        usage_dict = {
-            "input_tokens": 0,
-            "output_tokens": 0,
-            "cache_created_tokens": 0,
-            "cache_read_tokens": 0,
-            "tool_params": tool_params,
-            "call_id": call_id,
-            "duration_ms": 0,  # Updated later via function_call_output
-        }
-
-        return (tool_name, usage_dict)
+        # Don't record yet - wait for function_call_output for token estimation
+        return None
 
     def _parse_function_call_output(
         self, payload: Dict[str, Any]
     ) -> Optional[Tuple[str, Dict[str, Any]]]:
         """
-        Parse function_call_output event to extract tool duration (task-68.5).
+        Parse function_call_output event for token estimation (task-69.8, task-69.24).
 
-        Extracts "Wall time: X seconds" from output. The duration is associated
-        with the matching call_id to update the tool call's duration.
+        This is where tool calls are recorded, once we have both arguments
+        (from function_call) and result (from this event) for accurate token estimation.
 
-        Note: Since tool calls are recorded immediately when function_call is received,
-        this method updates the duration of the already-recorded call if it can find it.
-        For live tracking, this provides accurate duration reporting.
+        Token estimation uses tiktoken o200k_base encoding for ~99-100% accuracy
+        with OpenAI/Codex models. Both MCP and built-in tools are estimated.
 
         Args:
             payload: The event payload with output and call_id
 
         Returns:
-            None (duration updates are applied directly to recorded calls)
+            Tuple of (tool_name, usage_dict) with estimated tokens for all tools,
+            None if no matching pending call
         """
         call_id = payload.get("call_id")
+
+        # Must have a matching pending call to process
+        if not call_id or call_id not in self._pending_tool_calls:
+            return None
+
+        pending = self._pending_tool_calls.pop(call_id)
+        tool_name = pending["tool_name"]
+        arguments_str = pending.get("arguments_str", "{}")
+        is_builtin = pending.get("is_builtin", False)
+
+        # Get output/result for estimation
         output = payload.get("output", "")
 
         # Handle output being a list (some Codex CLI events have list outputs)
         if isinstance(output, list):
-            output = "\n".join(str(item) for item in output)
+            output = json.dumps(output)
         elif not isinstance(output, str):
             output = str(output) if output else ""
 
-        # Extract wall time from output
+        # Extract wall time from output (task-68.5)
         duration_ms = 0
         match = re.search(r"Wall time:\s*([\d.]+)\s*seconds?", output)
         if match:
             with contextlib.suppress(ValueError):
                 duration_ms = int(float(match.group(1)) * 1000)
 
-        # Clean up pending call entry (we don't need it anymore)
-        if call_id and call_id in self._pending_tool_calls:
-            pending = self._pending_tool_calls.pop(call_id)
-            tool_name = pending["tool_name"]
+        # Estimate tokens from arguments and result (task-69.8, task-69.24)
+        input_tokens, output_tokens = self._estimator.estimate_tool_call(arguments_str, output)
 
-            # Try to find and update the recorded call's duration
-            # This updates the Call object in the server_session's tool_stats
-            self._update_call_duration(tool_name, call_id, duration_ms)
+        # Track estimated tool calls for TUI display (task-69.10)
+        self._estimated_tool_calls += 1
 
-        return None
+        # Update builtin_tool_stats with estimated tokens (task-69.24)
+        if is_builtin and tool_name in self.session.builtin_tool_stats:
+            self.session.builtin_tool_stats[tool_name]["tokens"] += input_tokens + output_tokens
+
+        # Parse tool params for duplicate detection
+        try:
+            tool_params = json.loads(arguments_str)
+        except json.JSONDecodeError:
+            tool_params = {}
+
+        # Build usage dict with estimated tokens
+        usage_dict = {
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "cache_created_tokens": 0,  # Codex doesn't have cache creation
+            "cache_read_tokens": 0,  # Codex caching tracked at session level
+            "tool_params": tool_params,
+            "call_id": call_id,
+            "duration_ms": duration_ms,
+            # Token estimation metadata (v1.4.0)
+            "is_estimated": True,
+            "estimation_method": self._estimator.method_name,
+            "estimation_encoding": self._estimator.encoding_name,
+        }
+
+        # Return with correct prefix for built-in vs MCP tools (task-69.24)
+        if is_builtin:
+            return (f"__builtin__:{tool_name}", usage_dict)
+        return (tool_name, usage_dict)
 
     def _update_call_duration(self, tool_name: str, call_id: str, duration_ms: int) -> None:
         """
@@ -910,15 +955,13 @@ class CodexCLIAdapter(BaseTracker):
             tool_name: MCP tool name or "__session__" for non-MCP events
             usage: Token usage dictionary
         """
-        # v1.3.0: Include reasoning_tokens in total
+        # v1.3.0: Track reasoning_tokens separately (not in total per OpenAI API)
         reasoning_tokens = usage.get("reasoning_tokens", 0)
-        total_tokens = (
-            usage["input_tokens"]
-            + usage["output_tokens"]
-            + usage["cache_created_tokens"]
-            + usage["cache_read_tokens"]
-            + reasoning_tokens
-        )
+        # Task 69.23: Match OpenAI's total_tokens formula exactly
+        # total_tokens = input_tokens + output_tokens
+        # Note: cache tokens are a SUBSET of input_tokens, not additive
+        # Note: reasoning_tokens tracked separately, excluded from total per OpenAI API
+        total_tokens = usage["input_tokens"] + usage["output_tokens"]
 
         # Handle session-level token tracking (non-MCP events)
         # REPLACE values (not add) because we use cumulative total_token_usage
@@ -958,6 +1001,7 @@ class CodexCLIAdapter(BaseTracker):
 
         # Record tool call using BaseTracker
         # Duration comes from function_call_output parsing (task-68.5)
+        # Token estimation metadata comes from _parse_function_call_output (task-69.8)
         self.record_tool_call(
             tool_name=tool_name,
             input_tokens=usage["input_tokens"],
@@ -967,6 +1011,9 @@ class CodexCLIAdapter(BaseTracker):
             duration_ms=usage.get("duration_ms", 0),
             content_hash=content_hash,
             platform_data=platform_data,
+            is_estimated=usage.get("is_estimated", False),
+            estimation_method=usage.get("estimation_method"),
+            estimation_encoding=usage.get("estimation_encoding"),
         )
 
         # Notify display for Recent Activity feed (task-68.2)

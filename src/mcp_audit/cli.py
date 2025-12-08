@@ -218,6 +218,13 @@ analyzed later with the 'report' command.
     )
 
     collect_parser.add_argument(
+        "--theme",
+        choices=["auto", "dark", "light", "mocha", "latte", "hc-dark", "hc-light"],
+        default="auto",
+        help="TUI color theme (default: auto-detect). Options: dark/light (Catppuccin), hc-dark/hc-light (high contrast)",
+    )
+
+    collect_parser.add_argument(
         "--pin-server",
         action="append",
         dest="pinned_servers",
@@ -279,6 +286,129 @@ This command analyzes session data and produces reports in various formats
         "--top-n", type=int, default=10, help="Number of top tools to show (default: 10)"
     )
 
+    # ========================================================================
+    # init command
+    # ========================================================================
+    init_parser = subparsers.add_parser(
+        "init",
+        help="Initialize mcp-audit with optional enhancements",
+        description="""
+Interactive setup wizard for mcp-audit.
+
+This command checks your current configuration and offers optional
+enhancements with y/n prompts. Nothing is installed without your approval.
+
+Current checks:
+  - Gemma tokenizer (100% accurate Gemini CLI token estimation)
+  - Future: pricing config, output directories, etc.
+        """,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+
+    init_parser.add_argument(
+        "--yes",
+        "-y",
+        action="store_true",
+        help="Accept all optional enhancements without prompting",
+    )
+
+    init_parser.add_argument(
+        "--no",
+        "-n",
+        action="store_true",
+        help="Skip all optional enhancements without prompting",
+    )
+
+    init_parser.add_argument(
+        "--check-only",
+        action="store_true",
+        help="Only show status, don't offer to install anything",
+    )
+
+    # ========================================================================
+    # tokenizer command
+    # ========================================================================
+    tokenizer_parser = subparsers.add_parser(
+        "tokenizer",
+        help="Manage tokenizer models for token estimation",
+        description="""
+Manage tokenizer models used for accurate token estimation.
+
+The Gemma tokenizer provides 100% accurate token counts for Gemini CLI sessions.
+It can be downloaded from GitHub Releases (no account required).
+
+Without the Gemma tokenizer, mcp-audit falls back to tiktoken (cl100k_base)
+which provides ~95% accuracy for Gemini sessions.
+        """,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+
+    tokenizer_subparsers = tokenizer_parser.add_subparsers(
+        title="tokenizer commands",
+        dest="tokenizer_command",
+        help="Tokenizer management commands",
+    )
+
+    # tokenizer status
+    tokenizer_status_parser = tokenizer_subparsers.add_parser(
+        "status",
+        help="Check tokenizer installation status",
+    )
+    tokenizer_status_parser.add_argument("--json", action="store_true", help="Output as JSON")
+
+    # tokenizer download
+    tokenizer_download_parser = tokenizer_subparsers.add_parser(
+        "download",
+        help="Download the Gemma tokenizer for accurate Gemini CLI token estimation",
+        description="""
+Download the Gemma tokenizer model for 100% accurate Gemini CLI token estimation.
+
+By default, downloads from GitHub Releases (no account required).
+Alternatively, use --source huggingface if GitHub is unavailable.
+
+Examples:
+  # Download latest from GitHub (recommended)
+  mcp-audit tokenizer download
+
+  # Download specific release
+  mcp-audit tokenizer download --release v0.4.0
+
+  # Download from HuggingFace (requires account)
+  mcp-audit tokenizer download --source huggingface --token hf_xxx
+
+The tokenizer will be saved to ~/.cache/mcp-audit/tokenizer.model
+        """,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+
+    tokenizer_download_parser.add_argument(
+        "--source",
+        type=str,
+        choices=["github", "huggingface"],
+        default="github",
+        help="Download source: github (default, no auth) or huggingface (requires account)",
+    )
+
+    tokenizer_download_parser.add_argument(
+        "--release",
+        type=str,
+        default=None,
+        help="Specific release version to download (e.g., v0.4.0). Default: latest",
+    )
+
+    tokenizer_download_parser.add_argument(
+        "--token",
+        type=str,
+        default=None,
+        help="HuggingFace access token (only for --source huggingface)",
+    )
+
+    tokenizer_download_parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Re-download even if tokenizer already exists",
+    )
+
     # Parse arguments
     args = parser.parse_args()
 
@@ -287,6 +417,10 @@ This command analyzes session data and produces reports in various formats
         return cmd_collect(args)
     elif args.command == "report":
         return cmd_report(args)
+    elif args.command == "init":
+        return cmd_init(args)
+    elif args.command == "tokenizer":
+        return cmd_tokenizer(args)
     else:
         parser.print_help()
         return 1
@@ -308,11 +442,77 @@ def get_display_mode(args: argparse.Namespace) -> Literal["auto", "tui", "plain"
     return "auto"  # Will use TUI if TTY, else plain
 
 
+def _check_first_run() -> bool:
+    """Check if this is the first run and offer setup if so.
+
+    Returns True if user wants to continue, False if they ran init.
+    """
+    marker_file = Path.home() / ".mcp-audit" / ".initialized"
+
+    # If marker exists, not first run
+    if marker_file.exists():
+        return True
+
+    # First run - offer setup
+    print()
+    print("=" * 60)
+    print("  Welcome to MCP Audit!")
+    print("=" * 60)
+    print()
+    print("  Looks like this is your first time running mcp-audit.")
+    print()
+    print("  mcp-audit works out of the box for all platforms:")
+    print("    • Claude Code  — 100% accurate (native token counts)")
+    print("    • Codex CLI    — 99%+ accurate (tiktoken, bundled)")
+    print("    • Gemini CLI   — ~95% accurate (tiktoken fallback)")
+    print()
+    print("  Optional: Download the Gemma tokenizer for 100% Gemini CLI accuracy.")
+    print("  (Only needed if you use Gemini CLI and want exact token counts.)")
+    print()
+
+    # Interactive prompt
+    try:
+        response = input("  Run quick setup? [y/N] ").strip().lower()
+    except (EOFError, KeyboardInterrupt):
+        print()
+        response = "n"
+
+    # Create marker directory if needed
+    marker_file.parent.mkdir(parents=True, exist_ok=True)
+
+    if response in ("y", "yes"):
+        print()
+        # Run init command
+        import subprocess
+        import sys
+
+        subprocess.run([sys.executable, "-m", "mcp_audit", "init"])
+        # Mark as initialized
+        marker_file.touch()
+        print()
+        print("Setup complete! Starting collect...")
+        print()
+        return True
+    else:
+        # Mark as initialized (user declined but we don't ask again)
+        marker_file.touch()
+        print()
+        print("  Skipped. Run 'mcp-audit init' anytime for guided setup.")
+        print("  Tip: 'mcp-audit tokenizer download' for Gemini CLI accuracy.")
+        print()
+        return True
+
+
 def cmd_collect(args: argparse.Namespace) -> int:
     """Execute collect command."""
     global _active_tracker, _active_display, _shutdown_in_progress, _session_saved
 
     from .display import DisplaySnapshot, create_display
+
+    # Check for first run (interactive welcome)
+    # Skip if running in non-interactive mode (quiet/plain)
+    if not args.quiet and not args.plain:
+        _check_first_run()
 
     # Reset global state for this session
     _active_tracker = None
@@ -336,10 +536,14 @@ def cmd_collect(args: argparse.Namespace) -> int:
 
     # Create display adapter
     try:
+        # Resolve theme: 'auto' -> None (triggers auto-detection)
+        theme = None if args.theme == "auto" else args.theme
+
         display = create_display(
             mode=display_mode,
             refresh_rate=args.refresh_rate,
             pinned_servers=args.pinned_servers,
+            theme=theme,
         )
         _active_display = display
     except ImportError as e:
@@ -385,8 +589,16 @@ def cmd_collect(args: argparse.Namespace) -> int:
             tracker = CodexCLIAdapter(project=project, from_start=args.from_start)
         elif platform == "gemini-cli":
             from .gemini_cli_adapter import GeminiCLIAdapter
+            from .token_estimator import check_gemma_tokenizer_status
 
             tracker = GeminiCLIAdapter(project=project, from_start=args.from_start)
+
+            # "Noisy fallback" - inform user if using approximate token estimation
+            gemma_status = check_gemma_tokenizer_status()
+            if not gemma_status["installed"]:
+                print("Note: Using standard tokenizer for Gemini CLI (~95% accuracy).")
+                print("      For 100% accuracy: mcp-audit tokenizer download")
+                print()
         else:
             display.stop(initial_snapshot)
             print(f"Error: Platform '{platform}' not yet implemented")
@@ -508,32 +720,50 @@ def _build_snapshot_from_session(
     model_name = MODEL_DISPLAY_NAMES.get(model_id, model_id) if model_id else "Unknown Model"
 
     # ================================================================
-    # Enhanced cost tracking (fix for task-42.1)
+    # Enhanced cost tracking (fix for task-42.1, task-95.1)
     # ================================================================
-    pricing_config = PricingConfig()
     input_tokens = session.token_usage.input_tokens
     output_tokens = session.token_usage.output_tokens
     cache_created = session.token_usage.cache_created_tokens
     cache_read = session.token_usage.cache_read_tokens
 
-    # Calculate cost without cache (all cache tokens charged at input rate)
-    model_for_pricing = model_id or "claude-sonnet-4-5-20250929"  # Default fallback
-    pricing = pricing_config.get_model_pricing(model_for_pricing)
-    if pricing:
-        input_rate = pricing.get("input", 3.0)  # Default Sonnet 4.5 rate
-        output_rate = pricing.get("output", 15.0)
-        cost_no_cache = (
-            ((input_tokens + cache_created + cache_read) * input_rate)
-            + (output_tokens * output_rate)
-        ) / 1_000_000
-    else:
-        # Fallback to Sonnet 4.5 default pricing
-        cost_no_cache = (
-            ((input_tokens + cache_created + cache_read) * 3.0) + (output_tokens * 15.0)
-        ) / 1_000_000
-
-    # Calculate savings
+    # Use pre-calculated costs from session if available (task-95.1)
+    # This avoids double-counting for platforms like Codex CLI where
+    # input_tokens already includes cache_read_tokens
     cost_estimate = session.cost_estimate
+    cost_no_cache = session.cost_no_cache
+
+    # Only recalculate if session doesn't have cost_no_cache but has tokens
+    # (backwards compatibility with older session files, or Claude Code which
+    # calculates costs differently - input_tokens does NOT include cache tokens)
+    # For Codex/Gemini CLI, the adapter should have already set both cost fields.
+    has_tokens = (input_tokens + output_tokens + cache_created + cache_read) > 0
+    if cost_no_cache == 0.0 and has_tokens:
+        # Check if this is a Codex/Gemini session that already has cost_estimate set
+        # If so, don't recalculate as it would double-count
+        is_codex_or_gemini = session.platform in ("codex-cli", "gemini-cli")
+
+        if not is_codex_or_gemini or cost_estimate == 0.0:
+            pricing_config = PricingConfig()
+            model_for_pricing = model_id or "claude-sonnet-4-5-20250929"  # Default fallback
+            pricing = pricing_config.get_model_pricing(model_for_pricing)
+            if pricing:
+                input_rate = pricing.get("input", 3.0)  # Default Sonnet 4.5 rate
+                output_rate = pricing.get("output", 15.0)
+                # Note: This calculation assumes Claude Code format where input_tokens
+                # does NOT include cache tokens. For Codex/Gemini, the adapter
+                # should have already set cost_no_cache.
+                cost_no_cache = (
+                    ((input_tokens + cache_created + cache_read) * input_rate)
+                    + (output_tokens * output_rate)
+                ) / 1_000_000
+            else:
+                # Fallback to Sonnet 4.5 default pricing
+                cost_no_cache = (
+                    ((input_tokens + cache_created + cache_read) * 3.0) + (output_tokens * 15.0)
+                ) / 1_000_000
+
+    # Calculate savings from pre-calculated or recalculated values
     cache_savings = cost_no_cache - cost_estimate
     savings_percent = (cache_savings / cost_no_cache * 100) if cost_no_cache > 0 else 0.0
 
@@ -679,6 +909,319 @@ def cmd_report(args: argparse.Namespace) -> int:
         return generate_csv_report(sessions, args)
     else:
         print(f"Error: Unknown format: {args.format}")
+        return 1
+
+
+def cmd_init(args: argparse.Namespace) -> int:
+    """Execute init command - interactive setup wizard."""
+    import importlib.util
+
+    from .token_estimator import check_gemma_tokenizer_status
+
+    print()
+    print("=" * 60)
+    print("  mcp-audit Setup Wizard")
+    print("=" * 60)
+    print()
+
+    auto_yes = getattr(args, "yes", False)
+    auto_no = getattr(args, "no", False)
+    check_only = getattr(args, "check_only", False)
+
+    # Track what we found and did
+    issues_found = 0
+    enhancements_available = 0
+    enhancements_installed = 0
+
+    # ========================================================================
+    # Check 1: Core dependencies
+    # ========================================================================
+    print("[1/3] Checking core dependencies...")
+    print()
+
+    # Check tiktoken
+    if importlib.util.find_spec("tiktoken"):
+        print("  ✓ tiktoken installed (Codex CLI token estimation)")
+    else:
+        print("  ✗ tiktoken NOT installed")
+        issues_found += 1
+
+    # Check sentencepiece
+    if importlib.util.find_spec("sentencepiece"):
+        print("  ✓ sentencepiece installed (Gemini CLI token estimation)")
+    else:
+        print("  ✗ sentencepiece NOT installed")
+        issues_found += 1
+
+    # Check rich
+    if importlib.util.find_spec("rich"):
+        print("  ✓ rich installed (TUI display)")
+    else:
+        print("  ✗ rich NOT installed")
+        issues_found += 1
+
+    print()
+
+    # ========================================================================
+    # Check 2: Optional enhancements
+    # ========================================================================
+    print("[2/3] Checking optional enhancements...")
+    print()
+
+    # Gemma tokenizer status
+    gemma_status = check_gemma_tokenizer_status()
+
+    if gemma_status["installed"]:
+        print("  ✓ Gemma tokenizer installed")
+        print(f"    Location: {gemma_status['location']}")
+        print(f"    Source: {gemma_status['source']}")
+    else:
+        enhancements_available += 1
+        print("  ○ Gemma tokenizer NOT installed (optional)")
+        print("    Provides 100% accurate Gemini CLI token counts")
+        print("    Without it: ~95-99% accuracy using tiktoken fallback")
+
+        if not check_only:
+            # Ask user if they want to install
+            if auto_no:
+                print("    Skipped (--no flag)")
+            elif auto_yes:
+                print("    Installing (--yes flag)...")
+                success, message = _init_install_gemma_tokenizer()
+                if success:
+                    enhancements_installed += 1
+                    print(f"    ✓ {message}")
+                else:
+                    print(f"    ✗ {message}")
+            else:
+                # Interactive prompt
+                print()
+                response = _prompt_yes_no(
+                    "    Install Gemma tokenizer for 100% Gemini accuracy?",
+                    default=False,
+                )
+                if response:
+                    success, message = _init_install_gemma_tokenizer()
+                    if success:
+                        enhancements_installed += 1
+                        print(f"    ✓ {message}")
+                    else:
+                        print(f"    ✗ {message}")
+                else:
+                    print("    Skipped")
+
+    print()
+
+    # ========================================================================
+    # Check 3: Output directories
+    # ========================================================================
+    print("[3/3] Checking output directories...")
+    print()
+
+    sessions_dir = Path.home() / ".mcp-audit" / "sessions"
+    cache_dir = Path.home() / ".cache" / "mcp-audit"
+
+    if sessions_dir.exists():
+        session_count = len(list(sessions_dir.glob("*.json")))
+        print(f"  ✓ Sessions directory exists: {sessions_dir}")
+        print(f"    Contains {session_count} session file(s)")
+    else:
+        print("  ○ Sessions directory not created yet")
+        print(f"    Will be created at: {sessions_dir}")
+
+    if cache_dir.exists():
+        print(f"  ✓ Cache directory exists: {cache_dir}")
+    else:
+        print("  ○ Cache directory not created yet")
+        print(f"    Will be created at: {cache_dir}")
+
+    print()
+
+    # ========================================================================
+    # Summary
+    # ========================================================================
+    print("=" * 60)
+    print("  Summary")
+    print("=" * 60)
+    print()
+
+    if issues_found == 0:
+        print("  ✓ All core dependencies installed")
+    else:
+        print(f"  ✗ {issues_found} missing core dependency(ies)")
+        print("    Run: pip install mcp-audit")
+
+    if enhancements_available == 0:
+        print("  ✓ All optional enhancements installed")
+    else:
+        remaining = enhancements_available - enhancements_installed
+        if remaining > 0:
+            print(f"  ○ {remaining} optional enhancement(s) available")
+            print("    Run: mcp-audit init --yes")
+        else:
+            print(f"  ✓ Installed {enhancements_installed} enhancement(s)")
+
+    print()
+    print("  Ready to use: mcp-audit collect --platform <platform>")
+    print()
+
+    return 0 if issues_found == 0 else 1
+
+
+def _prompt_yes_no(prompt: str, default: bool = False) -> bool:
+    """Prompt user for yes/no response."""
+    suffix = " [y/N]: " if not default else " [Y/n]: "
+    try:
+        response = input(prompt + suffix).strip().lower()
+        if not response:
+            return default
+        return response in ("y", "yes")
+    except (EOFError, KeyboardInterrupt):
+        print()
+        return False
+
+
+def _init_install_gemma_tokenizer() -> tuple[bool, str]:
+    """Attempt to install Gemma tokenizer from GitHub Releases."""
+    from .token_estimator import download_gemma_from_github
+
+    print()
+    print("    Downloading Gemma tokenizer from GitHub Releases...")
+    return download_gemma_from_github()
+
+
+def cmd_tokenizer(args: argparse.Namespace) -> int:
+    """Execute tokenizer command."""
+    tokenizer_cmd = getattr(args, "tokenizer_command", None)
+
+    if tokenizer_cmd == "status":
+        return cmd_tokenizer_status(args)
+    elif tokenizer_cmd == "download":
+        return cmd_tokenizer_download(args)
+    else:
+        # No subcommand - show help
+        print("Usage: mcp-audit tokenizer <command>")
+        print()
+        print("Commands:")
+        print("  status    Check tokenizer installation status")
+        print("  download  Download the Gemma tokenizer (from GitHub by default)")
+        print()
+        print("Run 'mcp-audit tokenizer <command> --help' for more information.")
+        return 0
+
+
+def cmd_tokenizer_status(args: argparse.Namespace) -> int:
+    """Show tokenizer installation status."""
+    import json as json_lib
+
+    from .token_estimator import check_gemma_tokenizer_status
+
+    status = check_gemma_tokenizer_status()
+
+    if getattr(args, "json", False):
+        print(json_lib.dumps(status, indent=2))
+        return 0
+
+    print()
+    print("Gemma Tokenizer Status")
+    print("=" * 40)
+
+    if status["installed"]:
+        print("✓ Installed")
+        print(f"  Location: {status['location']}")
+
+        # Use clearer terminology for source
+        source_display = {
+            "bundled": "Bundled with package",
+            "cached": "Downloaded (persistent)",
+        }.get(status["source"], status["source"])
+        print(f"  Source: {source_display}")
+
+        # Show version info if available (from tokenizer.meta.json)
+        if status.get("version"):
+            print(f"  Version: {status['version']}")
+        if status.get("downloaded_at"):
+            # Format the ISO timestamp more readably
+            downloaded_at = status["downloaded_at"]
+            if "T" in downloaded_at:
+                downloaded_at = downloaded_at.replace("T", " ").split(".")[0]
+            print(f"  Downloaded: {downloaded_at}")
+
+        print()
+        print("Gemini CLI Accuracy: 100% (exact match)")
+    else:
+        print("✗ Not installed")
+        print()
+        print("Gemini CLI Accuracy: ~95% (tiktoken fallback)")
+        print()
+        print("To enable 100% accuracy for Gemini CLI:")
+        print("  mcp-audit tokenizer download")
+
+    # SentencePiece availability
+    print()
+    if status["sentencepiece_available"]:
+        print("SentencePiece: available")
+    else:
+        print("SentencePiece: not installed")
+        print("  pip install sentencepiece")
+
+    print()
+    return 0
+
+
+def cmd_tokenizer_download(args: argparse.Namespace) -> int:
+    """Download the Gemma tokenizer."""
+    from .token_estimator import download_gemma_from_github, download_gemma_tokenizer
+
+    source = getattr(args, "source", "github")
+    release = getattr(args, "release", None)
+    token = getattr(args, "token", None)
+    force = getattr(args, "force", False)
+
+    if source == "github":
+        print("Downloading Gemma Tokenizer from GitHub")
+        print("=" * 50)
+        if release:
+            print(f"  Release: {release}")
+        else:
+            print("  Release: latest")
+        print()
+
+        success, message = download_gemma_from_github(version=release, force=force)
+    else:
+        # HuggingFace source
+        print("Downloading Gemma Tokenizer from HuggingFace")
+        print("=" * 50)
+        print()
+
+        if not token:
+            print("Note: HuggingFace requires account signup and license acceptance.")
+            print("Visit: https://huggingface.co/google/gemma-2b")
+            print()
+
+        success, message = download_gemma_tokenizer(token=token, force=force)
+
+    if success:
+        print(f"✓ {message}")
+        print()
+        print("The Gemma tokenizer is now available for Gemini CLI sessions.")
+        print("Token estimation will use SentencePiece for 100% accuracy.")
+        return 0
+    else:
+        print("✗ Download failed")
+        print()
+        print(message)  # Already contains helpful context from the function
+
+        # Add general troubleshooting hint for network errors
+        if "rate limit" not in message.lower() and "not found" not in message.lower():
+            print()
+            print("Troubleshooting:")
+            print("• Check your network connection")
+            print("• Corporate firewall may block github.com")
+            print("• Download manually: https://github.com/littlebearapps/mcp-audit/releases")
+            print()
+            print("Token estimation will use tiktoken fallback (~95% accuracy).")
+
         return 1
 
 

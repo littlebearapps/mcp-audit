@@ -78,7 +78,11 @@ def sample_claude_code_events():
 
 @pytest.fixture
 def sample_codex_cli_events():
-    """Sample Codex CLI output events (actual JSONL format)"""
+    """Sample Codex CLI output events (actual JSONL format).
+
+    Since task-69.8, MCP tool calls require both function_call (registers pending)
+    and function_call_output (completes with estimated tokens) events.
+    """
     return [
         # turn_context event for model detection
         {
@@ -124,6 +128,16 @@ def sample_codex_cli_events():
                 "call_id": "call_abc123",
             },
         },
+        # function_call_output for zen chat (task-69.8: completes MCP tool call)
+        {
+            "timestamp": "2025-11-04T11:38:31.500Z",
+            "type": "response_item",
+            "payload": {
+                "type": "function_call_output",
+                "call_id": "call_abc123",
+                "output": "Response from zen chat\nWall time: 0.5 seconds",
+            },
+        },
         # MCP tool call event (brave-search server with -mcp suffix)
         {
             "timestamp": "2025-11-04T11:38:32.000Z",
@@ -133,6 +147,16 @@ def sample_codex_cli_events():
                 "name": "mcp__brave-search-mcp__web",  # Codex format with -mcp suffix
                 "arguments": '{"query": "search query"}',
                 "call_id": "call_def456",
+            },
+        },
+        # function_call_output for brave search (task-69.8: completes MCP tool call)
+        {
+            "timestamp": "2025-11-04T11:38:32.500Z",
+            "type": "response_item",
+            "payload": {
+                "type": "function_call_output",
+                "call_id": "call_def456",
+                "output": "Search results from brave\nWall time: 1.0 seconds",
             },
         },
     ]
@@ -195,7 +219,11 @@ class TestEventParsing:
                 assert usage["input_tokens"] > 0
 
     def test_codex_cli_event_parsing(self, sample_codex_cli_events) -> None:
-        """Test parsing Codex CLI events"""
+        """Test parsing Codex CLI events.
+
+        Since task-69.8, function_call events return None (register pending).
+        MCP tool calls complete when function_call_output arrives with estimated tokens.
+        """
         adapter = CodexCLIAdapter(project="test", codex_args=[])
 
         mcp_calls_found = 0
@@ -212,12 +240,13 @@ class TestEventParsing:
                     token_events_found += 1
                     assert usage["input_tokens"] > 0 or usage["cache_read_tokens"] > 0
                 else:
-                    # MCP tool call event
+                    # MCP tool call from function_call_output (task-69.8)
                     mcp_calls_found += 1
                     assert tool_name.startswith("mcp__")
-                    assert "-mcp__" in tool_name  # Codex format has -mcp suffix
-                    # MCP tool calls don't include token data directly
-                    assert "tool_params" in usage or "call_id" in usage
+                    # Now includes estimated tokens
+                    assert usage["is_estimated"] is True
+                    assert usage["estimation_method"] == "tiktoken"
+                    assert usage["input_tokens"] > 0
 
         # Verify model was detected from turn_context
         assert adapter.detected_model == "gpt-5-codex"
@@ -277,29 +306,20 @@ class TestSessionTracking:
         assert session.token_usage.total_tokens > 0
 
     def test_codex_cli_session_tracking(self, sample_codex_cli_events) -> None:
-        """Test complete Codex CLI session tracking"""
+        """Test complete Codex CLI session tracking.
+
+        Since task-69.8, function_call events return None (register pending).
+        MCP tool calls complete when function_call_output arrives with estimated tokens.
+        """
         adapter = CodexCLIAdapter(project="test-project", codex_args=[])
 
-        # Parse events and record calls
+        # Parse events and record calls using adapter's _process_tool_call
         for event in sample_codex_cli_events:
             result = adapter.parse_event(json.dumps(event))
             if result:
                 tool_name, usage = result
-
-                if tool_name == "__session__":
-                    # Token count event - update session tokens directly
-                    adapter.session.token_usage.input_tokens += usage["input_tokens"]
-                    adapter.session.token_usage.output_tokens += usage["output_tokens"]
-                    adapter.session.token_usage.cache_read_tokens += usage["cache_read_tokens"]
-                else:
-                    # MCP tool call event
-                    adapter.record_tool_call(
-                        tool_name=tool_name,
-                        input_tokens=usage["input_tokens"],
-                        output_tokens=usage["output_tokens"],
-                        cache_created_tokens=usage["cache_created_tokens"],
-                        cache_read_tokens=usage["cache_read_tokens"],
-                    )
+                # Use adapter's processing (handles both session and MCP)
+                adapter._process_tool_call(tool_name, usage)
 
         # Finalize session
         session = adapter.finalize_session()
@@ -321,6 +341,13 @@ class TestSessionTracking:
         zen_session = session.server_sessions.get("zen")
         assert zen_session is not None
         assert "mcp__zen__chat" in zen_session.tools
+
+        # Verify token estimation metadata (task-69.8)
+        chat_tool = zen_session.tools["mcp__zen__chat"]
+        assert len(chat_tool.call_history) == 1
+        call = chat_tool.call_history[0]
+        assert call.is_estimated is True
+        assert call.estimation_method == "tiktoken"
 
 
 # ============================================================================
@@ -570,30 +597,21 @@ class TestEndToEndWorkflow:
         assert "brave-search" in loaded_session.server_sessions
 
     def test_complete_codex_cli_workflow(self, tmp_path, sample_codex_cli_events) -> None:
-        """Test complete Codex CLI workflow with normalization"""
+        """Test complete Codex CLI workflow with normalization.
+
+        Since task-69.8, function_call events return None (register pending).
+        MCP tool calls complete when function_call_output arrives with estimated tokens.
+        """
         # 1. Create adapter
         adapter = CodexCLIAdapter(project="codex-e2e-test", codex_args=[])
 
-        # 2. Parse events and track
+        # 2. Parse events and track using adapter's _process_tool_call
         for event in sample_codex_cli_events:
             result = adapter.parse_event(json.dumps(event))
             if result:
                 tool_name, usage = result
-
-                if tool_name == "__session__":
-                    # Token count event - update session tokens directly
-                    adapter.session.token_usage.input_tokens += usage["input_tokens"]
-                    adapter.session.token_usage.output_tokens += usage["output_tokens"]
-                    adapter.session.token_usage.cache_read_tokens += usage["cache_read_tokens"]
-                else:
-                    # MCP tool call event
-                    adapter.record_tool_call(
-                        tool_name=tool_name,
-                        input_tokens=usage["input_tokens"],
-                        output_tokens=usage["output_tokens"],
-                        cache_created_tokens=usage["cache_created_tokens"],
-                        cache_read_tokens=usage["cache_read_tokens"],
-                    )
+                # Use adapter's processing (handles both session and MCP)
+                adapter._process_tool_call(tool_name, usage)
 
         # 3. Finalize and save
         session = adapter.finalize_session()
@@ -613,6 +631,12 @@ class TestEndToEndWorkflow:
         # 6. Verify model and tokens persisted
         assert loaded_session.model == "gpt-5-codex"
         assert loaded_session.token_usage.input_tokens > 0
+
+        # 7. Verify token estimation was recorded
+        # (Note: call_history may be empty after load depending on persistence settings)
+        chat_tool = zen_session.tools["mcp__zen__chat"]
+        assert chat_tool.calls == 1
+        assert chat_tool.total_tokens > 0  # Estimated tokens recorded
 
     def test_cross_session_analysis(self, tmp_path, sample_claude_code_events) -> None:
         """Test analyzing multiple sessions"""

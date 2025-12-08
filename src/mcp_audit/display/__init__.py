@@ -24,6 +24,7 @@ def create_display(
     mode: DisplayMode = "auto",
     refresh_rate: float = 0.5,
     pinned_servers: Optional[List[str]] = None,
+    theme: Optional[str] = None,
 ) -> DisplayAdapter:
     """Factory function to create appropriate display adapter.
 
@@ -35,6 +36,8 @@ def create_display(
             - "quiet": Silent mode (no output)
         refresh_rate: TUI refresh rate in seconds (default 0.5)
         pinned_servers: List of server names to pin at top of MCP section
+        theme: Theme name override for TUI (e.g., "dark", "light", "hc-dark")
+               If None, auto-detects from MCP_AUDIT_THEME env var or system.
 
     Returns:
         DisplayAdapter instance
@@ -64,7 +67,11 @@ def create_display(
         try:
             from .rich_display import RichDisplay
 
-            return RichDisplay(refresh_rate=refresh_rate, pinned_servers=pinned_servers)
+            return RichDisplay(
+                refresh_rate=refresh_rate,
+                pinned_servers=pinned_servers,
+                theme=theme,
+            )
         except ImportError:
             if mode == "tui":
                 raise ImportError(

@@ -102,6 +102,17 @@ class DisplaySnapshot:
     # Tracking mode: "live" (new events only) or "full" (from start)
     tracking_mode: str = "live"
 
+    # ========================================================================
+    # Token Estimation Tracking (task-69.10)
+    # ========================================================================
+
+    # Number of MCP tool calls with estimated tokens (Codex/Gemini CLI)
+    estimated_tool_calls: int = 0
+    # Estimation method used (tiktoken, sentencepiece, character, or "")
+    estimation_method: str = ""
+    # Encoding used (o200k_base, sentencepiece:gemma, cl100k_base, or "")
+    estimation_encoding: str = ""
+
     @classmethod
     def create(
         cls,
@@ -144,6 +155,10 @@ class DisplaySnapshot:
         health_status: str = "healthy",
         files_monitored: int = 0,
         tracking_mode: str = "live",
+        # Token estimation (task-69.10)
+        estimated_tool_calls: int = 0,
+        estimation_method: str = "",
+        estimation_encoding: str = "",
     ) -> "DisplaySnapshot":
         """Factory method to create a DisplaySnapshot with proper tuple conversion."""
         # Import version if not provided
@@ -200,4 +215,8 @@ class DisplaySnapshot:
             health_status=health_status,
             files_monitored=files_monitored,
             tracking_mode=tracking_mode,
+            # Token estimation (task-69.10)
+            estimated_tool_calls=estimated_tool_calls,
+            estimation_method=estimation_method,
+            estimation_encoding=estimation_encoding,
         )

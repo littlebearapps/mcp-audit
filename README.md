@@ -1,54 +1,43 @@
 # MCP Audit
 
-**Are your MCP tools eating context and you don't know which ones?**
+**Find + fix context bloat & high token usage in your MCP tools.**
 
-Whether you're building your own MCP servers or using Claude Code, Codex CLI, or Gemini CLI daily, mcp-audit shows you exactly where tokens go—per server, per tool, in real-time. Investigate and fix context bloat and high token usage at the source.
+Whether you build MCP servers or use **Claude Code**, **Codex CLI**, or **Gemini CLI**, `mcp-audit` shows you exactly where your tokens go—per server, per tool, in real-time.
+
+![MCP Audit real-time TUI showing token usage](docs/images/demo.gif)
+> *Real-time token tracking & MCP tool profiling — understand exactly where your tokens go.*
+
+[![PyPI version](https://img.shields.io/pypi/v/mcp-audit?style=for-the-badge&logo=pypi&logoColor=white)](https://pypi.org/project/mcp-audit/)
+[![Downloads](https://img.shields.io/pypi/dm/mcp-audit?style=for-the-badge&logo=pypi&logoColor=white)](https://pypi.org/project/mcp-audit/)
+[![CI](https://img.shields.io/github/actions/workflow/status/littlebearapps/mcp-audit/ci.yml?branch=main&label=CI&style=for-the-badge&logo=github&logoColor=white)](https://github.com/littlebearapps/mcp-audit/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](https://opensource.org/licenses/MIT)
+
+---
+
+## ⚡ Quick Install
+
+```bash
+pipx install mcp-audit
+```
+
+<details>
+<summary>Alternative: pip or uv</summary>
 
 ```bash
 pip install mcp-audit
 ```
 
-[![PyPI version](https://img.shields.io/pypi/v/mcp-audit.svg)](https://pypi.org/project/mcp-audit/)
-[![PyPI downloads](https://img.shields.io/pypi/dm/mcp-audit.svg)](https://pypi.org/project/mcp-audit/)
-[![Python 3.8+](https://img.shields.io/pypi/pyversions/mcp-audit.svg)](https://pypi.org/project/mcp-audit/)
-[![CI](https://img.shields.io/github/actions/workflow/status/littlebearapps/mcp-audit/ci.yml?branch=main&label=CI)](https://github.com/littlebearapps/mcp-audit/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
-![MCP Audit real-time TUI showing token usage per MCP server and tool](https://raw.githubusercontent.com/littlebearapps/mcp-audit/main/docs/images/demo.gif)
-
-> Real-time token tracking per MCP server and tool—see exactly what's eating your context.
-
-<details>
-<summary><strong>📑 Table of Contents</strong></summary>
-<br>
-
-- [Features](#features)
-- [Who Is This For?](#-who-is-this-for)
-- [Why mcp-audit?](#-why-mcp-audit)
-  - [How mcp-audit Compares](#how-mcp-audit-compares)
-- [Quick Start](#-quick-start)
-- [Platform Support](#️-platform-support)
-- [Feature Details](#-feature-details)
-- [Configuration](#️-configuration)
-- [Documentation](#-documentation)
-- [CLI Reference](#-cli-reference)
-- [Data Storage](#-data-storage)
-- [FAQ](#-faq)
-- [Roadmap](#️-roadmap)
-- [Contributing](#-contributing)
-- [License](#-license)
+```bash
+uv pip install mcp-audit
+```
 
 </details>
 
-### Features
-
-- ⚡ **Real-time TUI** — Watch tokens flow as you work
-- 📊 **Per-tool breakdown** — Track MCP tool calls; per-tool tokens on Claude Code
-- 💰 **Cost estimates** — Know what you're paying before the bill
-- 🔍 **Anomaly detection** — Spot duplicates and outliers automatically
-- 🗄️ **Cache analysis** — Understand if caching helps or hurts
-- 🔒 **Privacy-first** — Local-only, no prompts stored
-- 🪶 **Lightweight** — <500KB install, single dependency (rich)
+> [!TIP]
+> **Gemini CLI Users:** For 100% accurate token counts (instead of ~95%), run `mcp-audit tokenizer download` after installing.
+> ```bash
+> mcp-audit tokenizer download
+> ```
 
 ---
 
@@ -58,22 +47,26 @@ pip install mcp-audit
 <tr>
 <td width="50%" valign="top">
 
-### 🛠️ MCP Tool Developers
+### 🛠️ The Builder
+**"Is my MCP server (or the one I downloaded) too heavy?"**
 
-You built an MCP server. Now you need answers:
-- How efficient are my tools?
-- Which ones bloat context?
-- Am I shipping something optimized?
+You build MCP servers and want visibility into token consumption patterns.
+
+**You need:** Per-tool token breakdown, usage trends.
+
+<br>
 
 </td>
 <td width="50%" valign="top">
 
-### 💻 Daily Users (Power Users)
+### 💻 The Vibecoder
+**"Why did my CLI Agent auto-compact so quickly?"**
 
-You use Claude Code, Codex CLI, or Gemini CLI daily:
-- Hit context limits and don't know why?
-- Seeing unexpected costs?
-- Which MCP servers are responsible?
+You use Cursor/Claude daily and hit context limits without knowing why.
+
+**You need:** Real-time cost tracking, session telemetry.
+
+<br>
 
 </td>
 </tr>
@@ -81,128 +74,94 @@ You use Claude Code, Codex CLI, or Gemini CLI daily:
 
 ---
 
-## 💡 Why mcp-audit?
+### 🛡️ How It Works (Safe & Passive)
 
-**mcp-audit** is a real-time session tracker that shows you which MCP tools are being called, with full per-tool token attribution on Claude Code and call-count tracking across all platforms. Whether you're building MCP servers or using them daily, mcp-audit gives you the data you need to investigate and fix context bloat & high token usage at the source.
+`mcp-audit` is a **passive observer**. It watches your local session logs and artifacts in real-time.
+* **No Proxies:** It does not intercept your network traffic or API calls.
+* **No Latency:** It runs as a sidecar process, adding zero overhead to your agent.
+* **Local Only & Private:** All data remains on your machine.
+* **Telemetry Only:** Provides signals and metrics — you (or your AI) decide what to do with them.
 
-No other tool provides this level of MCP-specific visibility. It starts with the data.
-
----
-
-### How mcp-audit Compares
-
-#### vs. [ccusage](https://github.com/ryoppippi/ccusage) ⭐ 9K+
-
-ccusage is a fantastic **historical analyzer**—it tracks your Claude Code usage over time (daily, monthly, all-time reports). Use it to understand long-term spending trends and budget planning.
-
-| | ccusage | mcp-audit ✓ |
-|---|---------|:------------|
-| **Focus** | Historical trends | ✅ Real-time sessions |
-| **Question answered** | "What did I spend this month?" | ✅ "What's eating my context *right now*?" |
-| **Granularity** | Session/day/month totals | ✅ Per-MCP-server, per-tool breakdown¹ |
-| **Best for** | Cost tracking over time | ✅ Investigating specific tool issues |
-
-#### vs. [Claude-Code-Usage-Monitor](https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor) ⭐ 5.8K+
-
-Claude-Code-Usage-Monitor is a great **session limit tracker**—it predicts when you'll hit your token limit and shows burn rate. Use it to manage your session pacing.
-
-| | Claude-Code-Usage-Monitor | mcp-audit ✓ |
-|---|---------------------------|:------------|
-| **Focus** | Session limits & predictions | ✅ MCP tool analysis |
-| **Question answered** | "Will I run out of tokens?" | ✅ "Which MCP tool is causing this?" |
-| **Granularity** | Total session tokens | ✅ Per-server, per-tool breakdown¹ |
-| **Best for** | Session pacing | ✅ Debugging MCP tool efficiency |
-
-> ¹ Per-tool token breakdown requires Claude Code. Codex CLI and Gemini CLI provide call counts with session-level token totals.
-
-#### Why mcp-audit for MCP Tool Development
-
-If you're **building or optimizing MCP servers**, mcp-audit is the only tool that:
-
-- 🔍 **Breaks down tokens per MCP tool** — See exactly which tools bloat context (Claude Code)
-- 📌 **Pins specific servers** — Monitor your server while you develop
-- 🔄 **Detects duplicates** — Find redundant tool calls automatically
-- 📊 **Tracks cache efficiency** — Understand if caching helps or hurts
-- 🚨 **Flags anomalies** — Get warnings for high-variance patterns
-- 📈 **Counts all tool calls** — Track MCP usage across all platforms
-
-> [!TIP]
-> **Use them together**: ccusage for monthly cost trends, Claude-Code-Usage-Monitor for session pacing, and mcp-audit for MCP tool-level investigation.
+**Note:** MCP Audit is telemetry-only — no recommendations or optimizations are performed automatically.  
+Use the AI export (coming in v0.5.0) to analyze your results with your preferred AI CLI.
 
 ---
 
-## 🚀 Quick Start
+## 🚀 What's New in v0.4.0
 
-### 1. Track a Session
+- **High-Accuracy Token Estimation:** Session-level tokens are **99-100% accurate** for Codex CLI and Gemini CLI (using tiktoken/Gemma tokenizers). Per-tool estimates are also highly accurate.
+- **Theme Support:** Full theme support including **Catppuccin Mocha/Latte** and High Contrast modes.
+- **Ultra Light:** Core package size reduced from 5MB to **<500KB** (~2.5MB with optional Gemma tokenizer).
+
+---
+
+## 🔍 What to Look For (The "Audit")
+
+Once you're running `mcp-audit`, watch for these common patterns in your telemetry:
+
+1. **The "Context Tax" (High Initial Load):**
+   - *Signal:* Your session starts with 10k+ tokens before you type a word.
+   - *What this might indicate:* Large `list_tools` schemas can increase context usage on each turn (detailed telemetry coming in v0.6.0+).
+
+2. **The "Payload Spike" (Unexpected Cost):**
+   - *Signal:* A single tool call consumes far more tokens than expected.
+   - *What this might indicate:* Large file reads or verbose API responses.
+
+3. **The "Zombie Tool":** *(detection coming in v0.5.0)*
+   - *Signal:* A tool appears in your schema but is never called.
+   - *What this might indicate:* Unused tools consuming schema tokens on every turn.
+
+---
+
+## 🎮 Quick Start
+
+### 1. Start Tracking
+
+Open a separate terminal window and run (see [Platform Guides](#-documentation) for detailed setup):
 
 ```bash
-# Track Claude Code session
+# Auto-detects your platform (or specify with --platform)
 mcp-audit collect --platform claude-code
-
-# Track Codex CLI session
 mcp-audit collect --platform codex-cli
-
-# Track Gemini CLI session
 mcp-audit collect --platform gemini-cli
 ```
 
-Sessions are automatically saved to `~/.mcp-audit/sessions/`.
+### 2. Work Normally
 
-### 2. Generate a Report
+Go back to your agent (Claude Code, Codex CLI, or Gemini CLI) and start working. The MCP Audit TUI updates in real-time as you use tools.
 
-```bash
-# View summary of all sessions
-mcp-audit report ~/.mcp-audit/sessions/
+> **TUI runs automatically.** Other display options: `--quiet` (logs only), `--plain` (CI/pipelines), `--no-logs` (display only).
 
-# Export detailed CSV
-mcp-audit report ~/.mcp-audit/sessions/ --format csv --output report.csv
+### 3. Analyze Later
 
-# Generate markdown report
-mcp-audit report ~/.mcp-audit/sessions/ --format markdown --output report.md
-```
-
-### 3. Review Results
-
-```
-Top 10 Most Expensive Tools (Total Tokens)
-═══════════════════════════════════════════════════════════════
-Tool                              Calls    Tokens    Avg/Call
-mcp__zen__thinkdeep                  12   450,231      37,519
-mcp__brave-search__web               45   123,456       2,743
-mcp__zen__chat                       89    98,765       1,109
-
-Estimated Total Cost: $2.34 (across 15 sessions)
-```
-
-> Per-tool token breakdown shown above is from Claude Code sessions. Codex CLI and Gemini CLI reports show call counts with session-level totals.
-
-### Typical Session
+Generate a post-mortem report to see where the money went:
 
 ```bash
-# Terminal 1: Start tracking before your Claude Code session
-mcp-audit collect --platform claude-code
+# See the top 10 most expensive tools
+mcp-audit report ~/.mcp-audit/sessions/ --top-n 10
 
-# Terminal 2: Work normally in Claude Code
-# (TUI shows tokens accumulating in real-time as you use MCP tools)
-
-# When done, press Ctrl+C in Terminal 1
-# Session auto-saved to ~/.mcp-audit/sessions/
+# Session logs are stored by default in ~/.mcp-audit/sessions/
 ```
 
 ---
 
-## 🖥️ Platform Support
+## 🤖 Supported Agents
 
-| Platform | Status | Token Tracking | What You Get |
-|----------|--------|----------------|--------------|
-| Claude Code | **Stable** | Full (per-tool) | Per-tool token attribution, cache analysis |
-| Codex CLI | **Stable** | Session-level | Call counts, session costs, reasoning tokens² |
-| Gemini CLI | **Stable** | Session-level | Call counts, session costs, reasoning tokens² |
-| Ollama CLI | *Coming Soon* | Time-based | Duration tracking (no token costs locally) |
+![Claude Code](https://img.shields.io/badge/Claude%20Code-D97757?style=for-the-badge&logo=anthropic&logoColor=white)
+![OpenAI Codex](https://img.shields.io/badge/Codex%20CLI-412991?style=for-the-badge&logo=openai&logoColor=white)
+![Google Gemini](https://img.shields.io/badge/Gemini%20CLI-8E75B2?style=for-the-badge&logo=google%20gemini&logoColor=white)
 
-> **Note**: Per-tool token attribution is a Claude Code exclusive. Codex CLI and Gemini CLI provide accurate session totals with tool call counts—still unique visibility no other tool offers.
->
-> ² Reasoning tokens (thinking/chain-of-thought) tracked separately for o-series (Codex) and Gemini 2.0+ models.
+| Platform | Token Accuracy | Tracking Depth | Notes |
+| :--- | :--- | :--- | :--- |
+| **Claude Code** | **Native** (100%) | Full (Per-Tool) | Shows exact server-side usage. |
+| **Codex CLI** | **Estimated** (99%+) | Session + Tool | Uses `o200k_base` tokenizer for near-perfect precision. |
+| **Gemini CLI** | **Estimated** (100%) | Session + Tool | Uses `Gemma` tokenizer (requires download) or fallback (~95%). |
+| **Ollama CLI** | — | — | Coming soon. |
+
+- Session-level token accuracy is 99–100% for Codex CLI and Gemini CLI.  
+  *(Per-tool token counts are estimated and highly accurate in most cases.)*
+
+> **Want support for another CLI platform?** [Start a discussion](https://github.com/littlebearapps/mcp-audit/discussions/new?category=ideas) and let us know what you need!
 
 <details>
 <summary><strong>Detailed Platform Capabilities</strong></summary>
@@ -211,124 +170,175 @@ mcp-audit collect --platform claude-code
 | Capability | Claude Code | Codex CLI | Gemini CLI |
 |------------|:-----------:|:---------:|:----------:|
 | Session tokens | ✅ Full | ✅ Full | ✅ Full |
-| Per-tool tokens | ✅ Native | ❌ Calls only | ❌ Calls only |
+| Per-tool tokens | ✅ Native | ✅ Estimated | ✅ Estimated |
 | Reasoning tokens | ❌ Not exposed | ✅ o-series | ✅ Gemini 2.0+ |
 | Cache tracking | ✅ Create + Read | ✅ Read only | ✅ Read only |
-| Built-in tools | ✅ Calls + Tokens | ✅ Calls only | ✅ Calls only |
 | Cost estimates | ✅ Accurate | ✅ Accurate | ✅ Accurate |
-| MCP server breakdown | ✅ Full | ✅ Calls only | ✅ Calls only |
-
-Claude Code provides the richest data. For Codex CLI and Gemini CLI, mcp-audit tracks what the platforms expose: session totals, call counts, and cost estimates.
 
 </details>
 
-Want support for another CLI platform? Have a feature request? [Start a discussion](https://github.com/littlebearapps/mcp-audit/discussions)!
+---
+
+## 🤝 The Token Ecosystem (When to use what)
+
+`mcp-audit` focuses on **real-time MCP inspection**. It fits perfectly alongside other tools in your stack:
+
+| Tool | Best For... | The Question it Answers |
+| :--- | :--- | :--- |
+| **MCP Audit** (Us) | ⚡ **Deep Profiling** | "Which specific tool is eating my tokens right now?" |
+| **[ccusage](https://github.com/ryoppippi/ccusage)** | 📅 **Billing & History** | "How much did I spend last month?" |
+| **[Claude Code Usage Monitor](https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor)** | 🛑 **Session Limits** | "Will I hit my limit in the next hour?" |
 
 ---
 
-## ✨ Feature Details
+## ⚙️ Configuration & Theming
 
-### ⚡ Real-Time TUI
-
-Watch tokens flow as you work—no manual tracking:
-
-```
-MCP Audit v0.3.14
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Project: my-project │ Claude Opus 4.5 │ 12m 34s
-
-Tokens
-  Input: 45,231 │ Output: 12,543 │ Cache: 125K (93%)
-  Cost: $0.12 │ Cache Savings: $0.89
-
-MCP Servers & Tools (42 calls)
-  zen (28 calls, 234K tokens)
-    thinkdeep ........ 8 calls, 156K tokens
-    chat ............. 15 calls, 45K tokens
-  brave-search (14 calls, 89K tokens)
-    brave_web_search . 14 calls, 89K tokens
-```
-
-> The TUI above shows Claude Code output with full per-tool token attribution. On Codex CLI and Gemini CLI, token columns show call counts only (per-tool tokens are a platform limitation).
-
-**Investigating context bloat?** Pin your MCP server to monitor it closely during development:
+**New in v0.4.0:** Customize your dashboard look!
 
 ```bash
-mcp-audit collect --platform claude-code --pin-server myserver
+# Use the Catppuccin Mocha theme
+mcp-audit collect --theme mocha
+
+# Use Catppuccin Latte (light)
+mcp-audit collect --theme latte
+
+# Use High Contrast (Accessibility - WCAG AAA)
+mcp-audit collect --theme hc-dark
 ```
 
-### 📊 Cross-Session Analysis
+*Supported Themes:* `auto`, `dark`, `light`, `mocha`, `latte`, `hc-dark`, `hc-light`
 
-Aggregate insights across all your sessions:
+> **Note:** Advanced features such as smell detection, zombie tool detection,  
+> AI prompt export, and multi-model sessions are part of the upcoming v0.5.0+ releases.
 
-```bash
-mcp-audit report ~/.mcp-audit/sessions/ --aggregate
-```
+### Pricing Configuration
 
-- Top expensive tools by total tokens
-- Most frequently called tools
-- Anomaly detection (high variance, duplicates)
-- Per-server cost breakdowns
-
-### 🔍 Duplicate Detection
-
-Spot wasted tokens from redundant tool calls:
-
-```json
-{
-  "redundancy_analysis": {
-    "duplicate_calls": 3,
-    "potential_savings": 15234
-  }
-}
-```
-
-### 🗄️ Cache Analysis
-
-Understand whether caching is helping or hurting. Session logs include AI-readable insights:
-
-```json
-{
-  "cache_analysis": {
-    "status": "efficient",
-    "summary": "Good cache reuse (85% efficiency). Savings: $0.89",
-    "top_cache_creators": [{"tool": "mcp__zen__thinkdeep", "pct": 45}],
-    "recommendation": "Cache is working well for this session."
-  }
-}
-```
-
-### 🔒 Privacy-First
-
-- **No prompts stored** - Only token counts and tool names
-- **Local-only** - All data stays on your machine
-- **Redaction hooks** - Customize what gets logged
-
----
-
-## ⚙️ Configuration
-
-Customize model pricing in `mcp-audit.toml`. Searched in order: `./mcp-audit.toml` (project), `~/.mcp-audit/mcp-audit.toml` (user).
-
-> [!NOTE]
-> Prices in **USD per million tokens**.
+Customize model pricing in `mcp-audit.toml`:
 
 ```toml
 [pricing.claude]
-"claude-opus-4-5-20251101" = { input = 5.00, output = 25.00, cache_create = 6.25, cache_read = 0.50 }
-"claude-sonnet-4-5-20250929" = { input = 3.00, output = 15.00, cache_create = 3.75, cache_read = 0.30 }
+"claude-opus-4-5-20251101" = { input = 5.00, output = 25.00 }
 
 [pricing.openai]
-"gpt-5.1" = { input = 1.25, output = 10.00, cache_read = 0.125 }
-"gpt-4o" = { input = 2.50, output = 10.00, cache_read = 1.25 }
-
-[pricing.gemini]
-"gemini-3-pro-preview" = { input = 2.00, output = 12.00, cache_read = 0.20 }
-"gemini-2.5-pro" = { input = 1.25, output = 10.00, cache_read = 0.125 }
-"gemini-2.5-flash" = { input = 0.30, output = 2.50, cache_read = 0.03 }
+"gpt-5.1" = { input = 1.25, output = 10.00 }
 ```
 
-See [Pricing Configuration](docs/PRICING-CONFIGURATION.md) for the full list of supported models.
+Prices in USD per million tokens. See [Pricing Configuration](docs/PRICING-CONFIGURATION.md) for all models.
+
+---
+
+## 💻 CLI Reference
+
+```bash
+# Most common usage - just run this and start working
+mcp-audit collect
+
+# Specify your platform explicitly
+mcp-audit collect --platform claude-code
+mcp-audit collect --platform codex-cli
+mcp-audit collect --platform gemini-cli
+
+# Use a dark theme (try: mocha, latte, hc-dark, hc-light)
+mcp-audit collect --theme mocha
+
+# See where your tokens went after a session
+mcp-audit report ~/.mcp-audit/sessions/
+
+# Gemini CLI users: download tokenizer for 100% accuracy
+mcp-audit tokenizer download
+```
+
+### collect
+
+Track a live session.
+
+```
+Options:
+  --platform          Platform: claude-code, codex-cli, gemini-cli, auto
+  --project TEXT      Project name (auto-detected from directory)
+  --theme NAME        Color theme (default: auto)
+  --pin-server NAME   Pin server(s) at top of MCP section
+  --from-start        Include existing session data (Codex/Gemini only)
+  --quiet             Suppress display output (logs only)
+  --plain             Plain text output (for CI/logs)
+  --no-logs           Skip writing logs to disk (real-time display only)
+```
+
+### report
+
+Generate usage report.
+
+```
+Options:
+  --format           Output: json, csv, markdown (default: markdown)
+  --output PATH      Output file (default: stdout)
+  --aggregate        Aggregate across multiple sessions
+  --top-n INT        Number of top tools to show (default: 10)
+```
+
+### tokenizer
+
+Manage optional tokenizers.
+
+```bash
+mcp-audit tokenizer download   # Download Gemma tokenizer (~4MB)
+mcp-audit tokenizer status     # Check tokenizer availability
+```
+
+### Uninstall
+
+```bash
+# If installed with pipx
+pipx uninstall mcp-audit
+
+# If installed with pip
+pip uninstall mcp-audit
+```
+
+---
+
+## ❓ FAQ
+
+<details open>
+<summary><strong>How accurate is token estimation for Codex CLI and Gemini CLI?</strong></summary>
+
+<br>
+
+**Very accurate.** In v0.4.0, we use the same tokenizers as the underlying models:
+
+- **Codex CLI (OpenAI):** Uses `tiktoken` with the `o200k_base` encoding — the same tokenizer OpenAI uses. Session-level accuracy is **99%+**.
+- **Gemini CLI (Google):** Uses the official `Gemma` tokenizer (via `mcp-audit tokenizer download`). Session-level accuracy is **100%**. Without it, we fall back to `tiktoken` at ~95% accuracy.
+
+**Per-tool token estimates** are also highly accurate in most cases, though platforms don't provide native per-tool attribution (only Claude Code does).
+
+Claude Code provides native token counts directly from Anthropic's servers, so no estimation is needed there.
+
+</details>
+
+<details>
+<summary><strong>Why am I seeing 0 tokens or no activity?</strong></summary>
+
+<br>
+
+1. **Started mcp-audit after the agent** — Only new activity is tracked. Start `mcp-audit` first, then your agent.
+2. **Wrong directory** — mcp-audit looks for session files based on your current working directory.
+3. **No MCP tools used yet** — Built-in tools (Read, Write, Bash) are tracked separately. Try using an MCP tool.
+
+</details>
+
+<details>
+<summary><strong>Where is my data stored?</strong></summary>
+
+<br>
+
+**All data stays on your machine:**
+- Session data: `~/.mcp-audit/sessions/`
+- Configuration: `~/.mcp-audit/mcp-audit.toml`
+- No network requests, no telemetry
+
+Only token counts and tool names are logged—**prompts and responses are never stored**.
+
+</details>
 
 ---
 
@@ -336,258 +346,49 @@ See [Pricing Configuration](docs/PRICING-CONFIGURATION.md) for the full list of 
 
 | Document | Description |
 |----------|-------------|
-| [Features & Benefits](docs/FEATURES-BENEFITS.md) | Detailed feature guide by audience |
-| [Architecture](docs/architecture.md) | System design, data model, adapters |
-| [Data Contract](docs/data-contract.md) | Schema v1.3.0 format and guarantees |
-| [Platform Guides](docs/platforms/) | Claude Code, Codex CLI, Gemini CLI setup |
-| [Contributing](docs/contributing.md) | How to add platform adapters |
+| [Features & Benefits](docs/FEATURES-BENEFITS.md) | Detailed feature guide |
+| [Architecture](docs/architecture.md) | System design and adapters |
+| [Data Contract](docs/data-contract.md) | Schema v1.4.0 format |
+| [Claude Code Guide](docs/platforms/claude-code.md) | Getting started & help guide |
+| [Codex CLI Guide](docs/platforms/codex-cli.md) | Getting started & help guide |
+| [Gemini CLI Guide](docs/platforms/gemini-cli.md) | Getting started & help guide |
 | [Privacy & Security](docs/privacy-security.md) | Data handling policies |
-| [Changelog](CHANGELOG.md) | Version history and release notes |
-| [Roadmap](ROADMAP.md) | Planned features and long-term vision |
-
----
-
-## 💻 CLI Reference
-
-```bash
-mcp-audit --help
-
-Commands:
-  collect   Track a live session
-  report    Generate usage report
-
-Options:
-  --version  Show version
-  --help     Show help
-```
-
-### collect
-
-```bash
-mcp-audit collect [OPTIONS]
-
-Options:
-  --platform          Platform to track (claude-code, codex-cli, gemini-cli, auto)
-  --project TEXT      Project name (auto-detected from directory)
-  --output PATH       Output directory (default: ~/.mcp-audit/sessions)
-  --tui               Use rich TUI display (default when TTY available)
-  --plain             Use plain text output (for CI/logs)
-  --quiet             Suppress all display output (logs only)
-  --refresh-rate NUM  TUI refresh rate in seconds (default: 0.5)
-  --pin-server NAME   Pin server(s) at top of MCP section (can repeat)
-  --no-logs           Skip writing logs to disk (real-time display only)
-  --from-start        Include existing session data (Codex/Gemini CLI only)
-```
-
-> **Note**: For Codex CLI and Gemini CLI, mcp-audit tracks only **new** events by default. Use `--from-start` to include events from before tracking started.
-
-#### Display Modes
-
-MCP Audit automatically detects whether you're running in a terminal (TTY) and chooses the best display mode:
-
-- **TUI mode** (default for terminals): Beautiful Rich-based dashboard with live updating
-- **Plain mode** (default for CI/pipes): Simple scrolling text output
-- **Quiet mode**: No display output, only writes logs to disk
-
-### report
-
-```bash
-mcp-audit report [OPTIONS] SESSION_DIR
-
-Arguments:
-  SESSION_DIR        Session directory or parent directory containing sessions
-
-Options:
-  --format           Output format: json, csv, markdown (default: markdown)
-  --output PATH      Output file (default: stdout)
-  --aggregate        Aggregate data across multiple sessions
-  --top-n INT        Number of top tools to show (default: 10)
-```
-
----
-
-## 📁 Data Storage
-
-Sessions are stored at `~/.mcp-audit/sessions/` organized by platform and date:
-
-```
-~/.mcp-audit/sessions/
-├── claude-code/
-│   └── 2025-12-04/
-│       └── my-project-2025-12-04T09-15-30.json
-├── codex-cli/
-│   └── 2025-12-04/
-│       └── seo-expert-2025-12-04T11-36-54.json
-└── gemini-cli/
-    └── 2025-12-04/
-        └── research-2025-12-04T14-20-00.json
-```
-
-Each session is a self-describing JSON file (schema v1.3.0). See [Data Contract](docs/data-contract.md) for format details.
-
----
-
-## ❓ FAQ
-
-<details open>
-<summary><strong>Does mcp-audit work with resumed/continued sessions?</strong></summary>
-<br>
-
-**Yes.** If you start mcp-audit and then resume a Claude Code session from yesterday, it will track all new activity from that point forward. Claude Code appends new events to the existing session file, and mcp-audit monitors for new content regardless of when the session originally started.
-
-</details>
-
-<details>
-<summary><strong>What if I start mcp-audit after Claude Code is already running?</strong></summary>
-<br>
-
-**It works, but you'll only capture activity from that point forward.** When mcp-audit starts, it records the current position in all session files. Any new events written after that point are tracked. Events that occurred before you started mcp-audit are not captured.
-
-> [!TIP]
-> Start mcp-audit first, then start or resume your Claude Code session.
-
-</details>
-
-<details>
-<summary><strong>Does mcp-audit track historical data or only new activity?</strong></summary>
-<br>
-
-**Only new activity.** mcp-audit is designed for real-time monitoring. It deliberately skips historical data to avoid:
-- Re-processing old sessions you've already analyzed
-- Inflating token counts with past activity
-- Confusion about what happened "this session" vs "last week"
-
-If you need to analyze historical sessions, use `mcp-audit report` on previously saved session files.
-
-</details>
-
-<details>
-<summary><strong>Can I track multiple Claude Code windows or projects?</strong></summary>
-<br>
-
-**Yes, but each requires its own mcp-audit instance.** Each Claude Code project has its own session file in `~/.claude/projects/`. If you're working in multiple directories simultaneously:
-
-```bash
-# Terminal 1: Track project A
-cd ~/projects/project-a
-mcp-audit collect --platform claude-code
-
-# Terminal 2: Track project B
-cd ~/projects/project-b
-mcp-audit collect --platform claude-code
-```
-
-Each mcp-audit instance monitors the session files for its working directory.
-
-</details>
-
-<details>
-<summary><strong>Why am I seeing 0 tokens or no activity?</strong></summary>
-<br>
-
-Common causes:
-
-1. **Started mcp-audit after Claude Code** - Only new activity is tracked. Try making a request in Claude Code after starting mcp-audit.
-
-2. **Wrong directory** - mcp-audit looks for session files based on your working directory. Make sure you're in the same directory as your Claude Code session.
-
-3. **No MCP tools used** - mcp-audit tracks MCP server tools (like `mcp__zen__chat`). Built-in tools (Read, Write, Bash) are tracked separately. If you're not using MCP tools, you'll see low/zero MCP activity.
-
-4. **Session file not found** - Check that Claude Code has created a session file:
-   ```bash
-   ls ~/.claude/projects/
-   ```
-
-5. **Platform limitation (Codex/Gemini)** - Codex CLI and Gemini CLI don't provide per-tool token attribution. You'll see accurate session totals and call counts, but individual tool token columns will show 0. This is expected behavior, not a bug.
-
-</details>
-
-<details>
-<summary><strong>Where is my data stored? Is it sent anywhere?</strong></summary>
-<br>
-
-**All data stays on your machine.** mcp-audit is completely local:
-
-- Session data: `~/.mcp-audit/sessions/`
-- Configuration: `~/.mcp-audit/mcp-audit.toml`
-- No network requests, no telemetry, no cloud sync
-
-Only token counts and tool names are logged—**prompts and responses are never stored**.
-
-</details>
-
-<details>
-<summary><strong>How do I stop tracking without losing data?</strong></summary>
-<br>
-
-**Press Ctrl+C.** mcp-audit handles interrupts gracefully:
-
-1. Catches the interrupt signal
-2. Completes the session summary
-3. Writes all data to disk
-4. Exits cleanly
-
-You'll see a confirmation message:
-```
-Session saved to: ~/.mcp-audit/sessions/2025-12-02/mcp-audit-2025-12-02T14-30-45.json
-```
-
-> [!WARNING]
-> Avoid `kill -9` or force-quitting the terminal, which may result in incomplete session data.
-
-</details>
-
-<details>
-<summary><strong>Can I track multiple platforms at the same time?</strong></summary>
-<br>
-
-**Yes.** Run separate mcp-audit instances for each platform:
-
-```bash
-# Terminal 1: Track Claude Code
-mcp-audit collect --platform claude-code
-
-# Terminal 2: Track Codex CLI
-mcp-audit collect --platform codex-cli
-```
-
-Sessions are organized by date in `~/.mcp-audit/sessions/`.
-
-</details>
+| [Manual Tokenizer Install](docs/manual-tokenizer-install.md) | For firewalled networks |
+| [Changelog](CHANGELOG.md) | Version history |
+| [Roadmap](ROADMAP.md) | Planned features |
 
 ---
 
 ## 🗺️ Roadmap
 
-**Current**: v0.3.x (Beta) — Stable for daily use
+**Current**: v0.4.x — Stable for daily use
 
-### Coming Soon
+**Coming in v0.5.0:**
+- Smell detection signals (HIGH_VARIANCE, TOP_CONSUMER, CHATTY)
+- AI-friendly session export for analysis prompts
+- Zombie tool detection
+
+**Coming in v0.6.0+:**
 - Multi-model session tracking
-- Enhanced CLI commands and report filters
-- Ollama CLI support (local models)
-- Dynamic pricing via LiteLLM
+- TUI session browser
+- Static/dynamic payload metrics
+- Ollama CLI support (minimal)
 
-See the full [Roadmap](ROADMAP.md) for details and long-term vision.
+See the full [Roadmap](ROADMAP.md) for details.
 
-**Have an idea?** [Start a discussion](https://github.com/littlebearapps/mcp-audit/discussions/new?category=ideas) — we'd love to hear from you!
+**Have an idea or feature request?** [Start a discussion](https://github.com/littlebearapps/mcp-audit/discussions/new?category=ideas)
 
 ---
 
 ## 🤝 Contributing
 
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for:
-
-- How to add new platform adapters
-- Testing requirements
-- PR workflow
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for how to build new platform adapters.
 
 ### Development Setup
 
 ```bash
 git clone https://github.com/littlebearapps/mcp-audit.git
 cd mcp-audit
-python -m venv venv
-source venv/bin/activate
 pip install -e ".[dev]"
 pytest
 ```
@@ -596,10 +397,14 @@ pytest
 
 ## 📄 License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT License — see [LICENSE](LICENSE) for details.
+
+**Third-Party:**
+- [tiktoken](https://github.com/openai/tiktoken) (MIT) — Bundled for Codex CLI token estimation
+- [Gemma tokenizer](https://huggingface.co/google/gemma-2-2b) (Apache 2.0) — Optional download for Gemini CLI. See [Gemma Tokenizer License](docs/gemma-tokenizer-license.md) for terms.
 
 ---
 
-🐻 **Made with care by [Little Bear Apps](https://littlebearapps.com)**
+**Made with 🐻 by [Little Bear Apps](https://littlebearapps.com)**
 
 [Issues](https://github.com/littlebearapps/mcp-audit/issues) · [Discussions](https://github.com/littlebearapps/mcp-audit/discussions) · [Roadmap](ROADMAP.md)

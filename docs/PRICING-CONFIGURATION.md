@@ -1,6 +1,6 @@
 # Pricing Configuration Guide
 
-**Last Updated**: 2025-12-04
+**Last Updated**: 2025-12-08
 
 This guide explains how to configure model pricing for cost calculation in MCP Audit.
 
@@ -107,7 +107,11 @@ EOF
 
 ### OpenAI
 - **Pricing page**: https://openai.com/api/pricing/
-- Models: GPT-4o, GPT-4o Mini, O1, O3
+- Models: GPT-5.1, GPT-4o, O4-Mini, O3-Mini, O1
+
+### Google (Gemini)
+- **Pricing page**: https://ai.google.dev/gemini-api/docs/pricing
+- Models: Gemini 3 Pro, Gemini 2.5 Pro/Flash, Gemini 2.0 Flash
 
 ### Other Providers
 - Check provider's pricing documentation
@@ -284,8 +288,9 @@ If you previously used `model-pricing.json`, the TOML format is equivalent:
 ## Example Configuration
 
 See the default `mcp-audit.toml` for a complete example with:
-- Claude models (Opus, Sonnet, Haiku)
-- OpenAI models (GPT-4o, O1, O3)
+- Claude models (Opus 4.5, Sonnet 4.5, Haiku 4.5 + legacy)
+- OpenAI models (GPT-5.1, GPT-4o, O-series)
+- Gemini models (Gemini 3, 2.5, 2.0)
 - Custom model template
 - Exchange rates
 - Metadata

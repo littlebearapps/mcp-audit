@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mcp-audit"
-version = "0.3.14"
+version = "0.4.0.dev1"
 description = "Real-time MCP token tracker for Claude Code, Codex CLI & Gemini CLI. Investigate context bloat and high token usage at the source."
 readme = "README.md"
 license = "MIT"
@@ -30,6 +30,8 @@ classifiers = [
 requires-python = ">=3.8"
 dependencies = [
     "rich>=13.0.0",
+    "tiktoken>=0.7.0",       # Token estimation for Codex CLI (o200k_base encoding)
+    "sentencepiece>=0.2.0",  # Token estimation for Gemini CLI (100% accurate with Gemma)
 ]
 
 [project.optional-dependencies]
@@ -44,6 +46,9 @@ dev = [
 ]
 toml = [
     "toml>=0.10.2",
+]
+gemma = [
+    "huggingface_hub>=0.20.0",  # For downloading Gemma tokenizer
 ]
 
 [project.scripts]
@@ -60,7 +65,10 @@ Changelog = "https://github.com/littlebearapps/mcp-audit/blob/main/CHANGELOG.md"
 where = ["src"]
 
 [tool.setuptools.package-data]
-mcp_audit = ["py.typed"]
+mcp_audit = ["py.typed", "tokenizers/NOTICE"]
+
+[tool.setuptools.exclude-package-data]
+mcp_audit = ["tokenizers/*.model"]
 
 [tool.pytest.ini_options]
 minversion = "7.4"
@@ -115,6 +123,11 @@ exclude = [
     "analyze-.*\\.py$",
     "investigate-.*\\.py$",
 ]
+
+# Optional dependency - ignore if not installed
+[[tool.mypy.overrides]]
+module = "huggingface_hub"
+ignore_missing_imports = true
 
 [tool.ruff]
 target-version = "py38"

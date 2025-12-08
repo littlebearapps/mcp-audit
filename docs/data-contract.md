@@ -1,7 +1,7 @@
 # MCP Audit Data Contract
 
-**Version**: 1.3.0
-**Last Updated**: 2025-12-06
+**Version**: 1.4.0
+**Last Updated**: 2025-12-07
 **Status**: Active
 
 This document defines the data contract for MCP Audit, including backward compatibility guarantees, versioning policy, and migration guidelines.
@@ -10,15 +10,98 @@ This document defines the data contract for MCP Audit, including backward compat
 
 ## Table of Contents
 
-1. [Schema v1.3.0](#schema-v130)
-2. [Schema v1.2.0](#schema-v120)
-3. [Schema v1.1.0](#schema-v110)
+1. [Schema v1.4.0](#schema-v140)
+2. [Schema v1.3.0](#schema-v130)
+3. [Schema v1.2.0](#schema-v120)
+4. [Schema v1.1.0](#schema-v110)
 3. [Backward Compatibility Guarantee](#backward-compatibility-guarantee)
 4. [Versioning Policy](#versioning-policy)
 5. [Schema Stability](#schema-stability)
 6. [Migration Support](#migration-support)
 7. [Breaking Changes](#breaking-changes)
 8. [Deprecation Policy](#deprecation-policy)
+
+---
+
+## Schema v1.4.0
+
+Schema v1.4.0 adds token estimation metadata for MCP tool calls on platforms without native per-tool token attribution. This enables accurate token tracking for Codex CLI and Gemini CLI.
+
+### Key Changes from v1.3.0
+
+| Change | v1.3.0 | v1.4.0 |
+|--------|--------|--------|
+| Token estimation | Not tracked | `is_estimated`, `estimation_method`, `estimation_encoding` |
+| Schema version | `"1.3.0"` | `"1.4.0"` |
+
+### New Fields in `tool_calls`
+
+```json
+{
+  "tool_calls": [
+    {
+      "index": 1,
+      "tool": "mcp__brave-search__brave_web_search",
+      "server": "brave-search",
+      "input_tokens": 156,
+      "output_tokens": 2340,
+      "total_tokens": 2496,
+      "is_estimated": true,
+      "estimation_method": "tiktoken",
+      "estimation_encoding": "o200k_base"
+    }
+  ]
+}
+```
+
+#### `is_estimated` Field
+
+Indicates whether token counts are estimated (Codex CLI, Gemini CLI) or native (Claude Code).
+
+| Value | Meaning |
+|-------|---------|
+| `true` | Tokens estimated using tiktoken/sentencepiece |
+| `false` or absent | Native tokens from platform |
+
+**Optimization**: When `is_estimated` is `false`, the field and related estimation fields are omitted from output to minimize file size. Claude Code sessions will not have these fields.
+
+#### `estimation_method` Field
+
+Tokenization method used for estimation. Only present when `is_estimated` is `true`.
+
+| Value | Description | Accuracy |
+|-------|-------------|----------|
+| `"tiktoken"` | OpenAI tiktoken library | ~99-100% for Codex CLI |
+| `"sentencepiece"` | Google SentencePiece | 100% for Gemini CLI |
+| `"character"` | Fallback (~4 chars/token) | ~80% approximation |
+
+#### `estimation_encoding` Field
+
+Specific encoding/tokenizer used. Only present when `is_estimated` is `true`.
+
+| Value | Platform | Notes |
+|-------|----------|-------|
+| `"o200k_base"` | Codex CLI | Native OpenAI tokenizer |
+| `"cl100k_base"` | Claude Code fallback | Best approximation |
+| `"sentencepiece:gemma"` | Gemini CLI | Gemma tokenizer (identical BPE vocab) |
+| `"character-fallback"` | Any | When tokenizers unavailable |
+
+### Platform-Specific Behavior
+
+| Platform | `is_estimated` | `estimation_method` | Accuracy |
+|----------|----------------|---------------------|----------|
+| Claude Code | `false` (omitted) | N/A | 100% (native) |
+| Codex CLI | `true` | `"tiktoken"` | ~99-100% |
+| Gemini CLI | `true` | `"sentencepiece"` | 100% (with optional tokenizer) |
+| Gemini CLI | `true` | `"tiktoken"` | ~95% (fallback) |
+
+> **Note**: Gemini CLI 100% accuracy requires the optional Gemma tokenizer (`mcp-audit tokenizer download`). Without it, tiktoken cl100k_base is used as fallback.
+
+**Backward Compatibility:**
+
+- Old readers (v1.3.0 and earlier) ignore the new estimation fields
+- Claude Code sessions (no estimation) have minimal overhead since fields are omitted
+- Old sessions without estimation fields are read as having native tokens
 
 ---
 
@@ -689,6 +772,19 @@ v2.0.0+6mo - v1.x support ends
 | v1.1.0 | Additive changes (not breaking) | Automatic - readers support both |
 | v1.2.0 | Added `builtin_tool_summary` (not breaking) | Automatic - new field ignored by old readers |
 | v1.3.0 | Added `reasoning_tokens` field (not breaking) | Automatic - new field ignored by old readers |
+| v1.4.0 | Added token estimation fields (not breaking) | Automatic - new fields ignored by old readers |
+
+### v1.4.0 Changes (Non-Breaking)
+
+v1.4.0 adds token estimation metadata for Codex CLI and Gemini CLI:
+
+| Change | Type | Impact |
+|--------|------|--------|
+| Added `is_estimated` to `tool_calls` | Additive | New field, omitted when false |
+| Added `estimation_method` to `tool_calls` | Additive | New field, only present when estimated |
+| Added `estimation_encoding` to `tool_calls` | Additive | New field, only present when estimated |
+| Codex CLI uses tiktoken o200k_base | Enhancement | ~99-100% accuracy |
+| Gemini CLI uses SentencePiece | Enhancement | 100% accuracy |
 
 ### v1.3.0 Changes (Non-Breaking)
 

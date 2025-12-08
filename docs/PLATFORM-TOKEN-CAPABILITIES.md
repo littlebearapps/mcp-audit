@@ -1,6 +1,6 @@
 # Platform Token Capabilities
 
-This document describes the token tracking capabilities and limitations for each platform supported by mcp-audit, along with our planned approach for MCP tool token estimation.
+This document describes the token tracking capabilities and limitations for each platform supported by mcp-audit, including our implemented MCP tool token estimation.
 
 ---
 
@@ -11,8 +11,10 @@ mcp-audit tracks token usage and MCP server efficiency across multiple AI coding
 | Platform | Session Tokens | Per-Message Tokens | Per-Tool Tokens | Reasoning Tokens | MCP Tool Data | Built-in Tools |
 |----------|---------------|-------------------|-----------------|-----------------|---------------|----------------|
 | Claude Code | ✅ Native | ✅ Native | ✅ Native | ❌ Not exposed | Full attribution | ✅ Calls + Tokens |
-| Codex CLI | ✅ Native | ✅ Native (turn-level) | ❌ Not available | ✅ `reasoning_output_tokens` | Args + results | ✅ Calls only |
-| Gemini CLI | ✅ Native | ✅ Native | ❌ Not available | ✅ `thoughts` | Args + results | ✅ Calls only |
+| Codex CLI | ✅ Native | ✅ Native (turn-level) | ✅ **Estimated** (v0.4.0) | ✅ `reasoning_output_tokens` | Args + results | ✅ Calls only |
+| Gemini CLI | ✅ Native | ✅ Native | ✅ **Estimated** (v0.4.0) | ✅ `thoughts` | Args + results | ✅ Calls only |
+
+**New in v0.4.0**: Token estimation for MCP tools on Codex CLI and Gemini CLI using platform-native tokenizers (~99-100% accuracy).
 
 ---
 
@@ -51,7 +53,28 @@ Claude Code provides **complete per-tool token attribution** through its JSONL s
 
 ### Built-in Tool Tracking (v1.2.0)
 
-As of schema v1.2.0, mcp-audit tracks built-in tools (Bash, Read, Write, Edit, Glob, Grep, etc.) in session files:
+As of schema v1.2.0, mcp-audit tracks built-in tools in session files. Claude Code has **18 built-in tools**:
+
+| Tool | Description |
+|------|-------------|
+| AskUserQuestion | User interaction/clarification |
+| Bash | Shell command execution |
+| BashOutput | Background shell output retrieval |
+| Edit | Targeted file edits |
+| EnterPlanMode | Enter plan mode |
+| ExitPlanMode | Exit plan mode |
+| Glob | File pattern matching |
+| Grep | Content search |
+| KillShell | Kill background shell |
+| NotebookEdit | Jupyter notebook editing |
+| Read | File reading |
+| Skill | Execute skills |
+| SlashCommand | Custom slash commands |
+| Task | Sub-agent tasks |
+| TodoWrite | Task list management |
+| WebFetch | URL content fetching |
+| WebSearch | Web searching |
+| Write | File creation/overwrite |
 
 ```json
 {
@@ -184,7 +207,21 @@ This data enables **token estimation** based on content size.
 
 ### Built-in Tool Tracking (v1.2.0)
 
-As of schema v1.2.0, mcp-audit tracks built-in tools (shell, read_file, apply_patch, etc.) in session files:
+As of schema v1.2.0, mcp-audit tracks built-in tools in session files. Codex CLI has **11 built-in tools**:
+
+| Tool | Description |
+|------|-------------|
+| shell | Main shell execution |
+| shell_command | Alternative shell command |
+| apply_patch | File patching |
+| grep_files | File search |
+| list_dir | Directory listing |
+| read_file | File reading |
+| view_image | Image viewing |
+| exec | Unified execution |
+| update_plan | Task planning |
+| list_mcp_resources | MCP resource discovery |
+| list_mcp_resource_templates | MCP resource templates |
 
 ```json
 {
@@ -273,7 +310,22 @@ This data enables **token estimation** based on content size.
 
 ### Built-in Tool Tracking (v1.2.0)
 
-As of schema v1.2.0, mcp-audit tracks built-in tools (read_file, list_directory, google_web_search, etc.) in session files:
+As of schema v1.2.0, mcp-audit tracks built-in tools in session files. Gemini CLI has **12 built-in tools**:
+
+| Tool | Description |
+|------|-------------|
+| glob | File pattern matching |
+| google_web_search | Web search |
+| list_directory | Directory listing |
+| read_file | Read single file |
+| read_many_files | Read multiple files |
+| replace | File content replacement |
+| run_shell_command | Shell execution |
+| save_memory | Memory/context saving |
+| search_file_content | Grep/ripgrep search |
+| web_fetch | Fetch web content |
+| write_file | Write file |
+| write_todos | Task management |
 
 ```json
 {
@@ -343,201 +395,194 @@ This auto-hiding behavior ensures the TUI remains clean for platforms that don't
 
 ---
 
-## Token Estimation Plan
+## Token Estimation (Implemented v0.4.0)
 
-Since Codex CLI and Gemini CLI don't provide native per-tool token attribution, mcp-audit can **estimate** MCP tool token usage using tokenizer libraries.
+Since Codex CLI and Gemini CLI don't provide native per-tool token attribution, mcp-audit **estimates** MCP tool token usage using platform-native tokenizers.
 
 ### Approach
 
-Use the actual tool call content (arguments and results) to estimate token counts:
+Estimates are calculated from tool call content plus API formatting overhead:
 
 ```
-Estimated MCP Tokens = tokenize(tool_arguments) + tokenize(tool_results)
+Input Tokens  = tokenize(tool_arguments) + FUNCTION_CALL_OVERHEAD
+Output Tokens = tokenize(tool_result)
 ```
+
+Where `FUNCTION_CALL_OVERHEAD = 25` tokens accounts for function name, JSON structure, and API formatting.
+
+### Optional Gemma Tokenizer (Gemini CLI)
+
+The Gemma tokenizer provides 100% accurate token estimation for Gemini CLI but is **not bundled** with the package to keep install size small (~500KB vs ~5MB).
+
+**Install options:**
+```bash
+# Direct download from GitHub Releases (recommended)
+mcp-audit tokenizer download
+
+# Check status
+mcp-audit tokenizer status
+```
+
+The tokenizer is downloaded from GitHub Releases (no HuggingFace account required) to `~/.cache/mcp-audit/tokenizer.model` (~4MB). SHA256 checksum verification ensures integrity.
+
+**Without the tokenizer:** Gemini CLI uses tiktoken cl100k_base (~95% accuracy). A hint is shown during `collect`:
+```
+Note: Using standard tokenizer for Gemini CLI (~95% accuracy).
+      For 100% accuracy: mcp-audit tokenizer download
+```
+
+**Change your mind later:** Just run `mcp-audit tokenizer download` - no reinstall needed.
 
 ### Implementation
 
-#### 1. Token Estimator Module
+#### TokenEstimator Module (`src/mcp_audit/token_estimator.py`)
 
 ```python
-# src/mcp_audit/estimation.py
+from mcp_audit.token_estimator import (
+    TokenEstimator,
+    FUNCTION_CALL_OVERHEAD,  # 25 tokens
+    count_tokens,
+    estimate_tool_tokens,
+    get_estimator_for_platform,
+)
 
-import json
-from typing import Optional, Tuple
+# Platform-specific estimators (recommended)
+codex_estimator = TokenEstimator.for_platform("codex-cli")   # tiktoken o200k_base
+gemini_estimator = TokenEstimator.for_platform("gemini-cli") # SentencePiece/Gemma
 
-try:
-    import tiktoken
-    TIKTOKEN_AVAILABLE = True
-except ImportError:
-    TIKTOKEN_AVAILABLE = False
+# Model-specific estimators
+gpt5_estimator = TokenEstimator.for_model("gpt-5.1")     # tiktoken o200k_base
+gemini_estimator = TokenEstimator.for_model("gemini-2.5") # SentencePiece
 
+# Estimate tokens for a tool call
+input_tokens, output_tokens = estimator.estimate_tool_call(
+    args='{"query": "test"}',
+    result="Search results...",
+    include_overhead=True,  # default: adds FUNCTION_CALL_OVERHEAD
+)
 
-class TokenEstimator:
-    """Estimate token counts for MCP tool calls.
-
-    Uses tiktoken when available, falls back to character-based
-    approximation otherwise.
-    """
-
-    def __init__(self, model: str = "gpt-4"):
-        """Initialize estimator.
-
-        Args:
-            model: Model name for tokenizer selection.
-                   Uses cl100k_base encoding for GPT-4/GPT-5 models.
-        """
-        self._encoding = None
-        if TIKTOKEN_AVAILABLE:
-            try:
-                self._encoding = tiktoken.encoding_for_model(model)
-            except KeyError:
-                # Fall back to cl100k_base for unknown models
-                self._encoding = tiktoken.get_encoding("cl100k_base")
-
-    def estimate_tokens(self, text: str) -> int:
-        """Estimate token count for text.
-
-        Args:
-            text: Text to tokenize.
-
-        Returns:
-            Estimated token count.
-        """
-        if not text:
-            return 0
-
-        if self._encoding:
-            return len(self._encoding.encode(text))
-
-        # Fallback: ~4 characters per token (rough approximation)
-        return len(text) // 4
-
-    def estimate_tool_call(
-        self,
-        args: Optional[dict],
-        result: Optional[str]
-    ) -> Tuple[int, int]:
-        """Estimate input and output tokens for a tool call.
-
-        Args:
-            args: Tool call arguments (dict or None).
-            result: Tool call result (string or None).
-
-        Returns:
-            Tuple of (estimated_input_tokens, estimated_output_tokens).
-        """
-        # Serialize arguments to JSON string
-        args_text = json.dumps(args) if args else ""
-        result_text = str(result) if result else ""
-
-        input_tokens = self.estimate_tokens(args_text)
-        output_tokens = self.estimate_tokens(result_text)
-
-        return input_tokens, output_tokens
+# Check estimation method
+print(estimator.method_name)    # "tiktoken" or "sentencepiece" or "character"
+print(estimator.encoding_name)  # "o200k_base" or "sentencepiece:gemma"
+print(estimator.is_fallback)    # True if using character-based fallback
 ```
 
-#### 2. Adapter Integration
+#### Platform-Specific Tokenizers
+
+| Platform | Tokenizer | Encoding | Accuracy |
+|----------|-----------|----------|----------|
+| Codex CLI | tiktoken | o200k_base | ~99-100% (native OpenAI) |
+| Gemini CLI | SentencePiece | Gemma tokenizer | 100% (optional download) |
+| Gemini CLI | tiktoken | cl100k_base | ~95% (fallback) |
+| Claude Code | N/A | Native tokens | 100% (no estimation) |
+
+#### Adapter Integration
+
+Both Codex CLI and Gemini CLI adapters automatically estimate tokens for MCP tool calls:
 
 ```python
-# In codex_cli_adapter.py
-
+# Codex CLI adapter (codex_cli_adapter.py)
 class CodexCLIAdapter(BaseTracker):
     def __init__(self, ...):
-        # ...
-        self._estimator = TokenEstimator(model="gpt-4")
+        self._estimator = TokenEstimator.for_platform("codex-cli")
+        self._estimated_tool_calls = 0
 
-    def _process_tool_call(self, tool_name: str, args: dict, result: str):
-        # Get native tokens (will be 0 for Codex)
-        native_tokens = 0  # Not available
+    def _parse_function_call_output(self, ...):
+        if is_mcp_tool:
+            input_tokens, output_tokens = self._estimator.estimate_tool_call(
+                args=args_str, result=result
+            )
+            self._estimated_tool_calls += 1
+            # Records with is_estimated=True, estimation_method, estimation_encoding
 
-        # Estimate tokens from content
-        estimated_input, estimated_output = self._estimator.estimate_tool_call(
-            args=args,
-            result=result
-        )
-        estimated_total = estimated_input + estimated_output
+# Gemini CLI adapter (gemini_cli_adapter.py)
+class GeminiCLIAdapter(BaseTracker):
+    def __init__(self, ...):
+        self._token_estimator = TokenEstimator.for_platform("gemini-cli")
+        self._estimated_tool_calls = 0
 
-        # Track with estimation flag
-        self._track_mcp_tool(
-            tool_name=tool_name,
-            tokens=estimated_total,
-            is_estimated=True
-        )
+    def _parse_tool_call(self, ...):
+        if is_mcp_tool:
+            input_tokens, output_tokens = self._token_estimator.estimate_tool_call(
+                args=args_str, result=result_str
+            )
+            self._estimated_tool_calls += 1
 ```
 
-#### 3. Display Integration
+#### Schema v1.4.0 Estimation Fields
 
-```python
-# In rich_display.py
+Each `Call` record includes estimation metadata:
 
-def _build_tools(self, snapshot: DisplaySnapshot) -> Panel:
-    # Build title with estimation indicator
-    title = f"MCP Servers Usage ({num_servers} servers, {total_calls} calls)"
-    if snapshot.has_estimated_tokens:
-        title += " - Estimated*"
-
-    # ... existing display code ...
-
-    # Add footnote for estimated tokens
-    if snapshot.has_estimated_tokens:
-        content.append(
-            "\n  * Tokens estimated from tool arguments and results",
-            style="dim italic"
-        )
-
-    return Panel(content, title=title, border_style="yellow")
+```json
+{
+  "schema_version": "1.4.0",
+  "calls": [
+    {
+      "tool": "mcp__brave-search__brave_web_search",
+      "input_tokens": 52,
+      "output_tokens": 1250,
+      "is_estimated": true,
+      "estimation_method": "tiktoken",
+      "estimation_encoding": "o200k_base"
+    }
+  ]
+}
 ```
 
-#### 4. User-Facing Display
+#### TUI Display
 
-**With estimation enabled:**
+The TUI shows estimation method in the Token Usage panel title:
+
 ```
-╭─ MCP Servers Usage (2 servers, 5 calls) - Estimated* ─╮
-│                                                        │
-│  brave-search       2 calls    ~1.2K  (avg ~600/call) │
-│    └─ brave_web_search   2 calls    ~1.2K             │
-│                                                        │
-│  context7           3 calls    ~2.5K  (avg ~833/call) │
-│    └─ resolve-library-id   3 calls    ~2.5K           │
-│                                                        │
-│  ────────────────────────────────────────────────────  │
-│  Total MCP: 5 calls  (~3.7K estimated tokens)          │
-│                                                        │
-│  * Tokens estimated from tool arguments and results    │
-╰────────────────────────────────────────────────────────╯
+╭─ Token Usage & Cost (MCP: tiktoken) ─────────────╮
+│  Input:        10,000                            │
+│  Output:       2,000                             │
+│  Cache Read:   50,000                            │
+│  Total:        62,000                            │
+╰──────────────────────────────────────────────────╯
+
+Final Summary:
+  Duration: 2m 30s | 15 tool calls ($0.45)
+    (5 calls with tiktoken estimation, o200k_base)
 ```
 
 ### What Estimation Measures
 
 | Metric | Meaning | Use Case |
 |--------|---------|----------|
-| Estimated Input | Tokens in tool arguments | How much context sent to tool |
-| Estimated Output | Tokens in tool results | How much context returned from tool |
+| Input Tokens | Tokens in tool arguments + overhead | How much context sent to tool |
+| Output Tokens | Tokens in tool results | How much context returned from tool |
 | Total Estimated | Combined tool I/O | Overall MCP context load |
 
 ### What Estimation Does NOT Measure
 
-- Actual model billing tokens
+- Actual model billing tokens (use session totals for billing)
 - System prompt overhead
 - Model reasoning about tool calls
-- Internal formatting tokens
+- Internal formatting tokens beyond FUNCTION_CALL_OVERHEAD
 - Cache efficiency
 
-### Accuracy Considerations
+### Accuracy Details
 
-**tiktoken (when available):**
-- Very accurate for OpenAI models (GPT-4, GPT-5, Codex)
-- Reasonable approximation for other models
-- Uses cl100k_base encoding by default
+**Codex CLI (tiktoken o200k_base):**
+- Uses OpenAI's native tokenizer for GPT-5.1, o1, o3, o4 models
+- ~99-100% accuracy for content tokenization
+- FUNCTION_CALL_OVERHEAD adds 25 tokens per call for API formatting
 
-**Fallback (without tiktoken):**
-- Uses ~4 characters per token heuristic
+**Gemini CLI (SentencePiece + Gemma):**
+- Uses Google's Gemma tokenizer (same family as Gemini)
+- 100% accuracy when tokenizer is installed via `mcp-audit tokenizer download`
+- Falls back to tiktoken cl100k_base (~95% accuracy) if Gemma tokenizer not installed
+- Tokenizer downloaded from GitHub Releases (no account required)
+
+**Fallback (character-based):**
+- Used when tokenizer libraries unavailable
+- ~4 characters per token heuristic
 - Less accurate but still useful for relative comparisons
-- No additional dependencies required
 
 ### Value Proposition
 
-Even as estimates, MCP tool token tracking provides:
+MCP tool token tracking provides:
 
 1. **Relative comparisons**: Which MCP servers use the most context?
 2. **Efficiency insights**: Are tool results excessively large?
@@ -550,25 +595,28 @@ This is **unique functionality** - competitors like ccusage only track session-l
 
 ## Future Possibilities
 
-### Platform Improvements
+### Native Per-Tool Token Attribution
 
 We're monitoring these platforms for native per-tool token support:
 
 - **Codex CLI**: OpenAI could add `tokens` field to `function_call` events
-- **Gemini CLI**: Google could populate the existing `tool` token field
+- **Gemini CLI**: Google could populate the existing `tool` token field (currently always 0)
 
-If these become available, mcp-audit will automatically use native values.
+If native attribution becomes available, mcp-audit will automatically prefer native values over estimates, with the `is_estimated` field reflecting the source.
 
-### Feature Requests
+### Feature Requests Filed
 
-Consider filing feature requests:
-- OpenAI Codex: Request per-tool token attribution in JSONL output
-- Google Gemini: Request population of the `tool` token field
+- **Task 69.14**: File feature requests with OpenAI and Google for native per-tool token attribution
 
 ---
 
 ## References
 
-- [tiktoken](https://github.com/openai/tiktoken) - OpenAI's fast BPE tokenizer
-- [Codex CLI Reference](https://developers.openai.com/codex/cli/reference) - Official Codex documentation
-- [ccusage Codex Guide](https://ccusage.com/guide/codex/) - Third-party usage tracking
+- [tiktoken](https://github.com/openai/tiktoken) - OpenAI's fast BPE tokenizer (used for Codex CLI)
+- [Gemma tokenizer](https://huggingface.co/google/gemma-2-2b) - Google's Gemma tokenizer (used for Gemini CLI)
+- [Codex CLI](https://github.com/openai/codex) - OpenAI's Codex CLI repository
+- [Gemini CLI](https://github.com/google-gemini/gemini-cli) - Google's Gemini CLI repository
+
+---
+
+**Last Updated**: December 2025 (v0.4.0)

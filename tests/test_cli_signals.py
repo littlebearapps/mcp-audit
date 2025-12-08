@@ -344,3 +344,69 @@ class TestIntegrationWithMockTracker:
             session_files = list(tracker.session_dir.glob("*.json"))
             assert len(session_files) == 1
             assert session_files[0].name.startswith("test-project-")
+
+
+class TestFirstRunDetection:
+    """Test the _check_first_run function."""
+
+    def test_first_run_returns_true_if_marker_exists(self) -> None:
+        """Should return True immediately if .initialized marker exists."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create mock home directory with marker
+            mock_home = Path(tmpdir)
+            mcp_audit_dir = mock_home / ".mcp-audit"
+            mcp_audit_dir.mkdir()
+            marker = mcp_audit_dir / ".initialized"
+            marker.touch()
+
+            with patch.object(Path, "home", return_value=mock_home):
+                result = cli._check_first_run()
+                assert result is True
+
+    def test_first_run_creates_marker_on_skip(self) -> None:
+        """Should create .initialized marker when user skips setup."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            mock_home = Path(tmpdir)
+
+            with (
+                patch.object(Path, "home", return_value=mock_home),
+                patch("builtins.input", return_value="n"),
+            ):
+                result = cli._check_first_run()
+                assert result is True
+
+                # Marker should exist
+                marker = mock_home / ".mcp-audit" / ".initialized"
+                assert marker.exists()
+
+    def test_first_run_handles_eof_error(self) -> None:
+        """Should handle EOFError gracefully (non-interactive mode)."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            mock_home = Path(tmpdir)
+
+            with (
+                patch.object(Path, "home", return_value=mock_home),
+                patch("builtins.input", side_effect=EOFError),
+            ):
+                result = cli._check_first_run()
+                assert result is True
+
+                # Marker should exist
+                marker = mock_home / ".mcp-audit" / ".initialized"
+                assert marker.exists()
+
+    def test_first_run_handles_keyboard_interrupt(self) -> None:
+        """Should handle KeyboardInterrupt gracefully."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            mock_home = Path(tmpdir)
+
+            with (
+                patch.object(Path, "home", return_value=mock_home),
+                patch("builtins.input", side_effect=KeyboardInterrupt),
+            ):
+                result = cli._check_first_run()
+                assert result is True
+
+                # Marker should exist
+                marker = mock_home / ".mcp-audit" / ".initialized"
+                assert marker.exists()

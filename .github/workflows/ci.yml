@@ -35,7 +35,7 @@ jobs:
         run: pytest tests/ --cov=src/mcp_audit --cov-report=term-missing --cov-report=xml --cov-report=html
 
       - name: Type check with mypy
-        run: mypy src/mcp_audit
+        run: mypy src/mcp_audit --config-file pyproject.toml
 
       - name: Lint with ruff
         run: ruff check .

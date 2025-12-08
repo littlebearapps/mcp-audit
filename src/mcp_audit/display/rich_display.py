@@ -3,6 +3,9 @@ RichDisplay - Rich-based TUI with in-place updating.
 
 Uses Rich's Live display for a beautiful, real-time updating dashboard
 that shows session metrics without scrolling.
+
+Supports Catppuccin color themes (dark/light) and ASCII mode for
+terminals with limited Unicode support.
 """
 
 import contextlib
@@ -10,6 +13,7 @@ from collections import deque
 from datetime import datetime
 from typing import Deque, List, Optional, Tuple
 
+from rich import box
 from rich.console import Console
 from rich.layout import Layout
 from rich.live import Live
@@ -18,8 +22,11 @@ from rich.table import Table
 from rich.text import Text
 
 from ..base_tracker import SCHEMA_VERSION
+from .ascii_mode import ascii_emoji, get_box_style, is_ascii_mode
 from .base import DisplayAdapter
 from .snapshot import DisplaySnapshot
+from .theme_detect import get_active_theme
+from .themes import _ThemeType
 
 
 class RichDisplay(DisplayAdapter):
@@ -27,16 +34,23 @@ class RichDisplay(DisplayAdapter):
 
     Provides a beautiful terminal UI that updates in place,
     showing real-time token usage, tool calls, and activity.
+
+    Supports Catppuccin color themes for light/dark mode and
+    ASCII mode for legacy terminal compatibility.
     """
 
     def __init__(
-        self, refresh_rate: float = 0.5, pinned_servers: Optional[List[str]] = None
+        self,
+        refresh_rate: float = 0.5,
+        pinned_servers: Optional[List[str]] = None,
+        theme: Optional[str] = None,
     ) -> None:
         """Initialize Rich display.
 
         Args:
             refresh_rate: Display refresh rate in seconds (default 0.5 = 2Hz)
             pinned_servers: List of server names to pin at top of MCP section
+            theme: Theme name override (default: auto-detect from environment)
         """
         self.console = Console()
         self.refresh_rate = refresh_rate
@@ -45,6 +59,11 @@ class RichDisplay(DisplayAdapter):
         self.recent_events: Deque[Tuple[datetime, str, int]] = deque(maxlen=5)
         self._current_snapshot: Optional[DisplaySnapshot] = None
         self._fallback_warned = False
+
+        # Theme support (task-83)
+        self.theme: _ThemeType = get_active_theme(override=theme)
+        self.ascii_mode: bool = is_ascii_mode()
+        self.box_style: box.Box = get_box_style()
 
     def start(self, snapshot: DisplaySnapshot) -> None:
         """Start the live display."""
@@ -101,58 +120,61 @@ class RichDisplay(DisplayAdapter):
         return layout
 
     def _build_header(self, snapshot: DisplaySnapshot) -> Panel:
-        """Build header panel with project info, model, git metadata, and file monitoring (AC #6)."""
+        """Build header panel with project info, model, git metadata, and file monitoring."""
         duration = self._format_duration_human(snapshot.duration_seconds)
         version_str = f" v{snapshot.version}" if snapshot.version else ""
 
         header_text = Text()
-        header_text.append(f"MCP Audit{version_str} - ", style="bold cyan")
+        header_text.append(f"MCP Audit{version_str} - ", style=f"bold {self.theme.title}")
         # Show session type based on tracking mode
         if snapshot.tracking_mode == "full":
-            header_text.append("Full Session ↺", style="bold yellow")
+            sync_indicator = ascii_emoji("↺")
+            header_text.append(f"Full Session {sync_indicator}", style=f"bold {self.theme.warning}")
         else:
-            header_text.append("Live Session", style="bold cyan")
-        header_text.append(f"  [{snapshot.platform}]", style="bold cyan")
+            header_text.append("Live Session", style=f"bold {self.theme.title}")
+        header_text.append(f"  [{snapshot.platform}]", style=f"bold {self.theme.title}")
 
-        # Project and started time (task-46.2)
+        # Project and started time
         started_str = snapshot.start_time.strftime("%H:%M:%S")
-        header_text.append(f"\nProject: {snapshot.project}", style="white")
-        header_text.append(f"  Started: {started_str}", style="dim")
-        header_text.append(f"  Duration: {duration}", style="dim")
+        header_text.append(f"\nProject: {snapshot.project}", style=self.theme.primary_text)
+        header_text.append(f"  Started: {started_str}", style=self.theme.dim_text)
+        header_text.append(f"  Duration: {duration}", style=self.theme.dim_text)
 
-        # Model name (AC #6, #15)
+        # Model name
         if snapshot.model_name and snapshot.model_name != "Unknown Model":
-            header_text.append(f"\nModel: {snapshot.model_name}", style="green")
+            header_text.append(f"\nModel: {snapshot.model_name}", style=self.theme.success)
         elif snapshot.model_id:
-            header_text.append(f"\nModel: {snapshot.model_id}", style="green")
+            header_text.append(f"\nModel: {snapshot.model_id}", style=self.theme.success)
 
-        # Git metadata (task-46.5) and file monitoring (task-46.6)
+        # Git metadata and file monitoring
         git_info = []
         if snapshot.git_branch:
-            git_info.append(f"🌿 {snapshot.git_branch}")
+            branch_emoji = ascii_emoji("🌿")
+            git_info.append(f"{branch_emoji} {snapshot.git_branch}")
         if snapshot.git_commit_short:
             git_info.append(f"@{snapshot.git_commit_short}")
         if snapshot.git_status == "dirty":
             git_info.append("*")
         if snapshot.files_monitored > 0:
-            git_info.append(f"  📁 {snapshot.files_monitored} files")
+            files_emoji = ascii_emoji("📁")
+            git_info.append(f"  {files_emoji} {snapshot.files_monitored} files")
 
         if git_info:
-            header_text.append(f"\n{''.join(git_info)}", style="dim")
+            header_text.append(f"\n{''.join(git_info)}", style=self.theme.dim_text)
 
-        return Panel(header_text, border_style="cyan")
+        return Panel(header_text, border_style=self.theme.header_border, box=self.box_style)
 
     def _build_tokens(self, snapshot: DisplaySnapshot) -> Panel:
-        """Build token usage panel with 3-column layout (task-46.8, task-46.3)."""
+        """Build token usage panel with 3-column layout."""
         table = Table(show_header=False, box=None, padding=(0, 1))
         # Column 1: Tokens (Input, Output, Total, Messages)
-        table.add_column("Label1", style="dim", width=16)
+        table.add_column("Label1", style=self.theme.dim_text, width=16)
         table.add_column("Value1", justify="right", width=12)
         # Column 2: Cache (Created, Read, Efficiency, Built-in)
-        table.add_column("Label2", style="dim", width=16)
+        table.add_column("Label2", style=self.theme.dim_text, width=16)
         table.add_column("Value2", justify="right", width=12)
         # Column 3: Cost (w/ Cache, w/o Cache, Savings)
-        table.add_column("Label3", style="dim", width=16)
+        table.add_column("Label3", style=self.theme.dim_text, width=16)
         table.add_column("Value3", justify="right", width=14)
 
         # Row 1: Input | Cache Created | Cost w/ Cache
@@ -175,8 +197,7 @@ class RichDisplay(DisplayAdapter):
             f"${snapshot.cost_no_cache:.4f}" if snapshot.cost_no_cache > 0 else "$-.----",
         )
 
-        # Row 2.5 (conditional): Reasoning tokens - only shown when > 0 (v1.3.0)
-        # Auto-hides for Claude Code (always 0) and when not using thinking models
+        # Row 2.5 (conditional): Reasoning tokens - only shown when > 0
         if snapshot.reasoning_tokens > 0:
             table.add_row(
                 "Reasoning:",
@@ -187,25 +208,24 @@ class RichDisplay(DisplayAdapter):
                 "",
             )
 
-        # Row 3: Total | Efficiency | Savings/Net Cost (task-46.3, task-47.1, task-47.2)
-        # Show positive savings with 💰, negative as "Net Cost" with 💸
-        # Add hint when cache is inefficient (task-47.2)
+        # Row 3: Total | Efficiency | Savings/Net Cost
+        savings_emoji = ascii_emoji("💰")
+        cost_emoji = ascii_emoji("💸")
         if snapshot.cache_savings > 0:
-            savings_label = "💰 Savings:"
+            savings_label = f"{savings_emoji} Savings:"
             savings_str = f"${snapshot.cache_savings:.4f}"
             savings_pct = (
                 f"({snapshot.savings_percent:.0f}%)" if snapshot.savings_percent > 0 else ""
             )
             savings_display = f"{savings_str} {savings_pct}"
         elif snapshot.cache_savings < 0:
-            savings_label = "💸 Net Cost:"
+            savings_label = f"{cost_emoji} Net Cost:"
             savings_str = f"${abs(snapshot.cache_savings):.4f}"
-            # Add hint explaining why (task-47.2)
             hint = self._get_cache_inefficiency_hint(snapshot)
             savings_display = f"{savings_str} {hint}" if hint else savings_str
         else:
             # Zero savings - neutral display
-            savings_label = "💰 Savings:"
+            savings_label = f"{savings_emoji} Savings:"
             savings_display = "$0.0000"
         table.add_row(
             "Total:",
@@ -216,7 +236,7 @@ class RichDisplay(DisplayAdapter):
             savings_display,
         )
 
-        # Row 4: Messages | Built-in Tools (task-46.1, task-46.4)
+        # Row 4: Messages | Built-in Tools
         builtin_str = (
             f"{snapshot.builtin_tool_calls} ({self._format_tokens(snapshot.builtin_tool_tokens)})"
         )
@@ -229,14 +249,18 @@ class RichDisplay(DisplayAdapter):
             "",
         )
 
-        return Panel(table, title="Token Usage & Cost", border_style="green")
+        return Panel(
+            table,
+            title="Token Usage & Cost",
+            border_style=self.theme.tokens_border,
+            box=self.box_style,
+        )
 
     def _build_tools(self, snapshot: DisplaySnapshot) -> Panel:
-        """Build MCP Server→Tools hierarchy (AC #7, #8, #9, #13, #14)."""
+        """Build MCP Server→Tools hierarchy."""
         content = Text()
 
         # Max content lines (size=14 minus 2 for panel border)
-        # Reserve 3 lines for: divider, total line, and potential truncation indicator
         max_display_lines = 9
         lines_used = 0
         servers_shown = 0
@@ -247,24 +271,19 @@ class RichDisplay(DisplayAdapter):
             total_servers = len(snapshot.server_hierarchy)
             total_tools = sum(len(s[4]) for s in snapshot.server_hierarchy)
 
-            # Task 68.11: Detect if platform provides per-tool tokens
-            # Codex CLI and Gemini CLI don't provide per-tool token attribution
-            # Hide token columns when ALL servers have 0 tokens (platform limitation)
+            # Detect if platform provides per-tool tokens
             total_mcp_tokens = sum(s[2] for s in snapshot.server_hierarchy)
             show_tokens = total_mcp_tokens > 0
 
-            # Sort servers: pinned first, then by token usage (existing order)
+            # Sort servers: pinned first, then by token usage
             server_list = list(snapshot.server_hierarchy)
             if self.pinned_servers:
-                # Stable sort: pinned servers first, preserving original order within groups
                 server_list.sort(key=lambda s: (0 if s[0] in self.pinned_servers else 1))
 
             # Show server hierarchy
             for server_data in server_list:
                 server_name, server_calls, server_tokens, server_avg, tools = server_data
 
-                # Check if we have room for this server AND at least 1 tool (need 2 lines)
-                # This prevents showing a server header with no tools underneath (task-49.3)
                 if lines_used >= max_display_lines - 1:
                     truncated = True
                     break
@@ -272,36 +291,39 @@ class RichDisplay(DisplayAdapter):
                 # Server line with pin indicator if pinned
                 is_pinned = server_name in self.pinned_servers
                 if is_pinned:
-                    content.append("  📌 ", style="yellow")
-                    content.append(f"{server_name:<15}", style="yellow bold")
+                    pin_emoji = ascii_emoji("📌")
+                    content.append(f"  {pin_emoji} ", style=self.theme.pinned_indicator)
+                    content.append(
+                        f"{server_name:<15}", style=f"{self.theme.pinned_indicator} bold"
+                    )
                 else:
-                    content.append(f"  {server_name:<18}", style="cyan bold")
-                content.append(f" {server_calls:>3} calls", style="dim")
+                    content.append(f"  {server_name:<18}", style=f"{self.theme.server_name} bold")
+                content.append(f" {server_calls:>3} calls", style=self.theme.dim_text)
 
-                # Task 68.11: Only show token columns when platform provides them
                 if show_tokens:
                     tokens_str = self._format_tokens(server_tokens)
                     avg_str = self._format_tokens(server_avg)
-                    content.append(f"  {tokens_str:>8}", style="white")
-                    content.append(f"  (avg {avg_str}/call)", style="dim")
+                    content.append(f"  {tokens_str:>8}", style=self.theme.primary_text)
+                    content.append(f"  (avg {avg_str}/call)", style=self.theme.dim_text)
                 content.append("\n")
                 lines_used += 1
                 servers_shown += 1
 
-                # Tool breakdown (AC #9, #13)
+                # Tool breakdown
                 for tool_short, tool_calls, tool_tokens, pct_of_server in tools:
                     if lines_used >= max_display_lines:
                         truncated = True
                         break
 
-                    content.append(f"    └─ {tool_short:<15}", style="dim")
-                    content.append(f" {tool_calls:>3} calls", style="dim")
+                    content.append(f"    └─ {tool_short:<15}", style=self.theme.dim_text)
+                    content.append(f" {tool_calls:>3} calls", style=self.theme.dim_text)
 
-                    # Task 68.11: Only show token columns when platform provides them
                     if show_tokens:
                         tool_tokens_str = self._format_tokens(tool_tokens)
-                        content.append(f"  {tool_tokens_str:>8}", style="dim")
-                        content.append(f"  ({pct_of_server:.0f}% of server)", style="dim")
+                        content.append(f"  {tool_tokens_str:>8}", style=self.theme.dim_text)
+                        content.append(
+                            f"  ({pct_of_server:.0f}% of server)", style=self.theme.dim_text
+                        )
                     content.append("\n")
                     lines_used += 1
                     tools_shown += 1
@@ -316,29 +338,40 @@ class RichDisplay(DisplayAdapter):
                 if remaining_servers > 0 and remaining_tools > 0:
                     content.append(
                         f"  ... +{remaining_servers} more server(s), +{remaining_tools} more tool(s)\n",
-                        style="yellow italic",
+                        style=f"{self.theme.warning} italic",
                     )
                 elif remaining_tools > 0:
                     content.append(
-                        f"  ... +{remaining_tools} more tool(s)\n", style="yellow italic"
+                        f"  ... +{remaining_tools} more tool(s)\n",
+                        style=f"{self.theme.warning} italic",
                     )
 
-            # Summary line with MCP percentage of session (AC #14)
+            # Summary line with MCP percentage of session
             total_mcp_calls = snapshot.total_tool_calls
-            content.append("  ─" * 30 + "\n", style="dim")
-            content.append(f"  Total MCP: {total_mcp_calls} calls", style="white")
+            content.append("  ─" * 30 + "\n", style=self.theme.dim_text)
+            content.append(f"  Total MCP: {total_mcp_calls} calls", style=self.theme.primary_text)
             if show_tokens and snapshot.mcp_tokens_percent > 0:
                 content.append(
-                    f"  ({snapshot.mcp_tokens_percent:.0f}% of session tokens)", style="dim"
+                    f"  ({snapshot.mcp_tokens_percent:.0f}% of session tokens)",
+                    style=self.theme.dim_text,
                 )
         else:
-            content.append("  No MCP tools called yet", style="dim italic")
+            content.append("  No MCP tools called yet", style=f"{self.theme.dim_text} italic")
+
+        # Add estimation info for platforms that estimate MCP tokens (task-69.32)
+        if snapshot.estimated_tool_calls > 0 and snapshot.estimation_method:
+            content.append("\n")
+            method = snapshot.estimation_method
+            content.append(
+                f"  MCP tokens estimated via {method}. See github.com/littlebearapps/mcp-audit",
+                style=f"{self.theme.dim_text} italic",
+            )
 
         # Title includes server count
         num_servers = len(snapshot.server_hierarchy)
         title = f"MCP Servers Usage ({num_servers} servers, {snapshot.total_tool_calls} calls)"
 
-        return Panel(content, title=title, border_style="yellow")
+        return Panel(content, title=title, border_style=self.theme.mcp_border, box=self.box_style)
 
     def _format_tokens(self, tokens: int) -> str:
         """Format token count with K/M suffix."""
@@ -350,14 +383,13 @@ class RichDisplay(DisplayAdapter):
             return str(tokens)
 
     def _get_cache_inefficiency_hint(self, snapshot: DisplaySnapshot) -> str:
-        """Get brief explanation for cache inefficiency (task-47.2).
+        """Get brief explanation for cache inefficiency.
 
         Returns a short hint explaining why cache is costing more than saving.
         """
         created = snapshot.cache_created_tokens
         read = snapshot.cache_read_tokens
 
-        # Determine the reason for inefficiency
         if created > 0 and read == 0:
             return "(new context, no reuse)"
         elif created > 0 and read > 0:
@@ -374,29 +406,31 @@ class RichDisplay(DisplayAdapter):
     def _build_activity(self) -> Panel:
         """Build recent activity panel."""
         if not self.recent_events:
-            content = Text("Waiting for events...", style="dim italic")
+            content = Text("Waiting for events...", style=f"{self.theme.dim_text} italic")
         else:
             content = Text()
             for timestamp, tool_name, tokens in self.recent_events:
-                # Convert UTC timestamp to local time for display (task-68.10)
                 local_time = timestamp.astimezone()
                 time_str = local_time.strftime("%H:%M:%S")
                 short_name = tool_name if len(tool_name) <= 40 else tool_name[:37] + "..."
-                content.append(f"[{time_str}] ", style="dim")
-                content.append(f"{short_name}", style="cyan")
-                # Only show tokens if available (task-68.8)
-                # Codex CLI doesn't provide per-tool tokens, so hide when 0
+                content.append(f"[{time_str}] ", style=self.theme.dim_text)
+                content.append(f"{short_name}", style=self.theme.tool_name)
                 if tokens > 0:
-                    content.append(f" ({tokens:,} tokens)", style="dim")
+                    content.append(f" ({tokens:,} tokens)", style=self.theme.dim_text)
                 content.append("\n")
 
-        return Panel(content, title="Recent Activity", border_style="blue")
+        return Panel(
+            content,
+            title="Recent Activity",
+            border_style=self.theme.activity_border,
+            box=self.box_style,
+        )
 
     def _build_footer(self) -> Text:
         """Build footer with instructions."""
         return Text(
             "Press Ctrl+C to stop and save session",
-            style="dim italic",
+            style=f"{self.theme.dim_text} italic",
             justify="center",
         )
 
@@ -407,7 +441,7 @@ class RichDisplay(DisplayAdapter):
         return f"{hours:02d}:{minutes:02d}:{secs:02d}"
 
     def _format_duration_human(self, seconds: float) -> str:
-        """Format duration in human-friendly format (task-46.7).
+        """Format duration in human-friendly format.
 
         Examples: "5s", "2m 30s", "1h 15m", "2h 30m 15s"
         """
@@ -431,23 +465,28 @@ class RichDisplay(DisplayAdapter):
                 return f"{minutes}m"
 
     def _print_final_summary(self, snapshot: DisplaySnapshot) -> None:
-        """Print final summary after stopping with enhanced display (task-66.10)."""
+        """Print final summary after stopping with enhanced display."""
         version_str = f" v{snapshot.version}" if snapshot.version else ""
+
+        # Emoji for summary display
+        savings_emoji = ascii_emoji("💰")
+        cost_emoji = ascii_emoji("💸")
+        branch_emoji = ascii_emoji("🌿")
 
         # Build summary text
         summary_parts = [
-            "[bold green]Session Complete![/bold green]\n",
+            f"[bold {self.theme.success}]Session Complete![/]\n",
         ]
 
         # Model info
         if snapshot.model_name and snapshot.model_name != "Unknown Model":
             summary_parts.append(f"Model: {snapshot.model_name}\n")
 
-        # Duration and rate stats (task-66.10)
+        # Duration and rate stats
         duration_human = self._format_duration_human(snapshot.duration_seconds)
         summary_parts.append(f"Duration: {duration_human}")
 
-        # Rate statistics (task-66.10)
+        # Rate statistics
         if snapshot.duration_seconds > 0:
             msg_per_min = snapshot.message_count / (snapshot.duration_seconds / 60)
             tokens_per_min = snapshot.total_tokens / (snapshot.duration_seconds / 60)
@@ -458,7 +497,7 @@ class RichDisplay(DisplayAdapter):
         else:
             summary_parts.append(f"  ({snapshot.message_count} messages)\n")
 
-        # Token breakdown with percentages (task-66.10)
+        # Token breakdown with percentages
         summary_parts.append(f"\n[bold]Tokens[/bold]: {snapshot.total_tokens:,}\n")
         if snapshot.total_tokens > 0:
             input_pct = snapshot.input_tokens / snapshot.total_tokens * 100
@@ -470,7 +509,7 @@ class RichDisplay(DisplayAdapter):
                 f"  Input: {snapshot.input_tokens:,} ({input_pct:.1f}%) | "
                 f"Output: {snapshot.output_tokens:,} ({output_pct:.1f}%)\n"
             )
-            # v1.3.0: Show reasoning tokens when > 0 (Gemini thoughts / Codex reasoning)
+            # Show reasoning tokens when > 0 (Gemini thoughts / Codex reasoning)
             if snapshot.reasoning_tokens > 0:
                 reasoning_pct = snapshot.reasoning_tokens / snapshot.total_tokens * 100
                 summary_parts.append(
@@ -487,7 +526,7 @@ class RichDisplay(DisplayAdapter):
                 summary_parts.append("\n")
         summary_parts.append(f"  Cache efficiency: {snapshot.cache_efficiency:.1%}\n")
 
-        # Tool breakdown (task-66.10)
+        # Tool breakdown
         summary_parts.append("\n[bold]Tools[/bold]:\n")
 
         # MCP tools with server breakdown
@@ -506,35 +545,48 @@ class RichDisplay(DisplayAdapter):
         else:
             summary_parts.append("  MCP: 0 calls\n")
 
-        # Built-in tools (task-46.4)
+        # Token estimation indicator
+        if snapshot.estimated_tool_calls > 0:
+            method = snapshot.estimation_method or "estimated"
+            encoding = snapshot.estimation_encoding or ""
+            if encoding:
+                summary_parts.append(
+                    f"    [{self.theme.dim_text}]({snapshot.estimated_tool_calls} calls with {method} estimation, {encoding})[/]\n"
+                )
+            else:
+                summary_parts.append(
+                    f"    [{self.theme.dim_text}]({snapshot.estimated_tool_calls} calls with {method} estimation)[/]\n"
+                )
+
+        # Built-in tools
         if snapshot.builtin_tool_calls > 0:
             summary_parts.append(
                 f"  Built-in: {snapshot.builtin_tool_calls} calls "
                 f"({self._format_tokens(snapshot.builtin_tool_tokens)})\n"
             )
 
-        # Enhanced cost display (AC #1, #3, #4, task-47.1)
+        # Enhanced cost display
         summary_parts.append(f"\nCost w/ Cache (USD): ${snapshot.cost_estimate:.4f}\n")
 
         if snapshot.cost_no_cache > 0:
             summary_parts.append(f"Cost w/o Cache (USD): ${snapshot.cost_no_cache:.4f}\n")
             if snapshot.cache_savings > 0:
                 summary_parts.append(
-                    f"[green]💰 Cache savings: ${snapshot.cache_savings:.4f} "
-                    f"({snapshot.savings_percent:.1f}% saved)[/green]\n"
+                    f"[{self.theme.success}]{savings_emoji} Cache savings: ${snapshot.cache_savings:.4f} "
+                    f"({snapshot.savings_percent:.1f}% saved)[/]\n"
                 )
             elif snapshot.cache_savings < 0:
                 hint = self._get_cache_inefficiency_hint(snapshot)
                 hint_str = f" {hint}" if hint else ""
                 summary_parts.append(
-                    f"[yellow]💸 Net cost from caching: ${abs(snapshot.cache_savings):.4f}{hint_str}[/yellow]\n"
+                    f"[{self.theme.warning}]{cost_emoji} Net cost from caching: ${abs(snapshot.cache_savings):.4f}{hint_str}[/]\n"
                 )
             else:
-                summary_parts.append("💰 Cache savings: $0.0000 (break even)\n")
+                summary_parts.append(f"{savings_emoji} Cache savings: $0.0000 (break even)\n")
 
-        # Git metadata (task-46.5)
+        # Git metadata
         if snapshot.git_branch:
-            git_info = f"🌿 {snapshot.git_branch}"
+            git_info = f"{branch_emoji} {snapshot.git_branch}"
             if snapshot.git_commit_short:
                 git_info += f"@{snapshot.git_commit_short}"
             if snapshot.git_status == "dirty":
@@ -545,12 +597,15 @@ class RichDisplay(DisplayAdapter):
 
         # Session save location
         if snapshot.session_dir:
-            summary_parts.append(f"\n\n[dim]Session saved to: {snapshot.session_dir}[/dim]")
+            summary_parts.append(
+                f"\n\n[{self.theme.dim_text}]Session saved to: {snapshot.session_dir}[/]"
+            )
 
         self.console.print(
             Panel(
                 "".join(summary_parts),
                 title=f"MCP Audit{version_str} - Session Summary",
-                border_style="green",
+                border_style=self.theme.summary_border,
+                box=self.box_style,
             )
         )

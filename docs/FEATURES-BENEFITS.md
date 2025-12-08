@@ -1,6 +1,6 @@
 # Features & Benefits by Audience
 
-MCP Audit v0.3.14 - Features mapped to benefits for each target audience.
+MCP Audit v0.4.0 - Features mapped to benefits for each target audience.
 
 ---
 
@@ -249,10 +249,13 @@ mcp-audit report ~/.mcp-audit/sessions/
 | Google model pricing | Accurate cost estimates |
 | Tool call detection | Track MCP and built-in tool usage |
 | Built-in tool call counts | Track read_file, list_directory, etc. |
+| Optional Gemma tokenizer | 100% accurate token estimation (v0.4.0) |
 
 **Pain Point Addressed**: "How does Gemini CLI compare to alternatives?"
 
 **Note**: Gemini CLI provides message-level tokens only. Built-in tool call counts are tracked but per-tool token attribution is not available from the platform. Reasoning tokens (Gemini's `thoughts` field) are tracked separately from output tokens.
+
+**Token Estimation** (v0.4.0): For 100% accurate MCP tool token estimation, run `mcp-audit tokenizer download` to get the Gemma tokenizer from GitHub Releases (no account required). Without it, mcp-audit uses tiktoken (~95% accuracy) and displays a hint during collection.
 
 ---
 
@@ -275,12 +278,14 @@ ccusage is a historical analyzer—it tracks long-term usage trends (daily, mont
 |---------|---------|
 | **Privacy-first** | All data stays local, no prompts stored |
 | **Free & open-source** | MIT license, no cost to use |
-| **Easy installation** | `pip install mcp-audit` |
+| **Lightweight install** | `pip install mcp-audit` (~500KB, optional tokenizer) |
 | **Zero config needed** | Works out of the box |
 | **Signal handling** | Ctrl+C saves data gracefully |
 | **Multiple output formats** | JSON, CSV, Markdown reports |
 | **Configurable pricing** | TOML file for custom model pricing |
 | **Schema documentation** | Clear data contract for automation |
+| **Theme support** | Catppuccin dark/light, high-contrast, auto-detect |
+| **Accessibility** | ASCII mode, NO_COLOR standard, WCAG AAA themes |
 
 ### Privacy Guarantees
 
@@ -329,4 +334,4 @@ mcp-audit report ~/.mcp-audit/sessions/
 
 ---
 
-*v0.3.14 | Schema v1.3.0 | MIT License*
+*v0.4.0 | Schema v1.4.0 | MIT License*

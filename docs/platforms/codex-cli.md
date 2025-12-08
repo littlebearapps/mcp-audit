@@ -1,32 +1,107 @@
-# Codex CLI Platform
+# Codex CLI Platform Guide
 
-> **📖 See [Codex CLI Setup Guide](../codex-cli-setup.md) for complete documentation.**
+This guide explains how to use MCP Audit with [Codex CLI](https://github.com/openai/codex), OpenAI's AI coding assistant.
 
-## Overview
+> **📖 See [Codex CLI Setup Guide](../codex-cli-setup.md) for detailed configuration options.**
 
-MCP Audit supports Codex CLI through native JSONL session file parsing.
+---
 
-**Session Location**: `~/.codex/sessions/YYYY/MM/DD/*.jsonl`
+## Prerequisites
 
-## Key Features
+- **Codex CLI** installed (`npm install -g @openai/codex`)
+- **Python 3.8+** installed
+- **MCP servers** configured in Codex (optional)
 
-- **File-Based Tracking**: Parses native session files (no process wrapping needed)
-- **Session Auto-Discovery**: Finds latest session automatically
-- **Date Filtering**: Filter sessions by date range
-- **Model Detection**: Supports GPT-5.1, GPT-5-Codex, o-series models
+---
+
+## Installation
+
+```bash
+pipx install mcp-audit
+```
+
+Or with pip:
+
+```bash
+pip install mcp-audit
+```
+
+---
 
 ## Quick Start
 
+### 1. Start Tracking
+
+Open a new terminal and run:
+
 ```bash
-# Start tracking
+mcp-audit collect --platform codex-cli
+```
+
+### 2. Use Codex CLI Normally
+
+In a separate terminal, start Codex:
+
+```bash
+codex
+```
+
+Work as usual. MCP Audit will track:
+- All model interactions (tokens used)
+- All MCP tool calls (call counts)
+- Cache efficiency (cache read tokens)
+
+### 3. View Results
+
+When done, press `Ctrl+C` to see the session summary, or generate a report:
+
+```bash
+mcp-audit report
+```
+
+---
+
+## Platform Capabilities
+
+Codex CLI provides **session-level token counts** with per-tool estimation:
+
+| Capability | Status | Notes |
+|------------|--------|-------|
+| Session tokens | ✅ Native | Exact session totals from OpenAI |
+| Per-tool tokens | ✅ Estimated (99%+) | Via tiktoken `o200k_base` |
+| Reasoning tokens | ✅ o-series | Tracked separately for o1, o3 models |
+| Cache tracking | ✅ Read only | Cache creation not reported by OpenAI |
+| Cost estimates | ✅ Accurate | Based on session totals + model pricing |
+
+### Token Estimation (v0.4.0)
+
+MCP Audit uses OpenAI's `tiktoken` library with the `o200k_base` encoding to estimate per-tool token usage:
+
+- **Accuracy**: ~99-100% (same tokenizer OpenAI uses)
+- **No setup required**: tiktoken is bundled with mcp-audit
+- **TUI indicator**: Shows "Estimated (tiktoken)" in token panel
+
+---
+
+## Session File Location
+
+Codex CLI stores sessions at:
+
+```
+~/.codex/sessions/YYYY/MM/DD/*.jsonl
+```
+
+MCP Audit auto-discovers the latest session. Use `--from-start` to include existing data:
+
+```bash
+# Track only new events (default)
 mcp-audit collect --platform codex-cli
 
-# Batch process latest session
-mcp-audit collect --platform codex-cli --batch --latest
-
-# Process specific date range
-mcp-audit collect --platform codex-cli --batch --since 2025-11-01
+# Include existing session data from the start
+mcp-audit collect --platform codex-cli --from-start
 ```
+
+---
 
 ## Event Types Tracked
 
@@ -34,11 +109,144 @@ mcp-audit collect --platform codex-cli --batch --since 2025-11-01
 |------------|-------------|
 | `session_meta` | Session metadata (ID, CWD, CLI version) |
 | `turn_context` | Model selection and settings |
-| `token_count` | Token usage per turn |
+| `token_count` | Token usage (cumulative totals) |
 | `function_call` | MCP tool calls (filtered by `mcp__` prefix) |
+
+---
+
+## Configuration
+
+### Theme Options
+
+```bash
+# Use Catppuccin Mocha theme
+mcp-audit collect --platform codex-cli --theme mocha
+
+# Available themes: auto, dark, light, mocha, latte, hc-dark, hc-light
+```
+
+### Pricing Configuration
+
+Edit `~/.mcp-audit/mcp-audit.toml`:
+
+```toml
+[pricing.openai]
+# Prices per 1M tokens (USD)
+"gpt-5.1" = { input = 1.25, output = 10.00, cache_read = 0.125 }
+"gpt-5.1-codex-max" = { input = 1.25, output = 10.00, cache_read = 0.125 }
+"o4-mini" = { input = 4.00, output = 16.00, cache_read = 1.00 }
+```
+
+---
+
+## Built-in Tools vs MCP Tools
+
+Codex CLI has platform-specific built-in tools tracked separately:
+
+| Built-in Tool | Purpose |
+|---------------|---------|
+| `shell` | Execute bash commands |
+| `shell_command` | Alternative shell execution |
+| `read_file` | Read files |
+| `apply_patch` | Apply code patches |
+| `list_dir` | List directory contents |
+| `grep_files` | Search file contents |
+| `view_image` | View image files |
+| `exec` | Unified execution handler |
+| `update_plan` | Task planning |
+| `list_mcp_resources` | MCP resource discovery |
+| `list_mcp_resource_templates` | MCP resource templates |
+
+Built-in tools appear in the "Built-in Tools" count, not the MCP server hierarchy.
+
+---
+
+## Platform Limitations
+
+### Cache Creation Not Reported
+
+Only cache reads are available. `cache_created_tokens` is always 0:
+
+```json
+"token_usage": {
+  "cache_created_tokens": 0,
+  "cache_read_tokens": 1272832
+}
+```
+
+**Why**: OpenAI's API only reports `cached_input_tokens` (cache hits).
+
+### Tool Duration Available
+
+Tool execution time IS available via `function_call_output` events:
+
+```json
+{
+  "tool_calls": [
+    {
+      "tool": "mcp__brave-search__brave_web_search",
+      "duration_ms": 1500
+    }
+  ]
+}
+```
+
+---
+
+## Example Output
+
+```
+$ mcp-audit collect --platform codex-cli
+
+MCP Audit v0.4.0 - Codex CLI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Project: my-project │ Elapsed: 8m 12s
+Model: GPT-5.1 Codex Max
+
+Tokens (Estimated via tiktoken):
+  45,231 input │ 12,543 output │ 125K cached
+
+Cost (USD): $0.08
+
+MCP Servers & Tools (12 calls)
+  zen (8 calls)
+    chat ............. 5 calls
+    thinkdeep ........ 3 calls
+  brave-search (4 calls)
+    brave_web_search   4 calls
+
+Built-in Tools: 45 calls
+```
+
+---
+
+## Troubleshooting
+
+### No Sessions Found
+
+1. Verify Codex has created sessions:
+   ```bash
+   ls ~/.codex/sessions/
+   ```
+
+2. Check for recent sessions:
+   ```bash
+   find ~/.codex/sessions -name "*.jsonl" -mtime -7
+   ```
+
+### Model Not Detected
+
+Ensure the session contains `turn_context` events:
+```bash
+head -20 ~/.codex/sessions/2025/12/08/session.jsonl | grep turn_context
+```
+
+---
 
 ## See Also
 
-- [Complete Setup Guide](../codex-cli-setup.md)
-- [Architecture](../architecture.md)
-- [Pricing Configuration](../PRICING-CONFIGURATION.md)
+- [Complete Setup Guide](../codex-cli-setup.md) - Detailed configuration options
+- [Architecture](../architecture.md) - How MCP Audit works internally
+- [Pricing Configuration](../PRICING-CONFIGURATION.md) - Custom model pricing
+- [Data Contract](../data-contract.md) - Session schema documentation

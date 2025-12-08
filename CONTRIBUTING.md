@@ -54,26 +54,31 @@ pytest
 mcp-audit/
 ├── src/mcp_audit/
 │   ├── __init__.py
-│   ├── cli.py              # Command-line interface
-│   ├── storage.py          # Session storage and indexing
-│   ├── trackers/
-│   │   ├── __init__.py
-│   │   ├── base.py         # BaseTracker abstract class
-│   │   ├── claude_code.py  # Claude Code adapter
-│   │   └── codex_cli.py    # Codex CLI adapter
-│   ├── analyzers/
-│   │   ├── __init__.py
-│   │   └── efficiency.py   # Cross-session analysis
-│   └── pricing/
+│   ├── cli.py                  # Command-line interface
+│   ├── base_tracker.py         # BaseTracker abstract class
+│   ├── claude_code_adapter.py  # Claude Code platform adapter
+│   ├── codex_cli_adapter.py    # Codex CLI platform adapter
+│   ├── gemini_cli_adapter.py   # Gemini CLI platform adapter
+│   ├── token_estimator.py      # Token estimation for Codex/Gemini
+│   ├── session_manager.py      # Session management
+│   ├── storage.py              # Session storage and indexing
+│   ├── pricing_config.py       # Pricing configuration
+│   ├── normalization.py        # Data normalization
+│   ├── privacy.py              # Privacy utilities
+│   └── display/                # TUI components
 │       ├── __init__.py
-│       └── models.py       # Pricing configuration
+│       ├── rich_display.py     # Rich terminal display
+│       ├── themes.py           # Color themes
+│       └── snapshot.py         # Display snapshots
 ├── tests/
 │   ├── __init__.py
 │   ├── test_storage.py
-│   ├── test_trackers/
-│   └── fixtures/           # Test data
+│   ├── test_claude_code_adapter.py
+│   ├── test_codex_cli_adapter.py
+│   ├── test_gemini_cli_adapter.py
+│   ├── test_token_estimator.py
+│   └── fixtures/               # Test data
 ├── docs/
-├── examples/
 └── pyproject.toml
 ```
 

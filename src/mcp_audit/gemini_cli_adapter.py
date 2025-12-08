@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Set, Tupl
 
 from .base_tracker import BaseTracker
 from .pricing_config import PricingConfig
+from .token_estimator import TokenEstimator
 
 if TYPE_CHECKING:
     from .display import DisplayAdapter, DisplaySnapshot
@@ -294,6 +295,25 @@ class GeminiCLIAdapter(BaseTracker):
 
         # Current source files being tracked by this adapter instance
         self._current_source_files: Set[str] = set()
+
+        # Token estimation for MCP tools (task-69.9)
+        # Gemini CLI uses SentencePiece with Gemma tokenizer for 100% accuracy
+        self._token_estimator = TokenEstimator.for_platform("gemini-cli")
+
+        # Token estimation tracking (task-69.10)
+        # Counts MCP tool calls that use estimated tokens
+        self._estimated_tool_calls: int = 0
+
+        # Native session token tracking (task-69.27)
+        # Track native Gemini session tokens separately to avoid double-counting
+        # with tool estimation tokens. These accumulate per-message tokens and
+        # become the authoritative session.token_usage values.
+        self._native_input_tokens: int = 0
+        self._native_output_tokens: int = 0
+        self._native_cache_created_tokens: int = 0
+        self._native_cache_read_tokens: int = 0
+        self._native_reasoning_tokens: int = 0
+        self._native_total_tokens: int = 0
 
     def _extract_files_from_tool_params(self, tool_name: str, params: Dict[str, Any]) -> None:
         """
@@ -706,17 +726,22 @@ class GeminiCLIAdapter(BaseTracker):
         model_id = self.detected_model or ""
 
         # Calculate costs
+        # NOTE: For Gemini CLI, cache_read is a SUBSET of input_tokens (not additive)
+        # - input_tokens = total input/prompt tokens
+        # - cache_read = portion of input_tokens served from cache
+        # - fresh_input = input_tokens - cache_read (tokens at full price)
         cost_with_cache = 0.0
         cost_without_cache = 0.0
         if pricing.loaded and model_id:
-            # Cost with cache
+            # Fresh input tokens (not served from cache) - charged at full rate
+            fresh_input_tokens = input_tokens - cache_read
+
+            # Cost with cache: fresh at full rate, cached at discounted rate
             cost_with_cache = pricing.calculate_cost(
-                model_id, input_tokens, output_tokens, cache_created, cache_read
+                model_id, fresh_input_tokens, output_tokens, cache_created, cache_read
             )
-            # Cost without cache (all cache_read would be regular input)
-            cost_without_cache = pricing.calculate_cost(
-                model_id, input_tokens + cache_read, output_tokens, 0, 0
-            )
+            # Cost without cache: all input at full rate
+            cost_without_cache = pricing.calculate_cost(model_id, input_tokens, output_tokens, 0, 0)
 
             # Save costs to session for persistence (task-66.8)
             self.session.cost_estimate = cost_with_cache
@@ -770,6 +795,10 @@ class GeminiCLIAdapter(BaseTracker):
             warnings_count=warnings_count,
             health_status=health_status,
             files_monitored=1,  # Gemini CLI monitors one session file at a time
+            # Token estimation tracking (task-69.10)
+            estimated_tool_calls=self._estimated_tool_calls,
+            estimation_method=self._token_estimator.method_name,
+            estimation_encoding=self._token_estimator.encoding_name,
         )
 
     def parse_event(self, event_data: Any) -> Optional[Tuple[str, Dict[str, Any]]]:
@@ -849,6 +878,30 @@ class GeminiCLIAdapter(BaseTracker):
     # Tool Call Parsing (Task 60.5)
     # ========================================================================
 
+    def _is_gemini_mcp_tool(self, tool_name: str) -> bool:
+        """Check if a tool is a Gemini CLI MCP tool in native format.
+
+        Gemini CLI uses <server>__<tool> format for MCP tools,
+        e.g., "fs__read_file" for the filesystem server's read_file tool.
+
+        This is different from Claude Code which uses mcp__<server>__<tool>.
+
+        Returns True if:
+        - Tool contains "__" (server/tool separator)
+        - Tool is NOT a built-in (not in GEMINI_BUILTIN_TOOLS)
+        - Tool is NOT an internal marker (doesn't start with "__")
+        - Tool is NOT already in Claude format (doesn't start with "mcp__")
+
+        Task 69.28: Fix Gemini CLI MCP tool detection.
+        """
+        if tool_name in GEMINI_BUILTIN_TOOLS:
+            return False
+        if tool_name.startswith("__"):
+            return False  # Internal markers like __session__
+        if tool_name.startswith("mcp__"):
+            return False  # Already in Claude/normalized format
+        return "__" in tool_name  # Server__tool pattern (Gemini native format)
+
     def _parse_tool_call(
         self, tool_call: Dict[str, Any], msg: GeminiMessage
     ) -> Optional[Tuple[str, Dict[str, Any]]]:
@@ -874,19 +927,72 @@ class GeminiCLIAdapter(BaseTracker):
         tokens = msg.tokens or {}
         tool_tokens = tokens.get("tool", 0)
 
+        # Token estimation for MCP tools AND built-in tools (task-69.9, task-69.24, task-69.28)
+        # Per Task 69 validated plan: "Built-in vs MCP Tools: No difference in accuracy approach.
+        # Both are function calls to the model and use the same estimation method."
+        #
+        # Task 69.28: Gemini CLI uses <server>__<tool> format (e.g., fs__read_file),
+        # NOT the mcp__<server>__<tool> format used by Claude Code.
+        # We detect both formats:
+        # - Gemini native: fs__read_file -> needs normalization to mcp__fs__read_file
+        # - Already normalized: mcp__zen__chat -> use as-is
+        is_gemini_mcp_tool = self._is_gemini_mcp_tool(tool_name)
+        is_normalized_mcp_tool = tool_name.startswith("mcp__")
+        is_mcp_tool = is_gemini_mcp_tool or is_normalized_mcp_tool
+        is_builtin_tool = tool_name in GEMINI_BUILTIN_TOOLS
+        should_estimate = is_mcp_tool or is_builtin_tool
+
+        input_tokens = 0
+        output_tokens = tool_tokens
+        is_estimated = False
+        estimation_method: Optional[str] = None
+        estimation_encoding: Optional[str] = None
+
+        if should_estimate:
+            # Serialize args for estimation
+            args_str = json.dumps(params, separators=(",", ":")) if params else ""
+
+            # Get result for output estimation
+            result = tool_call.get("result")
+            if isinstance(result, list):
+                result_str = "\n".join(str(r) for r in result)
+            elif result is not None:
+                result_str = str(result)
+            else:
+                result_str = ""
+
+            # Estimate tokens using platform tokenizer
+            input_tokens, output_tokens = self._token_estimator.estimate_tool_call(
+                args_str, result_str
+            )
+            is_estimated = True
+            estimation_method = self._token_estimator.method_name
+            estimation_encoding = self._token_estimator.encoding_name
+
+            # Track estimated tool calls for TUI display (task-69.10)
+            self._estimated_tool_calls += 1
+
         usage_dict = {
-            "input_tokens": 0,  # Tool-specific tokens not tracked separately
-            "output_tokens": tool_tokens,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
             "cache_created_tokens": 0,
             "cache_read_tokens": 0,
             "duration_ms": 0,  # Not available in session format
             "success": tool_call.get("status") == "success",
             "tool_call_id": tool_call.get("id", ""),
+            # Token estimation metadata (task-69.9)
+            "is_estimated": is_estimated,
+            "estimation_method": estimation_method,
+            "estimation_encoding": estimation_encoding,
         }
 
-        # Track MCP tools
-        if tool_name.startswith("mcp__"):
-            return (tool_name, usage_dict)
+        # Track MCP tools (Task 69.28)
+        # - Gemini native format (fs__read_file) -> normalize to mcp__fs__read_file
+        # - Already normalized format (mcp__zen__chat) -> use as-is
+        if is_mcp_tool:
+            # Normalize Gemini format to standard mcp__ format, or use as-is
+            normalized_name = f"mcp__{tool_name}" if is_gemini_mcp_tool else tool_name
+            return (normalized_name, usage_dict)
 
         # Track Gemini CLI built-in tools (task-70.2)
         if tool_name in GEMINI_BUILTIN_TOOLS:
@@ -955,12 +1061,24 @@ class GeminiCLIAdapter(BaseTracker):
 
         # Handle session-level token tracking
         if tool_name == "__session__":
-            self.session.token_usage.input_tokens += usage["input_tokens"]
-            self.session.token_usage.output_tokens += usage["output_tokens"]
-            self.session.token_usage.cache_created_tokens += usage["cache_created_tokens"]
-            self.session.token_usage.cache_read_tokens += usage["cache_read_tokens"]
-            self.session.token_usage.reasoning_tokens += reasoning_tokens  # v1.3.0
-            self.session.token_usage.total_tokens += total_tokens
+            # Task 69.27: Accumulate native tokens separately, then SET (not ADD)
+            # to session.token_usage. This avoids double-counting with tool
+            # estimation tokens that were added by record_tool_call().
+            # Native Gemini session tokens already include tool costs.
+            self._native_input_tokens += usage["input_tokens"]
+            self._native_output_tokens += usage["output_tokens"]
+            self._native_cache_created_tokens += usage["cache_created_tokens"]
+            self._native_cache_read_tokens += usage["cache_read_tokens"]
+            self._native_reasoning_tokens += reasoning_tokens  # v1.3.0
+            self._native_total_tokens += total_tokens
+
+            # SET session.token_usage from native totals (replaces tool estimates)
+            self.session.token_usage.input_tokens = self._native_input_tokens
+            self.session.token_usage.output_tokens = self._native_output_tokens
+            self.session.token_usage.cache_created_tokens = self._native_cache_created_tokens
+            self.session.token_usage.cache_read_tokens = self._native_cache_read_tokens
+            self.session.token_usage.reasoning_tokens = self._native_reasoning_tokens
+            self.session.token_usage.total_tokens = self._native_total_tokens
 
             # Recalculate cache efficiency
             total_input = (
@@ -990,7 +1108,7 @@ class GeminiCLIAdapter(BaseTracker):
             self.session.builtin_tool_stats[actual_tool_name]["calls"] += 1
             self.session.builtin_tool_stats[actual_tool_name]["tokens"] += total_tokens
 
-            # Record built-in tool call to session file (task-72.3)
+            # Record built-in tool call to session file (task-72.3, task-69.24)
             # Use "builtin" as the server name so it appears in tool_calls array
             builtin_tool_name = f"builtin__{actual_tool_name}"
             platform_data = {
@@ -1009,6 +1127,10 @@ class GeminiCLIAdapter(BaseTracker):
                 duration_ms=usage.get("duration_ms", 0),
                 content_hash=None,
                 platform_data=platform_data,
+                # Token estimation metadata (task-69.24)
+                is_estimated=usage.get("is_estimated", False),
+                estimation_method=usage.get("estimation_method"),
+                estimation_encoding=usage.get("estimation_encoding"),
             )
 
             # Notify display of built-in tool event (task-70.3)
@@ -1035,6 +1157,7 @@ class GeminiCLIAdapter(BaseTracker):
             "thoughts_tokens": self.thoughts_tokens,
         }
 
+        # Token estimation metadata (task-69.9)
         self.record_tool_call(
             tool_name=tool_name,
             input_tokens=usage["input_tokens"],
@@ -1044,6 +1167,9 @@ class GeminiCLIAdapter(BaseTracker):
             duration_ms=usage.get("duration_ms", 0),
             content_hash=None,
             platform_data=platform_data,
+            is_estimated=usage.get("is_estimated", False),
+            estimation_method=usage.get("estimation_method"),
+            estimation_encoding=usage.get("estimation_encoding"),
         )
 
         # Notify display of MCP event (task-70.3)

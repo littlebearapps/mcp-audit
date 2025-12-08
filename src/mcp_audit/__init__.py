@@ -84,6 +84,24 @@ def __getattr__(name: str) -> Any:
 
         return GeminiCLIAdapter
 
+    # Token estimation
+    if name in (
+        "TokenEstimator",
+        "count_tokens",
+        "estimate_tool_tokens",
+        "get_estimator_for_platform",
+        "FUNCTION_CALL_OVERHEAD",
+    ):
+        from .token_estimator import (  # noqa: F401
+            FUNCTION_CALL_OVERHEAD,
+            TokenEstimator,
+            count_tokens,
+            estimate_tool_tokens,
+            get_estimator_for_platform,
+        )
+
+        return locals()[name]
+
     # Display module
     if name in ("DisplayAdapter", "DisplaySnapshot", "create_display", "DisplayMode"):
         from .display import (  # noqa: F401
@@ -126,6 +144,12 @@ __all__ = [
     "ClaudeCodeAdapter",
     "CodexCLIAdapter",
     "GeminiCLIAdapter",
+    # Token estimation
+    "TokenEstimator",
+    "count_tokens",
+    "estimate_tool_tokens",
+    "get_estimator_for_platform",
+    "FUNCTION_CALL_OVERHEAD",
     # Display
     "DisplayAdapter",
     "DisplaySnapshot",

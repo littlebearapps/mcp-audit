@@ -171,12 +171,21 @@ def make_function_call_output_event(
 
 @pytest.fixture
 def sample_events() -> List[Dict[str, Any]]:
-    """Create a list of sample Codex CLI events."""
+    """Create a list of sample Codex CLI events.
+
+    Since task-69.8, MCP tool calls require both function_call (registers pending)
+    and function_call_output (completes with estimated tokens) events.
+    """
     return [
         make_session_meta_event(),
         make_turn_context_event(),
         make_token_count_event(),
         make_mcp_tool_call_event(),
+        # function_call_output is required to complete the MCP tool call (task-69.8)
+        make_function_call_output_event(
+            call_id="call_abc123",  # Must match make_mcp_tool_call_event default
+            output="Result from zen chat tool",
+        ),
     ]
 
 
@@ -340,19 +349,44 @@ class TestEventParsing:
         assert usage["cache_created_tokens"] == 0
 
     def test_parse_mcp_tool_call_event(self, adapter: CodexCLIAdapter) -> None:
-        """Test parsing MCP tool call event."""
+        """Test parsing MCP tool call event.
+
+        Since task-69.8, function_call events now return None and store pending
+        info. The actual result comes from function_call_output when we have
+        both args and result for token estimation.
+        """
         event = make_mcp_tool_call_event(
             tool_name="mcp__zen__chat",
             arguments={"prompt": "test query"},
         )
 
+        # function_call returns None (stores pending call)
         result = adapter.parse_event(event)
+        assert result is None
 
-        assert result is not None
-        tool_name, usage = result
+        # Verify pending call was stored
+        assert "call_abc123" in adapter._pending_tool_calls
+        pending = adapter._pending_tool_calls["call_abc123"]
+        assert pending["tool_name"] == "mcp__zen__chat"
+        assert pending["arguments_str"] == '{"prompt": "test query"}'
+
+        # Now send the output event to get the result
+        output_event = make_function_call_output_event(
+            call_id="call_abc123",
+            output="Result from zen chat",
+        )
+        output_result = adapter.parse_event(output_event)
+
+        # function_call_output returns the tool call with estimated tokens
+        assert output_result is not None
+        tool_name, usage = output_result
         assert tool_name == "mcp__zen__chat"
-        assert usage["tool_params"] == {"prompt": "test query"}
         assert usage["call_id"] == "call_abc123"
+        assert usage["is_estimated"] is True
+        assert usage["estimation_method"] == "tiktoken"
+        assert usage["estimation_encoding"] == "o200k_base"
+        assert usage["input_tokens"] > 0  # Estimated from args
+        assert usage["output_tokens"] > 0  # Estimated from result
 
     def test_parse_native_tool_tracked_internally(self, adapter: CodexCLIAdapter) -> None:
         """Test native/built-in tools are tracked internally but not returned (task-68.3)."""
@@ -380,19 +414,57 @@ class TestEventParsing:
         assert adapter._builtin_tool_counts["shell_command"] == 3
         assert adapter._builtin_tool_counts["update_plan"] == 2
 
+    def test_builtin_tool_token_estimation(self, adapter: CodexCLIAdapter) -> None:
+        """Test built-in tools get token estimation like MCP tools (task-69.24).
+
+        Per Task 69 validated plan: "Built-in vs MCP Tools: No difference in
+        accuracy approach. Both are function calls to the model and use the
+        same estimation method."
+        """
+        # First parse the built-in tool call (registers pending)
+        tool_event = make_native_tool_call_event(
+            tool_name="shell",
+            arguments={"command": "ls -la /home/user"},
+        )
+        result = adapter.parse_event(tool_event)
+        assert result is None  # Still returns None (waits for output)
+
+        # Now parse the output event to trigger estimation
+        output_event = make_function_call_output_event(
+            call_id="call_native123",  # Matches call_id from make_native_tool_call_event
+            output="total 48\ndrwxr-xr-x  10 user  staff   320 Dec  7 15:00 .\n-rw-r--r--  1 user  staff  1234 Dec  7 14:00 file.txt",
+        )
+        output_result = adapter.parse_event(output_event)
+
+        # Built-in tools now get token estimation (task-69.24)
+        assert output_result is not None
+        tool_name, usage = output_result
+        assert tool_name == "__builtin__:shell"  # Built-in prefix
+        assert usage["is_estimated"] is True
+        assert usage["estimation_method"] == "tiktoken"
+        assert usage["estimation_encoding"] == "o200k_base"
+        assert usage["input_tokens"] > 0  # Estimated from args
+        assert usage["output_tokens"] > 0  # Estimated from result
+
+        # Verify builtin_tool_stats updated with estimated tokens
+        assert "shell" in adapter.session.builtin_tool_stats
+        stats = adapter.session.builtin_tool_stats["shell"]
+        assert stats["calls"] == 1
+        assert stats["tokens"] > 0  # Now has estimated tokens
+
     def test_parse_function_call_output_extracts_duration(self, adapter: CodexCLIAdapter) -> None:
-        """Test function_call_output extracts wall time duration (task-68.5)."""
-        # First parse the MCP tool call
+        """Test function_call_output extracts wall time duration (task-68.5).
+
+        Since task-69.8, function_call_output returns the tool call tuple with
+        estimated tokens. Duration is included in the usage dict.
+        """
+        # First parse the MCP tool call (registers pending, returns None)
         tool_event = make_mcp_tool_call_event(
             tool_name="mcp__zen__chat",
             call_id="call_duration_test",
         )
         result = adapter.parse_event(tool_event)
-        assert result is not None
-        tool_name, usage = result
-
-        # Process the tool call to record it
-        adapter._process_tool_call(tool_name, usage)
+        assert result is None  # Changed: now returns None
 
         # Now parse the output event with wall time
         output_event = make_function_call_output_event(
@@ -400,40 +472,52 @@ class TestEventParsing:
             output="Exit code: 0\nWall time: 2.5 seconds\nOutput:\nSuccess",
         )
         output_result = adapter.parse_event(output_event)
-        # Output event returns None (updates happen internally)
-        assert output_result is None
 
-        # Verify duration was updated on the recorded call
+        # function_call_output now returns the tuple with estimated tokens
+        assert output_result is not None
+        tool_name, usage = output_result
+        assert tool_name == "mcp__zen__chat"
+        assert usage["duration_ms"] == 2500  # 2.5 seconds = 2500ms
+        assert usage["is_estimated"] is True
+
+        # Process the tool call to record it
+        adapter._process_tool_call(tool_name, usage)
+
+        # Verify duration was recorded correctly
         server_session = adapter.server_sessions.get("zen")
         assert server_session is not None
         tool_stats = server_session.tools.get("mcp__zen__chat")
         assert tool_stats is not None
         assert len(tool_stats.call_history) == 1
-        assert tool_stats.call_history[0].duration_ms == 2500  # 2.5 seconds = 2500ms
+        assert tool_stats.call_history[0].duration_ms == 2500
         assert tool_stats.total_duration_ms == 2500
         assert tool_stats.max_duration_ms == 2500
         assert tool_stats.min_duration_ms == 2500
 
     def test_parse_function_call_output_without_wall_time(self, adapter: CodexCLIAdapter) -> None:
         """Test function_call_output without wall time leaves duration at 0 (task-68.5)."""
-        # First parse the MCP tool call
+        # First parse the MCP tool call (registers pending, returns None)
         tool_event = make_mcp_tool_call_event(
             tool_name="mcp__zen__chat",
             call_id="call_no_duration",
         )
         result = adapter.parse_event(tool_event)
-        assert result is not None
-        tool_name, usage = result
-
-        # Process the tool call to record it
-        adapter._process_tool_call(tool_name, usage)
+        assert result is None  # Changed: now returns None
 
         # Now parse output event WITHOUT wall time
         output_event = make_function_call_output_event(
             call_id="call_no_duration",
             output="Exit code: 0\nOutput:\nSuccess",  # No wall time
         )
-        adapter.parse_event(output_event)
+        output_result = adapter.parse_event(output_event)
+
+        # function_call_output returns the tuple with estimated tokens
+        assert output_result is not None
+        tool_name, usage = output_result
+        assert usage["duration_ms"] == 0  # No wall time found
+
+        # Process the tool call to record it
+        adapter._process_tool_call(tool_name, usage)
 
         # Verify duration remains at 0
         server_session = adapter.server_sessions.get("zen")
@@ -449,28 +533,29 @@ class TestEventParsing:
         Some Codex CLI events have output as a list instead of string.
         This was causing: TypeError: expected string or bytes-like object, got 'list'
         """
-        # First parse the MCP tool call
+        # First parse the MCP tool call (registers pending, returns None)
         call_event = make_mcp_tool_call_event(
             tool_name="mcp__zen__chat",
             call_id="call_list_output",
         )
         result = adapter.parse_event(call_event)
-        assert result is not None
-        tool_name, usage = result
-
-        # Process the tool call to record it
-        adapter._process_tool_call(tool_name, usage)
+        assert result is None  # Changed: now returns None
 
         # Send output as a list (like some Codex CLI events)
         output_event = make_function_call_output_event(
             call_id="call_list_output",
             output=["Line 1", "Wall time: 3.0 seconds", "Line 3"],  # List output
         )
-        # Should not crash
+        # Should not crash, and returns the tool call tuple
         output_result = adapter.parse_event(output_event)
-        assert output_result is None  # Output events return None
+        assert output_result is not None  # Changed: now returns tuple
+        tool_name, usage = output_result
+        assert usage["duration_ms"] == 3000  # Duration from list output
 
-        # Verify duration was extracted from the joined list
+        # Process the tool call to record it
+        adapter._process_tool_call(tool_name, usage)
+
+        # Verify duration was recorded correctly
         server_session = adapter.server_sessions.get("zen")
         assert server_session is not None
         tool_stats = server_session.tools.get("mcp__zen__chat")
@@ -479,26 +564,25 @@ class TestEventParsing:
 
     def test_function_call_output_non_string_type(self, adapter: CodexCLIAdapter) -> None:
         """Test function_call_output with non-string/non-list output doesn't crash."""
-        # First parse the MCP tool call
+        # First parse the MCP tool call (registers pending, returns None)
         call_event = make_mcp_tool_call_event(
             tool_name="mcp__zen__chat",
             call_id="call_dict_output",
         )
         result = adapter.parse_event(call_event)
-        assert result is not None
-        tool_name, usage = result
-
-        # Process the tool call to record it
-        adapter._process_tool_call(tool_name, usage)
+        assert result is None  # Changed: now returns None
 
         # Send output as a dict (edge case)
         output_event = make_function_call_output_event(
             call_id="call_dict_output",
             output={"result": "success"},  # Dict output
         )
-        # Should not crash
+        # Should not crash, and returns the tool call tuple
         output_result = adapter.parse_event(output_event)
-        assert output_result is None
+        assert output_result is not None  # Changed: now returns tuple
+        tool_name, usage = output_result
+        assert tool_name == "mcp__zen__chat"
+        assert usage["is_estimated"] is True
 
     def test_parse_invalid_json(self, adapter: CodexCLIAdapter) -> None:
         """Test invalid JSON returns None."""
@@ -569,7 +653,9 @@ class TestTokenAccumulation:
         assert adapter.session.token_usage.input_tokens == 100
         assert adapter.session.token_usage.output_tokens == 50
         assert adapter.session.token_usage.cache_read_tokens == 500
-        assert adapter.session.token_usage.total_tokens == 650
+        # Task 69.23: total = input + output (OpenAI formula)
+        # cache_read is a subset of input, not additive
+        assert adapter.session.token_usage.total_tokens == 150  # 100 + 50
 
     def test_process_mcp_tool_call(self, adapter: CodexCLIAdapter) -> None:
         """Test MCP tool calls are recorded."""
@@ -598,14 +684,19 @@ class TestBatchProcessing:
     def test_process_session_file_batch(
         self, adapter: CodexCLIAdapter, sample_session_file: Path
     ) -> None:
-        """Test batch processing of session file."""
+        """Test batch processing of session file.
+
+        Since task-69.8, token totals may include estimated MCP tool tokens.
+        Base values from token_count event: input=300, output=150, reasoning=50.
+        MCP tool estimation adds ~31 input and ~5 output tokens.
+        """
         adapter.process_session_file_batch(sample_session_file)
         session = adapter.finalize_session()
 
-        # Verify tokens processed
+        # Verify tokens processed - base values from token_count event
         assert session.token_usage.total_tokens > 0
-        assert session.token_usage.input_tokens == 300
-        assert session.token_usage.output_tokens == 150  # v1.3.0: No longer includes reasoning
+        assert session.token_usage.input_tokens >= 300  # Base + estimated MCP tokens
+        assert session.token_usage.output_tokens >= 150  # Base + estimated MCP tokens
         assert session.token_usage.reasoning_tokens == 50  # v1.3.0: Tracked separately
 
     def test_batch_processing_model_detection(
@@ -689,7 +780,11 @@ class TestEdgeCases:
         assert result is None
 
     def test_function_call_invalid_arguments(self, adapter: CodexCLIAdapter) -> None:
-        """Test function call with invalid JSON arguments."""
+        """Test function call with invalid JSON arguments.
+
+        Since task-69.8, function_call returns None (registers pending).
+        The result comes from function_call_output.
+        """
         event = {
             "type": "response_item",
             "payload": {
@@ -700,11 +795,24 @@ class TestEdgeCases:
             },
         }
         result = adapter.parse_event(event)
+        assert result is None  # Changed: now returns None
 
-        assert result is not None
-        tool_name, usage = result
+        # Verify pending call stored with invalid arguments
+        assert "call_123" in adapter._pending_tool_calls
+        pending = adapter._pending_tool_calls["call_123"]
+        assert pending["arguments_str"] == "not valid json"
+
+        # Send output event to get result
+        output_event = make_function_call_output_event(
+            call_id="call_123",
+            output="Result",
+        )
+        output_result = adapter.parse_event(output_event)
+        assert output_result is not None
+        tool_name, usage = output_result
         assert tool_name == "mcp__zen__chat"
         assert usage["tool_params"] == {}  # Empty on parse failure
+        assert usage["is_estimated"] is True
 
 
 # ============================================================================
@@ -718,7 +826,11 @@ class TestCompleteWorkflow:
     def test_complete_batch_workflow(
         self, adapter: CodexCLIAdapter, sample_session_file: Path, tmp_path: Path
     ) -> None:
-        """Test complete batch processing workflow."""
+        """Test complete batch processing workflow.
+
+        Since task-69.8, token totals may include estimated MCP tool tokens.
+        Base values from token_count event: input=300, output=150.
+        """
         adapter.process_session_file_batch(sample_session_file)
         session = adapter.finalize_session()
         adapter.save_session(tmp_path / "output")
@@ -728,15 +840,24 @@ class TestCompleteWorkflow:
         assert session.platform == "codex-cli"
         assert session.model == "gpt-5.1"
 
-        # Verify tokens
-        assert session.token_usage.input_tokens == 300
-        assert session.token_usage.output_tokens == 150  # v1.3.0: NOT combined with reasoning
+        # Verify tokens (base + estimated MCP tokens)
+        assert session.token_usage.input_tokens >= 300  # Base + estimated MCP
+        assert session.token_usage.output_tokens >= 150  # Base + estimated MCP
         assert session.token_usage.reasoning_tokens == 50  # v1.3.0: Tracked separately
         assert session.token_usage.cache_read_tokens == 1500
 
-        # Verify MCP calls
+        # Verify MCP calls with token estimation
         assert session.mcp_tool_calls.total_calls == 1
         assert "zen" in session.server_sessions
+
+        # Verify MCP tool has estimation metadata (task-69.8)
+        zen_session = session.server_sessions["zen"]
+        tool_stats = zen_session.tools["mcp__zen__chat"]
+        assert len(tool_stats.call_history) == 1
+        call = tool_stats.call_history[0]
+        assert call.is_estimated is True
+        assert call.estimation_method == "tiktoken"
+        assert call.estimation_encoding == "o200k_base"
 
         # Verify files saved
         assert adapter.session_dir is not None
@@ -898,10 +1019,45 @@ class TestTokenDuplicateEventHandling:
         )  # v1.3.0: NOT combined with reasoning
         assert adapter.session.token_usage.reasoning_tokens == 128  # v1.3.0: Tracked separately
 
-        # Total = input + output + cache_read + reasoning (note: Codex total_tokens
-        # in native doesn't include cache_read, but mcp-audit includes it for consistency)
-        expected_total = 16422 + 533 + 10240 + 128
+        # Task 69.23: total_tokens = input_tokens + output_tokens (OpenAI formula)
+        # Note: cache_read is a SUBSET of input_tokens, not additive
+        # Note: reasoning_tokens is tracked separately, excluded from total per OpenAI API
+        expected_total = 16422 + 533  # input + output only
         assert adapter.session.token_usage.total_tokens == expected_total
+
+    def test_total_tokens_matches_openai_formula(self, adapter: CodexCLIAdapter) -> None:
+        """Task 69.23: Verify total_tokens = input_tokens + output_tokens (OpenAI formula).
+
+        This test ensures mcp-audit matches native Codex CLI behavior exactly:
+        - cache_read_tokens is a SUBSET of input_tokens, not additive
+        - reasoning_tokens is tracked separately, excluded from total per OpenAI API
+        """
+        # Create event with significant cache and reasoning tokens
+        event = make_token_count_event(
+            cumulative_input=43853,
+            cumulative_cached=8320,
+            cumulative_output=1044,
+            cumulative_reasoning=576,
+        )
+
+        result = adapter.parse_event(event)
+        assert result is not None
+        adapter._process_tool_call(*result)
+
+        # Verify individual counts are preserved
+        assert adapter.session.token_usage.input_tokens == 43853
+        assert adapter.session.token_usage.output_tokens == 1044
+        assert adapter.session.token_usage.cache_read_tokens == 8320
+        assert adapter.session.token_usage.reasoning_tokens == 576
+
+        # CRITICAL: total_tokens must match OpenAI formula exactly
+        # Native Codex CLI: total_tokens = 44,897 = 43,853 + 1,044
+        expected_total = 43853 + 1044  # 44,897
+        assert adapter.session.token_usage.total_tokens == expected_total
+
+        # Verify we're NOT incorrectly adding cache or reasoning
+        wrong_total = 43853 + 1044 + 8320 + 576  # 53,793 (WRONG)
+        assert adapter.session.token_usage.total_tokens != wrong_total
 
     def test_only_total_token_usage_used(self, adapter: CodexCLIAdapter) -> None:
         """Test that only total_token_usage is used, not last_token_usage."""

@@ -1,4 +1,4 @@
-# Claude Code Setup Guide
+# Claude Code Platform Guide
 
 This guide explains how to use MCP Audit with [Claude Code](https://claude.ai/claude-code), Anthropic's AI coding assistant.
 
@@ -13,6 +13,12 @@ This guide explains how to use MCP Audit with [Claude Code](https://claude.ai/cl
 ---
 
 ## Installation
+
+```bash
+pipx install mcp-audit
+```
+
+Or with pip:
 
 ```bash
 pip install mcp-audit
@@ -30,17 +36,18 @@ Open a new terminal and run:
 mcp-audit collect --platform claude-code
 ```
 
-You'll see a live display of your session:
+You'll see a live TUI dashboard:
 
 ```
-MCP Audit - Claude Code Session
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MCP Audit v0.4.0 - Claude Code Session
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Status: Tracking...
 Project: my-project (auto-detected)
+Model: Claude Opus 4.5
 
 Tokens:      0 input │ 0 output │ 0 cached
-Cost:        $0.00 (estimated)
+Cost (USD):  $0.00
 MCP Tools:   0 calls │ 0 unique
 
 Waiting for events... (Ctrl+C to stop)
@@ -66,25 +73,25 @@ When done, press `Ctrl+C` in the MCP Audit terminal:
 ```
 ^C
 Session complete!
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Duration:    45 minutes
 Tokens:      125,432 total (93% cached)
-Cost:        $0.15 (estimated)
+Cost (USD):  $0.15
 MCP Tools:   42 calls across 3 servers
 
 Session saved to:
-~/.mcp-audit/sessions/claude_code/2025-11-25/session-20251125T103045-abc123.jsonl
+~/.mcp-audit/sessions/claude_code/2025-12-08/session-20251208T103045-abc123.jsonl
 ```
 
 ---
 
 ## How It Works
 
-MCP Audit monitors Claude Code's debug log files located at:
+MCP Audit monitors Claude Code's session log files located at:
 
 ```
-~/.claude/cache/*/debug.log
+~/.claude/projects/<project_hash>/session.jsonl
 ```
 
 It parses events in real-time to extract:
@@ -99,8 +106,8 @@ Claude Code          MCP Audit
     │                    │
     │ writes events      │
     ▼                    │
-~/.claude/cache/     watches
-debug.log ──────────────►│
+~/.claude/projects/  watches
+session.jsonl ──────────►│
                          │ parses events
                          ▼
                    Tracking Data
@@ -117,29 +124,68 @@ MCP Audit automatically detects:
 - **Model**: From Claude Code's session metadata
 - **MCP servers**: From tool call events
 
-### Manual Configuration
-
-Override auto-detection with CLI flags:
+### CLI Options
 
 ```bash
 # Specify project name
 mcp-audit collect --platform claude-code --project "my-feature"
 
-# Custom output directory
-mcp-audit collect --platform claude-code --output ./my-sessions/
+# Use a specific theme
+mcp-audit collect --platform claude-code --theme mocha
+
+# Pin specific servers at top of MCP panel
+mcp-audit collect --platform claude-code --pin-server zen --pin-server brave-search
+```
+
+### Theme Options
+
+MCP Audit supports multiple color themes:
+
+| Theme | Description |
+|-------|-------------|
+| `auto` | Auto-detect terminal background (default) |
+| `dark` | Dark theme |
+| `light` | Light theme |
+| `mocha` | Catppuccin Mocha (dark) |
+| `latte` | Catppuccin Latte (light) |
+| `hc-dark` | High contrast dark (WCAG AAA) |
+| `hc-light` | High contrast light (WCAG AAA) |
+
+```bash
+# Use Catppuccin Mocha theme
+mcp-audit collect --platform claude-code --theme mocha
+
+# Or set via environment variable
+export MCP_AUDIT_THEME=mocha
 ```
 
 ### Pricing Configuration
 
-Create `~/.mcp-audit/config/mcp-audit.toml`:
+Create or edit `~/.mcp-audit/mcp-audit.toml`:
 
 ```toml
 [pricing.claude]
-# Prices are per 1M tokens
-"claude-sonnet-4" = { input = 3.00, output = 15.00 }
-"claude-opus-4" = { input = 15.00, output = 75.00 }
-"claude-haiku" = { input = 0.25, output = 1.25 }
+# Prices are per 1M tokens (USD)
+"claude-opus-4-5-20251101" = { input = 5.00, output = 25.00, cache_create = 6.25, cache_read = 0.50 }
+"claude-sonnet-4-5-20250929" = { input = 3.00, output = 15.00, cache_create = 3.75, cache_read = 0.30 }
+"claude-haiku-4-5-20251001" = { input = 1.00, output = 5.00, cache_create = 1.25, cache_read = 0.10 }
 ```
+
+---
+
+## Platform Capabilities
+
+Claude Code provides **native token attribution** — the most accurate tracking available:
+
+| Capability | Status | Notes |
+|------------|--------|-------|
+| Session tokens | ✅ Native | Exact counts from Anthropic |
+| Per-tool tokens | ✅ Native | Each MCP call shows exact token cost |
+| Reasoning tokens | ❌ | Not exposed by Claude Code |
+| Cache tracking | ✅ Full | Both cache creation and read |
+| Cost estimates | ✅ Accurate | Uses native token counts |
+
+**No estimation needed** — Claude Code exposes exact per-tool token counts directly.
 
 ---
 
@@ -152,9 +198,9 @@ MCP Audit tracks all MCP servers configured in Claude Code:
 | Server | Common Tools | Notes |
 |--------|--------------|-------|
 | zen | chat, thinkdeep, consensus | High token usage |
-| brave-search | web, local, news | Variable by query |
-| context7 | lookup | Documentation |
-| mult-fetch | fetch | Web content |
+| brave-search | brave_web_search, brave_local_search | Variable by query |
+| jina | read_url, search_web | Web content |
+| context7 | resolve-library-id, get-library-docs | Documentation |
 
 ### Tool Name Format
 
@@ -166,8 +212,35 @@ mcp__<server>__<tool>
 
 Examples:
 - `mcp__zen__chat`
-- `mcp__brave-search__web`
-- `mcp__context7__lookup`
+- `mcp__brave-search__brave_web_search`
+- `mcp__jina__read_url`
+
+### Built-in Tools
+
+Claude Code's built-in tools are tracked separately:
+
+| Tool | Purpose |
+|------|---------|
+| Read | Read files |
+| Write | Write files |
+| Edit | Edit files |
+| Bash | Execute commands |
+| BashOutput | Get background shell output |
+| Glob | Find files by pattern |
+| Grep | Search file contents |
+| Task | Launch subagents |
+| AskUserQuestion | Request user input |
+| TodoWrite | Manage task lists |
+| WebFetch | Fetch URL content |
+| WebSearch | Search the web |
+| NotebookEdit | Edit Jupyter notebooks |
+| Skill | Execute skills |
+| SlashCommand | Run slash commands |
+| KillShell | Kill background shell |
+| EnterPlanMode | Enter plan mode |
+| ExitPlanMode | Exit plan mode |
+
+Built-in tools appear in the "Built-in Tools" section, not the MCP server hierarchy.
 
 ---
 
@@ -191,12 +264,10 @@ mcp-audit report --format json --output report.json
 mcp-audit report --format csv --output report.csv
 ```
 
-### Session Details
-
-View raw session events:
+### Aggregate Multiple Sessions
 
 ```bash
-cat ~/.mcp-audit/sessions/claude_code/2025-11-25/session-*.jsonl | head -20
+mcp-audit report ~/.mcp-audit/sessions/ --aggregate --top-n 10
 ```
 
 ---
@@ -209,11 +280,11 @@ cat ~/.mcp-audit/sessions/claude_code/2025-11-25/session-*.jsonl | head -20
 
 **Solutions**:
 1. Ensure Claude Code is running in a separate terminal
-2. Check that Claude Code's cache directory exists:
+2. Check that Claude Code's session directory exists:
    ```bash
-   ls ~/.claude/cache/
+   ls ~/.claude/projects/
    ```
-3. Verify debug logging is enabled (usually automatic)
+3. Start MCP Audit **before** starting Claude Code (only new events are tracked)
 
 ### Missing MCP Data
 
@@ -222,7 +293,7 @@ cat ~/.mcp-audit/sessions/claude_code/2025-11-25/session-*.jsonl | head -20
 **Solutions**:
 1. Verify MCP servers are configured:
    ```bash
-   cat ~/.config/claude/mcp.json
+   cat ~/.claude/settings.json | grep -A 20 mcpServers
    ```
 2. Use an MCP tool in Claude Code to trigger events
 3. Check for parsing errors in MCP Audit output
@@ -236,7 +307,7 @@ cat ~/.mcp-audit/sessions/claude_code/2025-11-25/session-*.jsonl | head -20
 - Rapidly changing context
 - Large file edits
 
-**Note**: High cache miss is normal for new sessions.
+**Note**: High cache miss is normal at the start of new sessions.
 
 ---
 
@@ -252,7 +323,7 @@ cat ~/.mcp-audit/sessions/claude_code/2025-11-25/session-*.jsonl | head -20
 
 Based on MCP Audit data:
 
-1. **Reduce expensive tool calls**:
+1. **Spot expensive tools**:
    - `thinkdeep`: Use for complex debugging only
    - `consensus`: Batch questions to minimize calls
 
@@ -268,7 +339,32 @@ Based on MCP Audit data:
 
 ## Example Session
 
-### Sample Output
+### Sample TUI Output
+
+```
+MCP Audit v0.4.0 - Claude Code
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Project: my-project │ Elapsed: 12m 34s
+Model: Claude Opus 4.5
+
+Tokens:  45,231 input │ 12,543 output │ 125K cached
+Cost:    $0.12 │ Cache savings: $0.89
+
+MCP Servers & Tools (42 calls)
+  zen (28 calls, 234K tokens)
+    chat ............. 15 calls, 45K tokens
+    thinkdeep ........ 8 calls, 156K tokens
+    debug ............ 5 calls, 33K tokens
+  brave-search (14 calls, 89K tokens)
+    brave_web_search   14 calls, 89K tokens
+
+Built-in Tools (127 calls)
+  Read .... 45 calls │ Edit .... 32 calls
+  Bash .... 28 calls │ Glob .... 22 calls
+```
+
+### Sample Report
 
 ```
 Top 5 Most Expensive Tools
@@ -276,8 +372,8 @@ Top 5 Most Expensive Tools
 Tool                              Calls    Tokens    Avg/Call
 mcp__zen__thinkdeep                   3   112,345      37,448
 mcp__zen__chat                       15    45,678       3,045
-mcp__brave-search__web                8    23,456       2,932
-mcp__context7__lookup                 5    12,345       2,469
+mcp__brave-search__brave_web_search   8    23,456       2,932
+mcp__jina__read_url                   5    12,345       2,469
 Read (built-in)                      45     8,765         195
 
 Summary
@@ -292,5 +388,6 @@ Estimated cost:   $0.23
 ## See Also
 
 - [Architecture](../architecture.md) - How MCP Audit works internally
+- [Data Contract](../data-contract.md) - Session schema documentation
 - [Privacy & Security](../privacy-security.md) - What data is collected
-- [Contributing](../contributing.md) - Adding platform adapters
+- [Features & Benefits](../FEATURES-BENEFITS.md) - Full feature guide

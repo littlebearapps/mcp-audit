@@ -6,9 +6,9 @@ We release patches for security vulnerabilities for the following versions:
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.2.x   | :white_check_mark: |
-| 0.1.x   | :x:                |
-| < 0.1   | :x:                |
+| 0.4.x   | :white_check_mark: |
+| 0.3.x   | :white_check_mark: |
+| < 0.3   | :x:                |
 
 ## Reporting a Vulnerability
 
@@ -166,4 +166,4 @@ If you have Dependabot enabled, you'll receive automated PRs for security update
 
 ---
 
-**Last Updated**: 2025-11-24
+**Last Updated**: 2025-12-08
