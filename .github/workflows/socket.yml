@@ -24,6 +24,8 @@ jobs:
   socket-security:
     name: Supply Chain Scan
     runs-on: ubuntu-latest
+    # Don't fail the overall CI if Socket rate limits us
+    continue-on-error: true
     permissions:
       contents: read
       pull-requests: write
@@ -54,9 +56,23 @@ jobs:
             SOCKET_PR="$PR_NUMBER"
           fi
 
-          # Run Socket CLI
-          # The CLI automatically detects repo, branch, commit from git
-          socketcli \
-            --target-path "$GITHUB_WORKSPACE" \
-            --scm github \
-            --pr-number "$SOCKET_PR"
+          # Run Socket CLI with retry for rate limiting
+          # Exit code 3 = APIInsufficientQuota (rate limited)
+          MAX_RETRIES=2
+          RETRY_DELAY=60
+
+          for i in $(seq 1 $MAX_RETRIES); do
+            echo "Attempt $i of $MAX_RETRIES..."
+            socketcli \
+              --target-path "$GITHUB_WORKSPACE" \
+              --scm github \
+              --pr-number "$SOCKET_PR" && exit 0
+
+            EXIT_CODE=$?
+            if [ $EXIT_CODE -eq 3 ] && [ $i -lt $MAX_RETRIES ]; then
+              echo "Rate limited, waiting ${RETRY_DELAY}s before retry..."
+              sleep $RETRY_DELAY
+            else
+              exit $EXIT_CODE
+            fi
+          done
