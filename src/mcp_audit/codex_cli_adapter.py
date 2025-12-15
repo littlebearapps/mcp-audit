@@ -354,6 +354,21 @@ class CodexCLIAdapter(BaseTracker):
         print(f"[Codex CLI] Monitoring: {session_file}")
         self.session.source_files = [session_file.name]
 
+        # Auto-detect completed sessions (v0.9.1 - #68)
+        # If session file is stale (>5 seconds old) and has data, auto-enable from_start
+        if not self._from_start:
+            file_mtime = session_file.stat().st_mtime
+            file_age_seconds = time.time() - file_mtime
+            if file_age_seconds > 5:
+                with open(session_file) as f:
+                    line_count = sum(1 for _ in f)
+                if line_count > 0:
+                    print(
+                        f"[Codex CLI] Auto-detected completed session "
+                        f"({line_count} lines, {file_age_seconds:.0f}s old)"
+                    )
+                    self._from_start = True
+
         # Initialize file position based on from_start flag
         if not self._from_start:
             # Skip to end - only track NEW events
@@ -556,6 +571,21 @@ class CodexCLIAdapter(BaseTracker):
 
         print(f"[Codex CLI] Monitoring: {session_file}")
         self.session.source_files = [session_file.name]
+
+        # Auto-detect completed sessions (v0.9.1 - #68)
+        # If session file is stale (>5 seconds old) and has data, auto-enable from_start
+        if not self._from_start:
+            file_mtime = session_file.stat().st_mtime
+            file_age_seconds = time.time() - file_mtime
+            if file_age_seconds > 5:
+                with open(session_file) as f:
+                    line_count = sum(1 for _ in f)
+                if line_count > 0:
+                    print(
+                        f"[Codex CLI] Auto-detected completed session "
+                        f"({line_count} lines, {file_age_seconds:.0f}s old)"
+                    )
+                    self._from_start = True
 
         # Initialize file position based on from_start flag
         if not self._from_start:

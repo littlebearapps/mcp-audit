@@ -155,6 +155,7 @@ class PricingAPI:
                 self._fetch_from_api()
                 self._source = "api"
                 self._save_cache()
+                self._save_fallback()  # v0.9.1 (#53): Persistent fallback
                 logger.info(f"Fetched pricing from API: {self.model_count} models")
                 return
             except URLError as e:
@@ -162,12 +163,18 @@ class PricingAPI:
             except Exception as e:
                 logger.warning(f"Failed to fetch pricing from API: {e}")
 
+        # v0.9.1 (#53): Try fallback file before stale cache
+        if self._load_fallback():
+            self._source = "fallback"
+            logger.info(f"Using fallback pricing: {self.model_count} models")
+            return
+
         # Fall back to stale cache
         if self._pricing_data is not None:
             self._source = "cache-stale"
             logger.info("Using stale cached pricing")
         else:
-            logger.warning("No pricing data available (no cache, API failed)")
+            logger.warning("No pricing data available (no cache, no fallback, API failed)")
 
     def _fetch_from_api(self) -> None:
         """Fetch pricing from LiteLLM API."""
@@ -253,6 +260,59 @@ class PricingAPI:
             logger.warning(f"Failed to save cache: {e}")
             return False
 
+    def _save_fallback(self) -> bool:
+        """Save pricing to persistent fallback file (no TTL).
+
+        Fallback file is saved alongside cache but without expiration.
+        Used when cache is stale and API is unavailable.
+
+        Fallback file: ~/.mcp-audit/fallback-pricing.json
+
+        Returns:
+            True if fallback was saved successfully, False otherwise.
+        """
+        if self._pricing_data is None:
+            return False
+
+        fallback_file = self.cache_file.parent / "fallback-pricing.json"
+        try:
+            fallback_data = {
+                "last_updated": datetime.now(timezone.utc).isoformat(),
+                "source": "litellm",
+                "model_count": len(self._pricing_data) if self._pricing_data else 0,
+                "data": self._pricing_data,
+            }
+
+            with open(fallback_file, "w") as f:
+                json.dump(fallback_data, f)
+
+            logger.debug(f"Saved fallback pricing to {fallback_file}")
+            return True
+        except OSError as e:
+            logger.warning(f"Failed to save fallback pricing: {e}")
+            return False
+
+    def _load_fallback(self) -> bool:
+        """Load pricing from persistent fallback file.
+
+        Returns:
+            True if fallback was loaded successfully, False otherwise.
+        """
+        fallback_file = self.cache_file.parent / "fallback-pricing.json"
+        if not fallback_file.exists():
+            return False
+
+        try:
+            with open(fallback_file) as f:
+                fallback_data = json.load(f)
+
+            self._pricing_data = fallback_data.get("data")
+            logger.debug(f"Loaded fallback pricing from {fallback_file}")
+            return self._pricing_data is not None
+        except (json.JSONDecodeError, OSError, ValueError) as e:
+            logger.warning(f"Failed to load fallback pricing: {e}")
+            return False
+
     def _is_cache_valid(self) -> bool:
         """Check if cache is still valid (not expired).
 
@@ -278,17 +338,33 @@ class PricingAPI:
 
         Returns:
             Dict with standardized pricing keys (per million tokens).
+            Includes tiered pricing fields if available (v0.9.1 #54).
         """
 
         def to_per_million(per_token: Optional[float]) -> float:
             return (per_token or 0) * 1_000_000
 
-        return {
+        result = {
             "input": to_per_million(model_data.get("input_cost_per_token")),
             "output": to_per_million(model_data.get("output_cost_per_token")),
             "cache_create": to_per_million(model_data.get("cache_creation_input_token_cost")),
             "cache_read": to_per_million(model_data.get("cache_read_input_token_cost")),
         }
+
+        # v0.9.1 (#54): Tiered pricing for Claude (200k) and Gemini (128k)
+        tiered_fields = {
+            "input_above_200k": "input_cost_per_token_above_200k_tokens",
+            "output_above_200k": "output_cost_per_token_above_200k_tokens",
+            "input_above_128k": "input_cost_per_token_above_128k_tokens",
+            "output_above_128k": "output_cost_per_token_above_128k_tokens",
+        }
+
+        for key, litellm_key in tiered_fields.items():
+            value = model_data.get(litellm_key)
+            if value is not None:
+                result[key] = to_per_million(value)
+
+        return result
 
     def _find_model_variant(self, model_name: str) -> Optional[Dict[str, Any]]:
         """Try to find model under alternate naming conventions.
@@ -344,7 +420,8 @@ class PricingAPI:
         Returns:
             - 'api': Fresh from LiteLLM API
             - 'cache': Valid cached data
-            - 'cache-stale': Expired cache (fallback)
+            - 'fallback': Persistent fallback file (v0.9.1 #53)
+            - 'cache-stale': Expired cache (last resort)
             - 'none': No pricing data available
         """
         return self._source

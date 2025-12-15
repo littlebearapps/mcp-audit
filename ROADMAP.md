@@ -4,7 +4,7 @@ This document outlines the planned development direction for MCP Audit. For comp
 
 ## Current Status
 
-**Version**: v0.9.0
+**Version**: v0.9.1
 **Stage**: Polish + Stability — Performance Optimization, API Stability, Profiling Guide
 
 MCP Audit provides stable support for Claude Code, Codex CLI, and Gemini CLI. v0.9.0 adds sub-millisecond TUI refresh, 14 performance benchmarks in CI, explicit API stability tiers for all 30 public exports, and comprehensive profiling documentation.

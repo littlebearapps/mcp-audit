@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 if TYPE_CHECKING:
     from .display import DisplayAdapter
+    from .recommendations import Recommendation
 
 from . import __version__
 
@@ -466,6 +467,7 @@ class Session:
     )  # tool -> {calls, tokens}
     # v1.5.0: Insight Layer
     smells: List["Smell"] = field(default_factory=list)  # Efficiency anti-patterns
+    recommendations: List["Recommendation"] = field(default_factory=list)  # v0.9.1 (#69)
     data_quality: Optional["DataQuality"] = None  # Accuracy indicators
     zombie_tools: Dict[str, List[str]] = field(default_factory=dict)  # server -> unused tools
     # v1.6.0: Multi-model tracking (task-108.2.2)
@@ -530,6 +532,7 @@ class Session:
             "tool_calls": tool_calls,
             # v1.5.0: Insight Layer blocks
             "smells": [smell.to_dict() for smell in self.smells],
+            "recommendations": [rec.to_dict() for rec in self.recommendations],  # v0.9.1 (#69)
             "zombie_tools": self.zombie_tools if self.zombie_tools else {},
             "analysis": {
                 "redundancy": self.redundancy_analysis,
@@ -1295,6 +1298,12 @@ class BaseTracker(ABC):
         from .smells import detect_smells
 
         self.session.smells = detect_smells(self.session)
+
+        # Generate recommendations from smells (v0.9.1 - #69)
+        from .recommendations import RecommendationEngine
+
+        engine = RecommendationEngine()
+        self.session.recommendations = engine.generate(self.session.smells, self.session)
 
         # Detect zombie tools (v1.5.0 - task-103.4)
         from .zombie_detector import detect_zombie_tools

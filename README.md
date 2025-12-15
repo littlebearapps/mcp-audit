@@ -150,7 +150,7 @@ It turns raw MCP telemetry into actionable insights you can use to optimise your
 
 ---
 
-## 🚀 What's New (v0.9.0)
+## 🚀 What's New (v0.9.1)
 
 **Polish + Stability** — Performance optimization and API stability for production readiness:
 

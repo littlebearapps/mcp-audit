@@ -18,6 +18,32 @@ updates:
     labels:
       - "dependencies"
       - "python"
+    # Group related updates to reduce PR noise
+    groups:
+      # Dev dependencies - auto-merged via dependabot-auto-merge.yml
+      dev-dependencies:
+        patterns:
+          - "pytest*"
+          - "mypy*"
+          - "ruff*"
+          - "black*"
+          - "coverage*"
+          - "pre-commit*"
+          - "pip-audit*"
+        update-types:
+          - "minor"
+          - "patch"
+      # Production dependencies - auto-merged for minor/patch
+      production-dependencies:
+        patterns:
+          - "rich"
+          - "click"
+          - "tiktoken"
+          - "httpx"
+          - "toml"
+        update-types:
+          - "minor"
+          - "patch"
 
   # GitHub Actions
   - package-ecosystem: "github-actions"
@@ -37,3 +63,8 @@ updates:
     labels:
       - "dependencies"
       - "ci"
+    # Group all GitHub Actions updates together
+    groups:
+      github-actions:
+        patterns:
+          - "*"

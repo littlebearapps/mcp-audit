@@ -89,7 +89,8 @@ class TestCostCalculation:
 
     def test_basic_cost_calculation(self) -> None:
         """Test basic input/output token cost"""
-        config = PricingConfig()
+        # Use nonexistent path and disable API to test against DEFAULT_PRICING flat rates
+        config = PricingConfig(Path("nonexistent.toml"), api_enabled=False)
         cost = config.calculate_cost(
             "claude-sonnet-4-5-20250929", input_tokens=1_000_000, output_tokens=1_000_000
         )
@@ -398,7 +399,8 @@ class TestDefaultPricingFallback:
 
     def test_default_pricing_cost_calculation(self) -> None:
         """Test cost calculation works with DEFAULT_PRICING"""
-        config = PricingConfig(Path("nonexistent.toml"))
+        # Disable API pricing to test against DEFAULT_PRICING flat rates
+        config = PricingConfig(Path("nonexistent.toml"), api_enabled=False)
 
         # Calculate cost with Claude Sonnet 4.5
         cost = config.calculate_cost(
@@ -432,6 +434,139 @@ class TestDefaultPricingFallback:
 
         with pytest.warns(RuntimeWarning, match="Create.*mcp-audit.toml"):
             config.get_model_pricing("unknown-future-model")
+
+
+class TestTieredPricing:
+    """Tests for tiered pricing support (v0.9.1 #54)"""
+
+    def test_tiered_cost_below_threshold(self) -> None:
+        """Test tiered cost calculation when tokens are below threshold"""
+        config = PricingConfig(api_enabled=False)
+
+        # Test _calculate_tiered_cost directly
+        cost = config._calculate_tiered_cost(
+            tokens=100_000,  # Below 200k threshold
+            base_rate=3.0,  # $3/M tokens
+            tiered_rate=4.0,  # $4/M tokens (above threshold)
+            threshold=200_000,
+        )
+
+        # Should use only base rate: 100K @ $3.0/M = $0.30
+        assert cost == pytest.approx(0.30, rel=1e-4)
+
+    def test_tiered_cost_at_threshold(self) -> None:
+        """Test tiered cost calculation when tokens are exactly at threshold"""
+        config = PricingConfig(api_enabled=False)
+
+        cost = config._calculate_tiered_cost(
+            tokens=200_000,  # Exactly at 200k threshold
+            base_rate=3.0,
+            tiered_rate=4.0,
+            threshold=200_000,
+        )
+
+        # Should use only base rate: 200K @ $3.0/M = $0.60
+        assert cost == pytest.approx(0.60, rel=1e-4)
+
+    def test_tiered_cost_above_threshold(self) -> None:
+        """Test tiered cost calculation when tokens exceed threshold"""
+        config = PricingConfig(api_enabled=False)
+
+        cost = config._calculate_tiered_cost(
+            tokens=300_000,  # 100k above 200k threshold
+            base_rate=3.0,
+            tiered_rate=4.0,
+            threshold=200_000,
+        )
+
+        # 200K @ $3.0/M = $0.60 + 100K @ $4.0/M = $0.40 = $1.00
+        assert cost == pytest.approx(1.00, rel=1e-4)
+
+    def test_tiered_cost_no_tiered_rate(self) -> None:
+        """Test tiered cost calculation when tiered_rate is None (uses flat rate)"""
+        config = PricingConfig(api_enabled=False)
+
+        cost = config._calculate_tiered_cost(
+            tokens=300_000,  # Above threshold
+            base_rate=3.0,
+            tiered_rate=None,  # No tiered rate available
+            threshold=200_000,
+        )
+
+        # Should use flat rate for all tokens: 300K @ $3.0/M = $0.90
+        assert cost == pytest.approx(0.90, rel=1e-4)
+
+    def test_calculate_cost_claude_model_with_tiered_data(self) -> None:
+        """Test calculate_cost applies tiered pricing for Claude models"""
+        config = PricingConfig(api_enabled=False)
+
+        # Mock pricing data with tiered fields
+        mock_pricing = {
+            "input": 3.0,
+            "output": 15.0,
+            "input_above_200k": 4.0,
+            "output_above_200k": 20.0,
+        }
+
+        # Patch get_model_pricing to return our mock
+        config.get_model_pricing = lambda _model, _vendor=None: mock_pricing
+
+        cost = config.calculate_cost(
+            "claude-sonnet-4-5-20250929",
+            input_tokens=300_000,  # 100k above threshold
+            output_tokens=400_000,  # 200k above threshold
+        )
+
+        # Input: 200K @ $3/M + 100K @ $4/M = $0.60 + $0.40 = $1.00
+        # Output: 200K @ $15/M + 200K @ $20/M = $3.00 + $4.00 = $7.00
+        # Total = $8.00
+        assert cost == pytest.approx(8.00, rel=1e-4)
+
+    def test_calculate_cost_gemini_model_with_tiered_data(self) -> None:
+        """Test calculate_cost applies tiered pricing for Gemini models"""
+        config = PricingConfig(api_enabled=False)
+
+        # Mock pricing data with tiered fields for Gemini (128k threshold)
+        mock_pricing = {
+            "input": 1.25,
+            "output": 10.0,
+            "input_above_128k": 2.50,
+            "output_above_128k": 15.0,
+        }
+
+        config.get_model_pricing = lambda _model, _vendor=None: mock_pricing
+
+        cost = config.calculate_cost(
+            "gemini-2.5-pro",
+            input_tokens=256_000,  # 128k above threshold
+            output_tokens=128_000,  # Exactly at threshold
+        )
+
+        # Input: 128K @ $1.25/M + 128K @ $2.50/M = $0.16 + $0.32 = $0.48
+        # Output: 128K @ $10/M = $1.28 (at threshold, no tiered rate applied)
+        # Total = $1.76
+        assert cost == pytest.approx(1.76, rel=1e-4)
+
+    def test_calculate_cost_openai_model_no_tiered_pricing(self) -> None:
+        """Test calculate_cost uses flat rate for OpenAI models (no tiering)"""
+        config = PricingConfig(api_enabled=False)
+
+        # Mock pricing without tiered fields (OpenAI doesn't use tiered pricing)
+        mock_pricing = {
+            "input": 1.25,
+            "output": 10.0,
+        }
+
+        config.get_model_pricing = lambda _model, _vendor=None: mock_pricing
+
+        cost = config.calculate_cost(
+            "gpt-5.1-codex-max",
+            input_tokens=500_000,
+            output_tokens=200_000,
+        )
+
+        # Flat rate: 500K @ $1.25/M + 200K @ $10/M = $0.625 + $2.00 = $2.625
+        assert cost == pytest.approx(2.625, rel=1e-4)
 
 
 if __name__ == "__main__":

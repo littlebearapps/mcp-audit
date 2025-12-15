@@ -350,13 +350,46 @@ class PricingConfig:
 
         cost = 0.0
 
-        # Input tokens
-        if "input" in pricing:
-            cost += (input_tokens / 1_000_000) * pricing["input"]
+        # Detect tiered pricing threshold (v0.9.1 #54)
+        # Claude models: 200k threshold
+        # Gemini models: 128k threshold
+        threshold: Optional[int] = None
+        input_tiered_key: Optional[str] = None
+        output_tiered_key: Optional[str] = None
 
-        # Output tokens
+        model_lower = model_name.lower()
+        if "claude" in model_lower or model_lower.startswith("anthropic"):
+            threshold = 200_000
+            input_tiered_key = "input_above_200k"
+            output_tiered_key = "output_above_200k"
+        elif "gemini" in model_lower or model_lower.startswith("google"):
+            threshold = 128_000
+            input_tiered_key = "input_above_128k"
+            output_tiered_key = "output_above_128k"
+
+        # Input tokens (with tiered pricing if available)
+        if "input" in pricing:
+            if threshold and input_tiered_key and input_tiered_key in pricing:
+                cost += self._calculate_tiered_cost(
+                    input_tokens,
+                    pricing["input"],
+                    pricing.get(input_tiered_key),
+                    threshold,
+                )
+            else:
+                cost += (input_tokens / 1_000_000) * pricing["input"]
+
+        # Output tokens (with tiered pricing if available)
         if "output" in pricing:
-            cost += (output_tokens / 1_000_000) * pricing["output"]
+            if threshold and output_tiered_key and output_tiered_key in pricing:
+                cost += self._calculate_tiered_cost(
+                    output_tokens,
+                    pricing["output"],
+                    pricing.get(output_tiered_key),
+                    threshold,
+                )
+            else:
+                cost += (output_tokens / 1_000_000) * pricing["output"]
 
         # Cache creation tokens
         if "cache_create" in pricing:
@@ -367,6 +400,31 @@ class PricingConfig:
             cost += (cache_read_tokens / 1_000_000) * pricing["cache_read"]
 
         return cost
+
+    def _calculate_tiered_cost(
+        self,
+        tokens: int,
+        base_rate: float,
+        tiered_rate: Optional[float],
+        threshold: int,
+    ) -> float:
+        """Calculate cost with token threshold tiering (v0.9.1 #54).
+
+        Args:
+            tokens: Number of tokens to price
+            base_rate: Price per million tokens for tokens below threshold
+            tiered_rate: Price per million tokens for tokens above threshold
+            threshold: Token threshold (e.g., 200000 for Claude, 128000 for Gemini)
+
+        Returns:
+            Cost in USD
+        """
+        if tiered_rate is None or tokens <= threshold:
+            return (tokens / 1_000_000) * base_rate
+
+        base_cost = (threshold / 1_000_000) * base_rate
+        tiered_cost = ((tokens - threshold) / 1_000_000) * tiered_rate
+        return base_cost + tiered_cost
 
     def list_models(self, vendor: Optional[str] = None) -> List[str]:
         """

@@ -1,7 +1,6 @@
 # Pricing Configuration Guide
 
 **Last Updated**: 2025-12-13
-**Version**: v0.7.0
 
 This guide explains how to configure model pricing for cost calculation in MCP Audit.
 
