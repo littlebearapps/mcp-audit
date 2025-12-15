@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Coverage for src/mcp_audit/session_manager.py: 74%</title>
+    <title>Coverage for src/mcp_audit/session_manager.py: 75%</title>
     <link rel="icon" sizes="32x32" href="favicon_32_cb_58284776.png">
-    <link rel="stylesheet" href="style_cb_8432e98f.css" type="text/css">
+    <link rel="stylesheet" href="style_cb_a5a05ca4.css" type="text/css">
     <script src="coverage_html_cb_bcae5fc4.js" defer></script>
 </head>
 <body class="pyfile">
@@ -12,7 +12,7 @@
     <div class="content">
         <h1>
             <span class="text">Coverage for </span><b>src&#8201;/&#8201;mcp_audit&#8201;/&#8201;session_manager.py</b>:
-            <span class="pc_cov">74%</span>
+            <span class="pc_cov">75%</span>
         </h1>
         <aside id="help_panel_wrapper">
             <input id="help_panel_state" type="checkbox">
@@ -55,8 +55,8 @@
         </aside>
         <h2>
             <span class="text">294 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">219<span class="text"> run</span></button>
-            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">75<span class="text"> missing</span></button>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">221<span class="text"> run</span></button>
+            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">73<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">9<span class="text"> excluded</span></button>
         </h2>
         <p class="text">
@@ -64,8 +64,8 @@
             <a id="indexLink" class="nav" href="index.html">&Hat; index</a> &nbsp; &nbsp;
             <a id="nextFileLink" class="nav" href="z_1b9d92d4521396f1_smell_aggregator_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
-            <a class="nav" href="https://coverage.readthedocs.io/en/7.12.0">coverage.py v7.12.0</a>,
-            created at 2025-12-14 03:39 +0000
+            <a class="nav" href="https://coverage.readthedocs.io/en/7.13.0">coverage.py v7.13.0</a>,
+            created at 2025-12-15 00:54 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -567,8 +567,8 @@
     <p class="run run2"><span class="n"><a id="t485" href="#t485">485</a></span><span class="t">            <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t486" href="#t486">486</a></span><span class="t">        <span class="key">else</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t487" href="#t487">487</a></span><span class="t">            <span class="com"># Fallback: try legacy mcp_tool_calls format or compute from tool_calls</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t488" href="#t488">488</a></span><span class="t">            <span class="nam">mcp_calls_data</span> <span class="op">=</span> <span class="nam">data</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"mcp_tool_calls"</span><span class="op">,</span> <span class="op">{</span><span class="op">}</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t489" href="#t489">489</a></span><span class="t">            <span class="nam">mcp_tool_calls</span> <span class="op">=</span> <span class="nam">MCPToolCalls</span><span class="op">(</span><span class="op">**</span><span class="nam">mcp_calls_data</span><span class="op">)</span> <span class="key">if</span> <span class="nam">mcp_calls_data</span> <span class="key">else</span> <span class="nam">MCPToolCalls</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t488" href="#t488">488</a></span><span class="t">            <span class="nam">mcp_calls_data</span> <span class="op">=</span> <span class="nam">data</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"mcp_tool_calls"</span><span class="op">,</span> <span class="op">{</span><span class="op">}</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t489" href="#t489">489</a></span><span class="t">            <span class="nam">mcp_tool_calls</span> <span class="op">=</span> <span class="nam">MCPToolCalls</span><span class="op">(</span><span class="op">**</span><span class="nam">mcp_calls_data</span><span class="op">)</span> <span class="key">if</span> <span class="nam">mcp_calls_data</span> <span class="key">else</span> <span class="nam">MCPToolCalls</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t490" href="#t490">490</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t491" href="#t491">491</a></span><span class="t">        <span class="com"># Reconstruct tool_calls</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t492" href="#t492">492</a></span><span class="t">        <span class="nam">tool_calls_data</span> <span class="op">=</span> <span class="nam">data</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"tool_calls"</span><span class="op">,</span> <span class="op">[</span><span class="op">]</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -950,8 +950,8 @@
             <a class="nav" href="index.html">&Hat; index</a> &nbsp; &nbsp;
             <a class="nav" href="z_1b9d92d4521396f1_smell_aggregator_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
-            <a class="nav" href="https://coverage.readthedocs.io/en/7.12.0">coverage.py v7.12.0</a>,
-            created at 2025-12-14 03:39 +0000
+            <a class="nav" href="https://coverage.readthedocs.io/en/7.13.0">coverage.py v7.13.0</a>,
+            created at 2025-12-15 00:54 +0000
         </p>
     </div>
 </footer>
