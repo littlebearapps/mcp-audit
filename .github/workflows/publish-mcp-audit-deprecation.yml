@@ -30,6 +30,10 @@ jobs:
 
           [project.scripts]
           mcp-audit = "mcp_audit:main"
+
+          [tool.setuptools]
+          package-dir = {"" = "src"}
+          packages = ["mcp_audit"]
           TOML
           
           cat > README.md << 'README'
