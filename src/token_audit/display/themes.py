@@ -118,7 +118,8 @@ class CatppuccinMocha:
 
     @property
     def dim_text(self) -> str:
-        return self.overlay1
+        # Use subtext0 for WCAG AA compliance (~6:1 contrast on dark background)
+        return self.subtext0
 
     @property
     def success(self) -> str:
@@ -227,11 +228,15 @@ class CatppuccinLatte:
 
     @property
     def secondary_text(self) -> str:
-        return self.subtext0
+        # Use subtext1 for WCAG AA compliance (~5.5:1 contrast on light background)
+        # subtext0 (#6c6f85) only achieves 4.37:1, below the 4.5:1 minimum
+        return self.subtext1
 
     @property
     def dim_text(self) -> str:
-        return self.overlay1
+        # Use subtext1 for WCAG AA compliance (~5.5:1 contrast on light background)
+        # Note: secondary_text and dim_text share the same color for accessibility
+        return self.subtext1
 
     @property
     def success(self) -> str:

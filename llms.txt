@@ -1,0 +1,40 @@
+# Token Audit
+
+> Token Audit is a Python CLI tool for analyzing MCP (Model Context Protocol) efficiency and token usage across AI coding sessions. It supports Claude Code, Codex CLI, and Gemini CLI platforms.
+
+## Installation
+
+```bash
+pip install token-audit
+```
+
+## Key Features
+
+- Multi-platform session analysis (Claude Code, Codex CLI, Gemini CLI)
+- Token usage tracking and cost estimation
+- MCP server efficiency metrics
+- Interactive TUI dashboard with Rich
+- Smell detection for suboptimal patterns
+- Export to CSV, JSON, and AI-friendly markdown
+
+## Docs
+
+- [README](https://raw.githubusercontent.com/littlebearapps/token-audit/main/README.md): Complete installation, usage guide, and feature overview
+- [Architecture](https://raw.githubusercontent.com/littlebearapps/token-audit/main/docs/architecture.md): System design and component relationships
+- [Data Contract](https://raw.githubusercontent.com/littlebearapps/token-audit/main/docs/data-contract.md): Data format guarantees and schema documentation
+- [TUI Guide](https://raw.githubusercontent.com/littlebearapps/token-audit/main/docs/tui-guide.md): Interactive dashboard navigation and features
+- [Features](https://raw.githubusercontent.com/littlebearapps/token-audit/main/docs/features.md): Detailed feature documentation
+
+## CLI Commands
+
+- `token-audit collect` - Collect session data from AI coding tools
+- `token-audit report` - Generate usage reports with cost analysis
+- `token-audit ui` - Launch interactive TUI dashboard
+- `token-audit export` - Export data to CSV, JSON, or AI markdown
+- `token-audit init` - Initialize configuration
+
+## Optional
+
+- [Contributing](https://raw.githubusercontent.com/littlebearapps/token-audit/main/CONTRIBUTING.md): Contribution guidelines
+- [Changelog](https://raw.githubusercontent.com/littlebearapps/token-audit/main/CHANGELOG.md): Version history and release notes
+- [Roadmap](https://raw.githubusercontent.com/littlebearapps/token-audit/main/ROADMAP.md): Future development plans

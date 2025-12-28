@@ -324,7 +324,7 @@ pip install token-audit
 **Required token-audit Changes**:
 - Add file watcher mode for `~/.codex/sessions/`
 - Add CLI flag: `--watch-sessions` for live monitoring
-- Add session auto-discovery: `token-audit report --platform codex-cli --latest`
+- Add session auto-discovery: `token-audit collect --platform codex-cli --from-start`
 
 ---
 

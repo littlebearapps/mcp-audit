@@ -7,11 +7,12 @@ Provides commands for collecting MCP session data and generating reports.
 
 import argparse
 import atexit
+import re
 import signal
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, cast
 
 if TYPE_CHECKING:
     from .base_tracker import BaseTracker, Session
@@ -19,6 +20,9 @@ if TYPE_CHECKING:
     from .smell_aggregator import SmellAggregationResult
 
 from . import __version__
+
+# Type alias for platform names (matches storage.Platform)
+Platform = Literal["claude_code", "codex_cli", "gemini_cli", "ollama_cli", "custom"]
 
 # ============================================================================
 # Global State for Signal Handlers
@@ -30,6 +34,26 @@ _active_display: Optional["DisplayAdapter"] = None
 _tracking_start_time: Optional[datetime] = None
 _shutdown_in_progress: bool = False
 _session_saved: bool = False
+
+
+def normalize_platform(platform: Optional[str]) -> Optional[Platform]:
+    """
+    Normalize platform name from CLI format to internal format.
+
+    CLI uses hyphen-style (claude-code, codex-cli) for user convenience.
+    Internal storage uses underscore-style (claude_code, codex_cli).
+
+    Args:
+        platform: Platform name from CLI (may be None or "auto")
+
+    Returns:
+        Normalized platform name, or None if input is None/auto
+    """
+    if platform is None or platform == "auto":
+        return None
+    normalized = platform.replace("-", "_")
+    # Cast to Platform type - validation happens at CLI argument parsing
+    return cast(Platform, normalized)
 
 
 def _cleanup_session() -> None:
@@ -324,7 +348,7 @@ EXAMPLES:
     )
     standard_group.add_argument(
         "--platform",
-        choices=["claude_code", "codex_cli", "gemini_cli", "ollama_cli"],
+        choices=["claude-code", "codex-cli", "gemini-cli", "ollama-cli"],
         default=None,
         help="Filter sessions by platform",
     )
@@ -439,6 +463,107 @@ Examples:
         "-o",
         type=Path,
         help="Output file (default: stdout)",
+    )
+
+    # ========================================================================
+    # export command (v1.0.3 - task-243)
+    # ========================================================================
+    export_parser = subparsers.add_parser(
+        "export",
+        help="Export session data in various formats",
+        description="""
+Export session data for external analysis or backup.
+
+Matches TUI export functionality with intuitive subcommands.
+
+Subcommands:
+  csv   Export sessions as CSV (spreadsheet-compatible)
+  json  Export sessions as JSON (structured data)
+  ai    Export AI analysis prompt (LLM-ready markdown)
+
+Examples:
+  # Export all sessions to CSV
+  token-audit export csv
+
+  # Export Claude Code sessions to JSON file
+  token-audit export json --platform claude-code -o claude-sessions.json
+
+  # Generate AI analysis prompt with pinned focus
+  token-audit export ai --pinned-focus
+        """,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+
+    export_subparsers = export_parser.add_subparsers(
+        title="export formats",
+        description="Available export formats",
+        dest="export_format",
+        help="Export format",
+    )
+
+    # export csv subcommand
+    export_csv_parser = export_subparsers.add_parser(
+        "csv",
+        help="Export sessions as CSV",
+        description="Export session data as CSV file.",
+    )
+    export_csv_parser.add_argument(
+        "-o",
+        "--output",
+        type=Path,
+        help="Output file path (default: ~/.token-audit/exports/)",
+    )
+    export_csv_parser.add_argument(
+        "--platform",
+        choices=["claude-code", "codex-cli", "gemini-cli"],
+        help="Filter by platform",
+    )
+
+    # export json subcommand
+    export_json_parser = export_subparsers.add_parser(
+        "json",
+        help="Export sessions as JSON",
+        description="Export session data as JSON file.",
+    )
+    export_json_parser.add_argument(
+        "-o",
+        "--output",
+        type=Path,
+        help="Output file path (default: ~/.token-audit/exports/)",
+    )
+    export_json_parser.add_argument(
+        "--platform",
+        choices=["claude-code", "codex-cli", "gemini-cli"],
+        help="Filter by platform",
+    )
+
+    # export ai subcommand
+    export_ai_parser = export_subparsers.add_parser(
+        "ai",
+        help="Export AI analysis prompt",
+        description="Generate AI-optimized markdown for LLM analysis.",
+    )
+    export_ai_parser.add_argument(
+        "-o",
+        "--output",
+        type=Path,
+        help="Output file path (default: stdout)",
+    )
+    export_ai_parser.add_argument(
+        "--pinned-focus",
+        action="store_true",
+        help="Add dedicated analysis section for pinned servers",
+    )
+    export_ai_parser.add_argument(
+        "--full-mcp-breakdown",
+        action="store_true",
+        help="Include per-server and per-tool breakdown",
+    )
+    export_ai_parser.add_argument(
+        "--pinned-servers",
+        action="append",
+        metavar="SERVER",
+        help="Servers to analyze as pinned (can use multiple times)",
     )
 
     # ========================================================================
@@ -607,6 +732,19 @@ Keyboard shortcuts:
         choices=["dashboard", "sessions", "recommendations", "live"],
         default="dashboard",
         help="Initial view to display (default: dashboard)",
+    )
+
+    ui_parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Enable verbose key/event logging for debugging TUI issues",
+    )
+
+    ui_parser.add_argument(
+        "--platform",
+        choices=["claude-code", "codex-cli", "gemini-cli"],
+        default=None,
+        help="Pre-filter to specific platform on startup",
     )
 
     # ========================================================================
@@ -1019,6 +1157,8 @@ By default shows the last 3 months with data.
         return cmd_weekly(args)
     elif args.command == "monthly":
         return cmd_monthly(args)
+    elif args.command == "export":
+        return cmd_export_new(args)
     else:
         parser.print_help()
         return 1
@@ -1161,7 +1301,8 @@ def cmd_collect(args: argparse.Namespace) -> int:
         print(f"Error: {e}")
         return 1
 
-    # Detect platform
+    # Detect platform (keep hyphen format for adapter selection)
+    # Note: Storage normalization (hyphen→underscore) happens inside adapters
     platform = args.platform
     if platform == "auto":
         platform = detect_platform()
@@ -1576,6 +1717,154 @@ def _cmd_report_ai(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_export_new(args: argparse.Namespace) -> int:
+    """Execute export command.
+
+    Provides intuitive export subcommands matching TUI functionality:
+    - csv: Export sessions as CSV
+    - json: Export sessions as JSON
+    - ai: Generate AI analysis prompt
+
+    v1.0.3: New CLI command (task-243)
+    """
+    export_format = getattr(args, "export_format", None)
+
+    if not export_format:
+        print("Error: export subcommand required (csv, json, or ai)")
+        print("Usage: token-audit export {csv,json,ai} [options]")
+        return 1
+
+    if export_format == "ai":
+        # Delegate to AI export handler
+        return _cmd_export_ai(args)
+    elif export_format in ("csv", "json"):
+        # Delegate to CSV/JSON export handler
+        return _cmd_export_data(args)
+    else:
+        print(f"Error: Unknown export format: {export_format}")
+        return 1
+
+
+def _cmd_export_data(args: argparse.Namespace) -> int:
+    """Handle 'export csv' and 'export json' commands.
+
+    Loads all sessions and exports to specified format.
+    """
+    from .session_manager import SessionManager
+    from .storage import StorageManager
+
+    storage = StorageManager()
+    manager = SessionManager()
+
+    # Load all sessions
+    sessions = []
+    # base_dir is ~/.token-audit/sessions/ (the sessions directory)
+    sessions_dir = storage.base_dir
+
+    if not sessions_dir.exists():
+        print(f"Error: Sessions directory not found: {sessions_dir}")
+        print("Tip: Run 'token-audit collect' first to gather session data.")
+        return 1
+
+    # Check for platform filter
+    platform_filter = getattr(args, "platform", None)
+
+    # Platform directories structure: sessions/<platform>/<date>/<session>.json
+    date_pattern = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+    for platform_dir in sessions_dir.iterdir():
+        if not platform_dir.is_dir():
+            continue
+
+        # Skip if filtering and doesn't match
+        if platform_filter:
+            platform_internal = platform_filter.replace("-", "_")
+            if platform_dir.name.replace("-", "_") != platform_internal:
+                continue
+
+        # Look in date subdirectories
+        for date_dir in platform_dir.iterdir():
+            if date_dir.is_dir() and date_pattern.match(date_dir.name):
+                for json_file in date_dir.glob("*.json"):
+                    if json_file.name != "summary.json" and not json_file.name.startswith("."):
+                        session = manager.load_session(json_file)
+                        if session:
+                            sessions.append(session)
+
+    if not sessions:
+        if platform_filter:
+            print(f"Error: No sessions found for platform: {platform_filter}")
+        else:
+            print("Error: No sessions found.")
+        print("Tip: Run 'token-audit collect' to gather session data.")
+        return 1
+
+    print(f"Loaded {len(sessions)} session(s)")
+
+    # Generate output based on format
+    export_format = args.export_format
+    output_path = getattr(args, "output", None)
+
+    if export_format == "csv":
+        # Create mock args for generate_csv_report
+        mock_args = argparse.Namespace(output=output_path)
+        return generate_csv_report(sessions, mock_args)
+    elif export_format == "json":
+        # Create mock args for generate_json_report
+        mock_args = argparse.Namespace(output=output_path)
+        return generate_json_report(sessions, mock_args)
+
+    return 1
+
+
+def _cmd_export_ai(args: argparse.Namespace) -> int:
+    """Handle 'export ai' command.
+
+    Generates AI analysis prompt for latest session.
+    """
+    from .storage import get_latest_session, load_session_file
+
+    output_path = getattr(args, "output", None)
+    pinned_focus = getattr(args, "pinned_focus", False)
+    full_mcp_breakdown = getattr(args, "full_mcp_breakdown", False)
+    pinned_servers = getattr(args, "pinned_servers", None) or []
+
+    # Get latest session
+    session_path = get_latest_session()
+    if session_path is None:
+        print("Error: No sessions found. Run 'token-audit collect' first.")
+        return 1
+
+    # Load session data
+    session_data = load_session_file(session_path)
+    if session_data is None:
+        print(f"Error: Could not load session file: {session_path}")
+        return 1
+
+    # Merge CLI pinned servers with session pinned servers
+    session_pinned = session_data.get("session", {}).get("pinned_servers", [])
+    all_pinned = list(set(pinned_servers + session_pinned))
+
+    # Generate markdown output
+    output = generate_ai_prompt_markdown(
+        session_data,
+        session_path,
+        pinned_focus=pinned_focus,
+        full_mcp_breakdown=full_mcp_breakdown,
+        pinned_servers=all_pinned,
+    )
+
+    # Write output
+    if output_path:
+        output_path.write_text(output)
+        path_str = str(output_path).replace(str(Path.home()), "~")
+        print(f"Exported AI analysis prompt to: {path_str}")
+    else:
+        print(output)
+
+    return 0
+
+
 def cmd_report(args: argparse.Namespace) -> int:
     """Execute report command.
 
@@ -1625,22 +1914,37 @@ def cmd_report(args: argparse.Namespace) -> int:
         print(f"Loading sessions from: {session_dir}")
         sessions = []
 
-        # Try loading from subdirectories (v1.0.0 format)
+        # Check if this is a platform directory (contains date-formatted subdirectories)
+        date_pattern = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+        # Try loading from subdirectories
         session_dirs = [d for d in session_dir.iterdir() if d.is_dir()]
         for s_dir in session_dirs:
-            session = manager.load_session(s_dir)
-            if session:
-                sessions.append(session)
+            # Check if it's a date directory (platform → date → sessions structure)
+            if date_pattern.match(s_dir.name):
+                # Look for session JSON files inside date directory
+                for json_file in s_dir.glob("*.json"):
+                    if json_file.name != "summary.json" and not json_file.name.startswith("."):
+                        session = manager.load_session(json_file)
+                        if session:
+                            sessions.append(session)
+            else:
+                # Try loading as v1.0.0 format session directory
+                session = manager.load_session(s_dir)
+                if session:
+                    sessions.append(session)
 
-        # Also try direct JSON files (v1.1.0 format)
+        # Also try direct JSON files in the current directory (v1.1.0 format)
         for json_file in session_dir.glob("*.json"):
-            if json_file.name != "summary.json":  # Skip v1.0.0 summary files
+            if json_file.name != "summary.json" and not json_file.name.startswith("."):
                 session = manager.load_session(json_file)
                 if session:
                     sessions.append(session)
 
         if not sessions:
-            print("Error: No valid sessions found")
+            print("Error: No valid sessions found in directory")
+            print(f"  Searched: {session_dir}")
+            print("  Tip: Specify a session file directly or check the path")
             return 1
 
         print(f"Loaded {len(sessions)} session(s)")
@@ -1675,7 +1979,7 @@ def cmd_smells(args: argparse.Namespace) -> int:
     aggregator = SmellAggregator()
     result = aggregator.aggregate(
         days=args.days,
-        platform=args.platform,
+        platform=normalize_platform(args.platform),
         project=args.project,
     )
 
@@ -2976,7 +3280,8 @@ def cmd_ui(args: argparse.Namespace) -> int:
     initial_mode = view_modes.get(args.view, BrowserMode.DASHBOARD)
 
     try:
-        browser = SessionBrowser(theme=theme)
+        debug_mode = getattr(args, "debug", False)
+        browser = SessionBrowser(theme=theme, debug=debug_mode)
 
         # Set initial view (v1.0.0)
         browser.state.mode = initial_mode
@@ -2984,6 +3289,10 @@ def cmd_ui(args: argparse.Namespace) -> int:
         # Set compact mode if specified (v1.0.0)
         if args.compact:
             browser.state.compact_mode = True
+
+        # Set platform filter if specified (v1.0.3 - task-241)
+        if args.platform:
+            browser.state.filter_platform = normalize_platform(args.platform)
 
         browser.run()
         return 0
@@ -3630,7 +3939,7 @@ def _cmd_sessions_list(args: argparse.Namespace, storage: Any) -> int:
     import json
     from datetime import datetime
 
-    platform = getattr(args, "platform", None)
+    platform = normalize_platform(getattr(args, "platform", None))
     limit = None if getattr(args, "all", False) else getattr(args, "count", 10)
     use_json = getattr(args, "json", False)
     verbose = getattr(args, "verbose", False)
@@ -4152,8 +4461,8 @@ def cmd_daily(args: argparse.Namespace) -> int:
     end_date = date.today()
     start_date = end_date - timedelta(days=args.days - 1)  # Inclusive
 
-    # Convert platform format (claude-code -> claude_code)
-    platform = args.platform.replace("-", "_") if args.platform else None
+    # Normalize platform format
+    platform = normalize_platform(args.platform)
 
     # Get aggregated data
     results = aggregate_daily(
@@ -4194,8 +4503,8 @@ def cmd_weekly(args: argparse.Namespace) -> int:
     # Convert week start (monday=0, sunday=6)
     start_of_week = 0 if args.start_of_week == "monday" else 6
 
-    # Convert platform format
-    platform = args.platform.replace("-", "_") if args.platform else None
+    # Normalize platform format
+    platform = normalize_platform(args.platform)
 
     # Get aggregated data
     results = aggregate_weekly(
@@ -4240,8 +4549,8 @@ def cmd_monthly(args: argparse.Namespace) -> int:
         year -= 1
     start_date = date(year, month, 1)  # Start of month
 
-    # Convert platform format
-    platform = args.platform.replace("-", "_") if args.platform else None
+    # Normalize platform format
+    platform = normalize_platform(args.platform)
 
     # Get aggregated data
     results = aggregate_monthly(

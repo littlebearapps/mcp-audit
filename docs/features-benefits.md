@@ -1,6 +1,6 @@
 # Features & Benefits by Audience
 
-Token Audit v1.0.0 - Features mapped to benefits for each target audience.
+Token Audit v1.0.3 - Features mapped to benefits for each target audience.
 
 ---
 
@@ -39,6 +39,15 @@ Token Audit v1.0.0 - Features mapped to benefits for each target audience.
 | **Config analyzer** (v1.0.0) | Security issue detection | Find misconfigurations |
 | **LiveTracker JSONL** (v1.0.0) | Real-time streaming writes | Incremental session data |
 | **MCP resources** (v1.0.0) | Resource-based pattern access | Queryable best practices |
+| **15 MCP tools** (v1.0.2) | Aggregation + session management | Historical insights |
+| **File locking** (v1.0.2) | Concurrent access safety | Safe TUI + MCP + CLI |
+| **7 TUI views** (v1.0.3) | Dashboard, Sessions, Live, Analytics, etc. | Self-contained monitoring |
+| **Modal system** (v1.0.3) | Select, Confirm, Input modals | Rich user interactions |
+| **Date filtering** (v1.0.3) | Quick presets + custom ranges | Focus on time periods |
+| **Export functionality** (v1.0.3) | CSV, JSON, AI markdown export | Share data anywhere |
+| **Delete sessions** (v1.0.3) | Session management from TUI | Clean up old data |
+| **Smell trends view** (v1.0.3) | Pattern frequency over time | Track improvement |
+| **Pinned servers view** (v1.0.3) | Frequently-used MCP servers | Quick server access |
 
 ---
 

@@ -86,6 +86,39 @@ PermissionError: [Errno 13] Permission denied
 pipx install token-audit
 ```
 
+### Virtual environment corruption
+
+**Symptoms:**
+```
+ModuleNotFoundError: No module named 'token_audit'
+ModuleNotFoundError: No module named 'pip'
+```
+
+**Possible causes:**
+1. System Python version changed (e.g., Homebrew upgrade)
+2. Interrupted `pip install`
+3. Disk issues
+4. Concurrent modifications by multiple processes
+
+**Solution:** Recreate the virtual environment:
+```bash
+# Remove corrupted venv
+rm -rf .venv
+
+# Create fresh venv
+python3 -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Reinstall (development mode)
+pip install -e ".[dev]"
+```
+
+**Verify installation:**
+```bash
+token-audit --version
+python -c "import token_audit; print(token_audit.__version__)"
+```
+
 ---
 
 ## Tracking Issues

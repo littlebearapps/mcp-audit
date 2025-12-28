@@ -104,6 +104,10 @@ pip install -e ".[dev]"
 # - ruff (linting)
 ```
 
+### Troubleshooting
+
+If you encounter installation issues like `ModuleNotFoundError`, see the [Troubleshooting Guide](docs/troubleshooting.md#virtual-environment-corruption) for solutions including virtual environment recreation.
+
 ---
 
 ## Adding Platform Adapters

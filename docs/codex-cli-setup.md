@@ -40,16 +40,24 @@ adapter = CodexCLIAdapter(project="my-project")
 adapter.start_tracking()
 ```
 
-### 2. Batch Processing
+### 2. Process Existing Sessions
 
-Analyze completed sessions:
+Include data from existing sessions (not just new events):
 
 ```bash
-# Process the most recent session
-token-audit collect --platform codex-cli --batch --latest
+# Process existing session data + monitor new events
+token-audit collect --platform codex-cli --from-start
+```
 
-# Process a specific session file
-token-audit collect --platform codex-cli --batch --session-file ~/.codex/sessions/2025/11/04/session.jsonl
+To process a specific session file, use the Python API:
+
+```python
+from token_audit.codex_cli_adapter import CodexCLIAdapter
+from pathlib import Path
+
+adapter = CodexCLIAdapter(project="my-project")
+session_path = Path.home() / ".codex/sessions/2025/11/04/session.jsonl"
+# Use list_sessions() to find sessions, then process via adapter
 ```
 
 ### 3. List Available Sessions
@@ -119,7 +127,7 @@ sessions = adapter.get_session_files(since=since, until=until)
 ## Example Output
 
 ```
-$ token-audit collect --platform codex-cli --batch --latest
+$ token-audit collect --platform codex-cli --from-start
 
 [Codex CLI] Processing: rollout-2025-11-23T16-40-08-...jsonl
   Total tokens: 10,454,282
@@ -244,9 +252,11 @@ Codex CLI uses `-mcp` suffix in server names (e.g., `brave-search-mcp`). Token A
 
 ### Wrong Session Selected
 
-Use `--session-file` to specify exact file:
-```bash
-token-audit collect --platform codex-cli --session-file /path/to/session.jsonl
+To process a specific session file, use the Python API:
+```python
+from token_audit.codex_cli_adapter import CodexCLIAdapter
+adapter = CodexCLIAdapter(project="my-project")
+# Use list_sessions() to find sessions by date, then process
 ```
 
 ### Model Not Detected

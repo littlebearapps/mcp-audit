@@ -6,7 +6,7 @@ Token Audit v1.0+ can run as an MCP server, enabling your AI assistant to direct
 
 ## Overview
 
-**MCP Server Mode** provides 15 tools for real-time monitoring, historical analysis, and optimization:
+**MCP Server Mode** provides 15 tools and 5 resources for real-time monitoring, historical analysis, and optimization:
 
 | Tool | Purpose |
 |------|---------|
@@ -495,6 +495,35 @@ Delete a session from storage.
 Returns: Success/failure with message.
 
 > "Delete session abc123" (will prompt for confirm=true)
+
+---
+
+## Resource Reference *(v1.0.2)*
+
+MCP resources provide read-only access to usage data via the resource protocol. Resources are ideal for AI assistants that want to passively query data without invoking tools.
+
+### Available Resources
+
+| Resource URI | Description |
+|--------------|-------------|
+| `token-audit://usage/daily` | Daily usage summary (last 7 days) |
+| `token-audit://usage/weekly` | Weekly usage summary (last 4 weeks) |
+| `token-audit://usage/monthly` | Monthly usage summary (last 3 months) |
+| `token-audit://sessions` | List of recent sessions with metadata |
+| `token-audit://sessions/{id}` | Detailed session information by ID |
+
+### Resource Usage
+
+Resources can be read by MCP clients that support the resource protocol:
+
+```
+# Example: Read daily usage via resource
+resource://token-audit/usage/daily
+```
+
+**When to use resources vs tools:**
+- **Resources**: Read-only access, polling, background monitoring
+- **Tools**: Interactive queries, actions (delete, pin), filtered searches
 
 ---
 

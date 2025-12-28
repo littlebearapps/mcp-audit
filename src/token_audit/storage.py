@@ -30,7 +30,7 @@ try:
 
     _HAS_FILELOCK = True
 except ImportError:
-    FileLock = None  # type: ignore[misc, assignment]
+    FileLock = None  # type: ignore
     _HAS_FILELOCK = False
 
 # Schema version for storage format

@@ -46,6 +46,10 @@ EMOJI_TO_ASCII: Dict[str, str] = {
     "⚠": "[WARN]",
     "✗": "[ERR]",
     "ℹ": "[INFO]",
+    # Trend indicators (v1.0.3 - task-233.12)
+    "▲": "[UP]",
+    "▼": "[DN]",
+    "→": "[->]",
 }
 
 # Histogram block characters for token distribution (v0.7.0 - task-105.7)

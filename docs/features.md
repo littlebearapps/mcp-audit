@@ -401,7 +401,7 @@ After exporting, try these prompts:
 
 ## Session Browser
 
-Interactive TUI for browsing past sessions. **v1.0.0** introduces a Dashboard view as the default landing page.
+Interactive TUI for browsing past sessions. **v1.0.3** expands the interface to 7 integrated views with modals, date filtering, and export functionality.
 
 ### Launch
 
@@ -410,36 +410,94 @@ token-audit ui                              # Launch to Dashboard (default)
 token-audit ui --view sessions              # Start in session list
 token-audit ui --view live                  # Start in live monitoring
 token-audit ui --view recommendations       # Start in recommendations
+token-audit ui --view analytics             # Start in analytics
+token-audit ui --view smell-trends          # Start in smell trends
+token-audit ui --view pinned-servers        # Start in pinned servers
 token-audit ui --compact                    # Force compact mode
 token-audit ui --theme mocha                # Use specific theme
 ```
 
-### Views (v1.0.0)
+### Views (v1.0.3)
 
 | View | Key | Description |
 |------|-----|-------------|
 | **Dashboard** | `1` | Today's summary, weekly trends, top smells, recent sessions |
-| **Sessions** | `2` | Full session list with filtering and sorting |
+| **Sessions** | `2` | Full session list with filtering, search, and delete |
 | **Recommendations** | `3` | Actionable optimization suggestions grouped by confidence |
 | **Live** | `4` | Real-time session monitoring with token burn rate |
+| **Analytics** | `5` | Usage trends by period (daily/weekly/monthly), project grouping |
+| **Smell Trends** | `6` | Pattern frequency over time with severity indicators |
+| **Pinned Servers** | `7` | Frequently-used MCP servers with usage stats |
 
 ### Keybindings
 
 | Key | Action |
 |-----|--------|
-| `1`-`4` | Switch between views |
+| `1`-`7` | Switch between views |
 | `j/k`, `↑/↓` | Navigate |
 | `Enter` | View details / Select |
 | `:` | Command palette (quick navigation) |
 | `/` | Search sessions |
 | `f` | Cycle platform filter |
 | `s` | Cycle sort (date/cost/duration/tools) |
-| `a` | Export to AI |
+| `d` | Open date filter modal |
+| `e` | Export as CSV |
+| `x` | Export as JSON |
+| `a` | Export to AI (markdown) |
+| `Delete` | Delete session (with confirmation) |
 | `p` | Pin/unpin session |
 | `r` | Refresh |
 | `?` | Show help |
-| `Esc` | Back / Navigate back (uses breadcrumb history) |
+| `Esc` | Back / Close modal |
 | `q` | Quit |
+
+### Modal System (v1.0.3)
+
+Interactive modals for contextual actions:
+
+| Modal | Purpose | Keys |
+|-------|---------|------|
+| **SelectModal** | Choose from options | `j/k`, `↑/↓`, numbers, `Enter` |
+| **ConfirmModal** | Yes/No confirmation | `y/n`, `Enter`, `Esc` |
+| **InputModal** | Text input with validation | Type, `Backspace`, `Ctrl+U`, `Enter` |
+
+Modals include:
+- **Platform filter**: Select claude-code, codex-cli, gemini-cli
+- **Delete confirmation**: Preview session details before deletion
+- **Date filter**: Quick preset selection with number keys
+
+### Date Range Filtering (v1.0.3)
+
+Press `d` to open the date filter modal:
+
+| Preset | Key | Description |
+|--------|-----|-------------|
+| Today | `1` | Sessions from today only |
+| Yesterday | `2` | Sessions from yesterday only |
+| Last 7 days | `3` | Past week |
+| Last 14 days | `4` | Past two weeks |
+| Last 30 days | `5` | Past month |
+| Last 60 days | `6` | Past two months |
+| This month | `7` | Current calendar month |
+| Last month | `8` | Previous calendar month |
+| All time | `0` | Clear date filter |
+
+Active filter shows as badge in header: `[Last 7d]`
+
+### Export Functionality (v1.0.3)
+
+Export data from any view:
+
+| Key | Format | Description |
+|-----|--------|-------------|
+| `e` | CSV | Standard tabular format for spreadsheets |
+| `x` | JSON | Full structured data with metadata |
+| `a` | AI | Markdown optimized for LLM analysis |
+
+Exports include:
+- View-specific data (sessions, analytics, smell trends)
+- Active filter/sort settings
+- Timestamp and metadata
 
 ### Navigation Features (v1.0.0)
 

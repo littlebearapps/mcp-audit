@@ -33,16 +33,15 @@ uv pip install token-audit
 
 ---
 
-## What's New (v1.0.2)
+## What's New (v1.0.3)
 
-**MCP Server Enhancements** — 7 new MCP tools for historical aggregation and session management:
+**Rich TUI Enhancements** — A self-contained interface with 7 views, modals, and advanced navigation:
 
-- `get_daily_summary`, `get_weekly_summary`, `get_monthly_summary` — Query usage trends
-- `list_sessions`, `get_session_details` — Browse and inspect historical sessions
-- `pin_server`, `delete_session` — Manage pinned servers and cleanup old sessions
-- 5 new MCP resources for quick usage data access
-
-Plus: concurrent access safety with file locking for CLI + MCP + TUI.
+- **7 integrated views**: Dashboard, Sessions, Recommendations, Live, Analytics, Smell Trends, Pinned Servers
+- **Modal system**: Select, Confirm, and Input modals for contextual actions (delete, filter, export)
+- **Date range filtering**: Quick presets (Today, Last 7d, Last 30d) and custom date ranges
+- **Export formats**: CSV, JSON, and AI-ready markdown for any view
+- **Concurrent access safety**: File locking ensures safe TUI + MCP + CLI access
 
 ---
 
@@ -254,6 +253,18 @@ After restarting your AI CLI, ask:
 
 Tool names and outputs are stable in v1.x. New tools may be added without breaking changes.
 
+### Available Resources (5)
+
+MCP resources provide read-only access to usage data via the resource protocol:
+
+| Resource URI | Description |
+|--------------|-------------|
+| `token-audit://usage/daily` | Daily usage summary (last 7 days) |
+| `token-audit://usage/weekly` | Weekly usage summary (last 4 weeks) |
+| `token-audit://usage/monthly` | Monthly usage summary (last 3 months) |
+| `token-audit://sessions` | List of recent sessions |
+| `token-audit://sessions/{id}` | Detailed session information |
+
 Ask your AI: *"How many tokens have I used? Show me the breakdown by tool."*
 
 See [MCP Server Guide](docs/mcp-server-guide.md) for full documentation.
@@ -294,16 +305,21 @@ Only token counts and tool names are logged — **prompts and responses are neve
 
 ## Interactive Dashboard
 
-The `token-audit ui` command opens an interactive browser with four views:
+The `token-audit ui` command opens an interactive browser with seven views:
 
 | View | Key | Description |
 |------|:---:|-------------|
 | Dashboard | `1` | Today's summary, weekly trends, top smells, recent sessions |
-| Sessions | `2` | Full session list with filtering and search |
+| Sessions | `2` | Full session list with filtering, search, and delete |
 | Recommendations | `3` | Actionable optimization suggestions by confidence |
 | Live | `4` | Real-time session monitoring with burn rate |
+| Analytics | `5` | Usage trends by period (daily/weekly/monthly), project grouping |
+| Smell Trends | `6` | Pattern frequency over time with severity indicators |
+| Pinned Servers | `7` | Frequently-used MCP servers with usage stats |
 
-**Hotkeys:** `j/k` navigate, `Enter` select, `:` command palette, `/` search, `f` filter, `a` AI export, `q` quit.
+**Hotkeys:** `j/k` navigate, `Enter` select, `:` command palette, `/` search, `d` date filter, `e` CSV, `x` JSON, `a` AI export, `q` quit.
+
+**Modals:** Press `Delete` to confirm session deletion, use number keys for quick preset selection in date filter modal.
 
 ---
 
@@ -338,6 +354,15 @@ token-audit report PATH --smells           # Smell analysis mode
 token-audit report PATH --format ai        # AI-ready export
 token-audit best-practices                 # Export efficiency patterns
 token-audit validate session.json          # Validate session file
+```
+
+### Export
+
+```bash
+token-audit export csv                     # Export sessions as CSV
+token-audit export json                    # Export sessions as JSON
+token-audit export ai                      # Generate AI analysis prompt
+token-audit export ai --pinned-focus       # Include pinned server analysis
 ```
 
 ### Session Management
@@ -473,7 +498,7 @@ Token Audit focuses on **real-time tool profiling**. Where billing tools answer 
 
 ## Roadmap
 
-**Current:** v1.0.2 — MCP Server Enhancements (15 tools, 8 resources, file locking)
+**Current:** v1.0.3 — Rich TUI Enhancements (7 views, modals, exports)
 
 **Upcoming:**
 - **v1.1.0** — Billing & Statusline: 5-hour billing block tracking, Claude Code statusline hook

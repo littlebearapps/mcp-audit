@@ -2,7 +2,7 @@
 
 **Version**: 1.7.0
 **Last Updated**: 2025-12-14
-**Status**: Active (shipped in v1.0.0)
+**Status**: Active (shipped in v1.0.3)
 
 This document defines the v1.7.0 session JSON schema, extending v1.6.0 with expanded smell taxonomy, recommendations engine, and cross-session aggregation.
 

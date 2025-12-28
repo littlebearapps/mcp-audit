@@ -2,7 +2,7 @@
 
 **Version**: 1.7.0
 **Last Updated**: 2025-12-13
-**Status**: Active (shipped in v1.0.0)
+**Status**: Active (shipped in v1.0.3)
 
 This document defines the data contract for Token Audit, including backward compatibility guarantees, versioning policy, and migration guidelines.
 

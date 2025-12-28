@@ -65,18 +65,25 @@ adapter = GeminiCLIAdapter(project="my-project")
 adapter.start_tracking()
 ```
 
-### 2. Batch Processing
+### 2. Process Existing Sessions
 
-Analyze completed sessions:
+Include data from existing sessions (not just new events):
 
 ```bash
-# Process the most recent session (auto-detects project hash)
+# Process existing session data + monitor new events
 cd /path/to/project
-token-audit collect --platform gemini-cli --batch --latest
+token-audit collect --platform gemini-cli --from-start
+```
 
-# Process a specific session file
-token-audit collect --platform gemini-cli --batch \
-  --session-file ~/.gemini/tmp/abc123.../chats/session-2025-11-07T05-10-xyz.json
+To process a specific session file, use the Python API:
+
+```python
+from token_audit.gemini_cli_adapter import GeminiCLIAdapter
+from pathlib import Path
+
+adapter = GeminiCLIAdapter(project="my-project")
+session_path = Path.home() / ".gemini/tmp/abc123.../chats/session-2025-11-07T05-10-xyz.json"
+adapter.process_session_file_batch(session_path)
 ```
 
 ### 3. List Available Projects
@@ -111,10 +118,12 @@ print(f"Project hash: {project_hash}")
 
 ### Manual Project Hash
 
-If auto-detection fails, specify the hash directly:
+If auto-detection fails, use the Python API to specify the project:
 
-```bash
-token-audit collect --platform gemini-cli --project-hash abc123...
+```python
+from token_audit.gemini_cli_adapter import GeminiCLIAdapter
+adapter = GeminiCLIAdapter(project="my-project", project_hash="abc123...")
+adapter.start_tracking()
 ```
 
 ## What Gets Tracked
@@ -157,7 +166,7 @@ print(f"Thinking tokens: {adapter.thoughts_tokens}")
 ## Example Output
 
 ```
-$ token-audit collect --platform gemini-cli --batch --latest
+$ token-audit collect --platform gemini-cli --from-start
 
 [Gemini CLI] Processing: session-2025-11-07T05-10-0b04c358.json
   Total tokens: 13,175,835
@@ -217,10 +226,12 @@ Previous versions of Token Audit used Gemini's OpenTelemetry output. The new ada
 
 ### Wrong Project Hash
 
-Ensure you're in the correct directory when running Token Audit, or specify the hash:
+Ensure you're in the correct directory when running Token Audit. If needed, use the Python API to specify the correct hash:
 
-```bash
-token-audit collect --platform gemini-cli --project-hash <correct-hash>
+```python
+from token_audit.gemini_cli_adapter import GeminiCLIAdapter
+adapter = GeminiCLIAdapter(project="my-project", project_hash="<correct-hash>")
+adapter.start_tracking()
 ```
 
 ### Model Not Detected

@@ -14,6 +14,37 @@ from token_audit.display.themes import (
 )
 
 
+def hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
+    """Convert hex color to RGB tuple."""
+    hex_color = hex_color.lstrip("#")
+    return tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4))
+
+
+def relative_luminance(rgb: tuple[int, int, int]) -> float:
+    """Calculate relative luminance per WCAG 2.1.
+
+    https://www.w3.org/TR/WCAG21/#dfn-relative-luminance
+    """
+    r, g, b = [x / 255.0 for x in rgb]
+    r = r / 12.92 if r <= 0.04045 else ((r + 0.055) / 1.055) ** 2.4
+    g = g / 12.92 if g <= 0.04045 else ((g + 0.055) / 1.055) ** 2.4
+    b = b / 12.92 if b <= 0.04045 else ((b + 0.055) / 1.055) ** 2.4
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+def calculate_contrast_ratio(fg_hex: str, bg_hex: str) -> float:
+    """Calculate WCAG contrast ratio between two colors.
+
+    https://www.w3.org/TR/WCAG21/#dfn-contrast-ratio
+    Returns ratio like 4.5 (meaning 4.5:1).
+    """
+    fg_lum = relative_luminance(hex_to_rgb(fg_hex))
+    bg_lum = relative_luminance(hex_to_rgb(bg_hex))
+    lighter = max(fg_lum, bg_lum)
+    darker = min(fg_lum, bg_lum)
+    return (lighter + 0.05) / (darker + 0.05)
+
+
 class TestCatppuccinMocha:
     """Tests for Catppuccin Mocha theme."""
 
@@ -295,3 +326,93 @@ class TestDefaults:
         """Defaults should be Catppuccin themes."""
         assert DEFAULT_DARK == "catppuccin-mocha"
         assert DEFAULT_LIGHT == "catppuccin-latte"
+
+
+class TestContrastCompliance:
+    """Tests for WCAG AA contrast compliance.
+
+    WCAG AA requires:
+    - 4.5:1 for normal text
+    - 3:1 for large text (18pt+ or 14pt bold)
+
+    We test for 4.5:1 as the standard minimum.
+    """
+
+    # WCAG AA minimum contrast ratio for normal text
+    WCAG_AA_MIN = 4.5
+
+    def _get_background(self, theme) -> str:
+        """Get background color for a theme."""
+        # All themes have a 'base' attribute for background
+        return theme.base
+
+    @pytest.mark.parametrize(
+        "theme_name",
+        ["catppuccin-mocha", "catppuccin-latte", "high-contrast-dark", "high-contrast-light"],
+    )
+    def test_primary_text_contrast(self, theme_name):
+        """primary_text must meet WCAG AA contrast (4.5:1)."""
+        theme = get_theme(theme_name)
+        bg = self._get_background(theme)
+        ratio = calculate_contrast_ratio(theme.primary_text, bg)
+        assert (
+            ratio >= self.WCAG_AA_MIN
+        ), f"{theme_name} primary_text contrast {ratio:.2f}:1 < {self.WCAG_AA_MIN}:1"
+
+    @pytest.mark.parametrize(
+        "theme_name",
+        ["catppuccin-mocha", "catppuccin-latte", "high-contrast-dark", "high-contrast-light"],
+    )
+    def test_secondary_text_contrast(self, theme_name):
+        """secondary_text must meet WCAG AA contrast (4.5:1)."""
+        theme = get_theme(theme_name)
+        bg = self._get_background(theme)
+        ratio = calculate_contrast_ratio(theme.secondary_text, bg)
+        assert (
+            ratio >= self.WCAG_AA_MIN
+        ), f"{theme_name} secondary_text contrast {ratio:.2f}:1 < {self.WCAG_AA_MIN}:1"
+
+    @pytest.mark.parametrize(
+        "theme_name",
+        ["catppuccin-mocha", "catppuccin-latte", "high-contrast-dark", "high-contrast-light"],
+    )
+    def test_dim_text_contrast(self, theme_name):
+        """dim_text must meet WCAG AA contrast (4.5:1)."""
+        theme = get_theme(theme_name)
+        bg = self._get_background(theme)
+        ratio = calculate_contrast_ratio(theme.dim_text, bg)
+        assert (
+            ratio >= self.WCAG_AA_MIN
+        ), f"{theme_name} dim_text contrast {ratio:.2f}:1 < {self.WCAG_AA_MIN}:1"
+
+
+class TestContrastHelpers:
+    """Tests for contrast calculation helper functions."""
+
+    def test_hex_to_rgb_black(self):
+        """Black should convert to (0, 0, 0)."""
+        assert hex_to_rgb("#000000") == (0, 0, 0)
+
+    def test_hex_to_rgb_white(self):
+        """White should convert to (255, 255, 255)."""
+        assert hex_to_rgb("#FFFFFF") == (255, 255, 255)
+
+    def test_hex_to_rgb_red(self):
+        """Red should convert to (255, 0, 0)."""
+        assert hex_to_rgb("#FF0000") == (255, 0, 0)
+
+    def test_contrast_black_white(self):
+        """Black on white should have 21:1 contrast."""
+        ratio = calculate_contrast_ratio("#000000", "#FFFFFF")
+        assert abs(ratio - 21.0) < 0.1
+
+    def test_contrast_same_color(self):
+        """Same color should have 1:1 contrast."""
+        ratio = calculate_contrast_ratio("#808080", "#808080")
+        assert abs(ratio - 1.0) < 0.01
+
+    def test_contrast_is_symmetric(self):
+        """Contrast ratio should be the same regardless of which color is fg/bg."""
+        ratio1 = calculate_contrast_ratio("#1e1e2e", "#cdd6f4")
+        ratio2 = calculate_contrast_ratio("#cdd6f4", "#1e1e2e")
+        assert abs(ratio1 - ratio2) < 0.01

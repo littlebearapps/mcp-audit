@@ -8,6 +8,95 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > **Note:** Starting with v0.5.0, feature entries link to GitHub Issues where applicable (e.g., `[#16](url)`).
 > Bug fixes always link to their issue. Earlier versions reference internal task IDs.
 
+## [1.0.3] - 2025-12-27
+
+### Added
+
+#### Rich TUI Enhancements
+
+- **7 Integrated Views** — Complete self-contained TUI interface
+  - Dashboard (key `1`): Today's summary, weekly trends, top smells, recent sessions
+  - Sessions (key `2`): Full session list with filtering, search, and delete
+  - Recommendations (key `3`): Actionable optimization suggestions by confidence
+  - Live (key `4`): Real-time session monitoring with burn rate
+  - Analytics (key `5`): Usage trends by period (daily/weekly/monthly), project grouping
+  - Smell Trends (key `6`): Pattern frequency over time with severity indicators
+  - Pinned Servers (key `7`): Frequently-used MCP servers with usage stats
+
+- **Modal System** — Contextual modals for user interactions
+  - `SelectModal`: Options with keyboard navigation (j/k, arrows, number keys)
+  - `ConfirmModal`: Yes/No confirmation with danger mode styling
+  - `InputModal`: Text input with validation and error feedback
+  - Platform filter modal for session list
+  - Delete confirmation modal with session preview
+
+- **Date Range Filtering** — Quick presets and custom ranges
+  - Presets: Today, Yesterday, Last 7/14/30/60 days, This month, Last month, All time
+  - Badge display showing active filter in all views
+  - Number key shortcuts for instant preset selection
+
+- **Export Functionality** — Multiple formats for any view
+  - CSV export (key `e`): Standard tabular format
+  - JSON export (key `x`): Full structured data with metadata
+  - AI export (key `a`): Markdown format optimized for LLM analysis
+
+- **Session Management** — Delete sessions directly from TUI
+  - Confirmation modal with session details preview
+  - Safety check prevents deleting active sessions
+  - Automatic list refresh after deletion
+
+### Changed
+
+- **Concurrent Access Safety** — File locking ensures safe TUI + MCP + CLI access
+  - Thread locks per session for concurrent write protection
+  - Index file locking during session list refresh
+  - Graceful handling of lock timeout and permission errors
+
+- **Test Coverage** — Comprehensive unit and integration tests for v1.0.3 features
+  - Modal system tests (55 tests)
+  - Date filter preset tests (25 tests)
+  - Analytics view tests (15 tests)
+  - Smell trends tests (18 tests)
+  - Export format tests (25 tests)
+  - Concurrency tests (18 tests)
+
+## [1.0.2] - 2025-12-26
+
+### Added
+
+#### MCP Server Enhancements
+
+- **7 New MCP Tools** — Enhanced MCP server with aggregation and session management
+  - `get_daily_summary`: Daily token usage aggregation with trends (days parameter, platform filter)
+  - `get_weekly_summary`: Weekly token usage aggregation with configurable week boundaries
+  - `get_monthly_summary`: Monthly token usage aggregation with model breakdown option
+  - `list_sessions`: Query historical sessions with filtering, sorting, and pagination
+  - `get_session_details`: Retrieve full session data with smells, tool calls, and recommendations
+  - `pin_server`: Add/update/remove pinned MCP servers via MCP protocol
+  - `delete_session`: Delete sessions from storage with confirmation safety check
+
+- **5 New MCP Resources** — Usage summaries and session access via MCP resource protocol
+  - `token-audit://usage/daily` — Daily usage summary (last 7 days)
+  - `token-audit://usage/weekly` — Weekly usage summary (last 4 weeks)
+  - `token-audit://usage/monthly` — Monthly usage summary (last 3 months)
+  - `token-audit://sessions` — List of recent sessions
+  - `token-audit://sessions/{id}` — Detailed session information
+
+### Changed
+
+- **Dependencies** — Added `filelock>=3.12.0` to server extras for concurrent index access
+- **Storage** — Index file operations now use atomic writes and file locking for concurrent access safety
+  - `save_daily_index()` and `save_platform_index()` use temp file + rename for crash safety
+  - `update_indexes_for_session()` holds file locks during read-modify-write cycles
+  - Prevents data loss when MCP server, CLI, and TUI run simultaneously
+
+## [1.0.1] - 2025-12-26
+
+### Documentation
+
+- **Roadmap** — Updated version numbering for post-v1.0 milestones (v1.1.0 Billing & Statusline, v1.2.0 Burn Rate, v1.3.0 MCP Profiler, v1.4.0 Platform Expansion)
+- **Backlog** — Reorganized task versioning to align with updated roadmap
+
 ## [1.0.0] - 2025-12-17
 
 First public release with MCP server mode and best practices guidance system.
