@@ -1200,9 +1200,9 @@ Examples:
     )
     bucket_parser.add_argument(
         "--session",
-        type=Path,
+        type=str,
         default=None,
-        help="Session file or directory to analyze (default: latest session)",
+        help="Session ID or path to analyze (default: latest session)",
     )
     bucket_parser.add_argument(
         "--format",
@@ -4493,30 +4493,92 @@ def cmd_sessions(args: argparse.Namespace) -> int:
         return 1
 
 
+def _build_active_session_entry(
+    path: Path, session_id: str, verbose: bool, use_json: bool
+) -> Optional[dict[str, Any]]:
+    """
+    Parse session_start event from active .jsonl file.
+
+    Args:
+        path: Path to the active session .jsonl file
+        session_id: Session identifier
+        verbose: Whether to include detailed info
+        use_json: Whether output will be JSON (implies verbose)
+
+    Returns:
+        Dictionary with session entry data, or None if parsing fails
+    """
+    import json as json_mod
+
+    try:
+        with open(path) as f:
+            first_line = f.readline()
+            if first_line.strip():
+                header = json_mod.loads(first_line)
+                # Active sessions have session_start event as first line
+                if header.get("type") == "session_start":
+                    platform_raw = header.get("platform", "unknown")
+                    platform_name = platform_raw.replace("-", " ").title().replace(" ", "-")
+                    timestamp = header.get("timestamp", "")
+
+                    entry = {
+                        "id": session_id,
+                        "platform": platform_name,
+                        "date": timestamp[:10] if timestamp else "unknown",
+                        "path": str(path),
+                        "is_active": True,
+                    }
+
+                    if verbose or use_json:
+                        entry["project"] = header.get("project", "unknown")
+                        # Active sessions don't have aggregated token usage yet
+                        entry["total_tokens"] = 0
+                        entry["cached_tokens"] = 0
+
+                    return entry
+    except Exception:
+        pass
+    return None
+
+
 def _cmd_sessions_list(args: argparse.Namespace, storage: Any) -> int:
     """List collected sessions."""
     import json
     from datetime import datetime
+
+    from .storage import StreamingStorage
 
     platform = normalize_platform(getattr(args, "platform", None))
     limit = None if getattr(args, "all", False) else getattr(args, "count", 10)
     use_json = getattr(args, "json", False)
     verbose = getattr(args, "verbose", False)
 
-    # Get sessions
+    # Get completed sessions
     sessions = storage.list_sessions(platform=platform, limit=limit)
 
-    if not sessions:
-        if use_json:
-            print(json.dumps({"sessions": [], "total": 0}))
-        else:
-            print("No sessions found.")
-            print()
-            print("Start tracking with: token-audit collect")
-        return 0
+    # Get active sessions (Bug #3 fix: make tmp sessions visible)
+    streaming = StreamingStorage()
+    active_session_ids = streaming.get_active_sessions()
 
-    # Build session data
+    # Build session data - active sessions first (they're current)
     session_data = []
+
+    # Add active sessions first
+    for session_id in active_session_ids:
+        active_path = streaming.get_active_session_path(session_id)
+        if active_path and active_path.exists():
+            active_entry = _build_active_session_entry(active_path, session_id, verbose, use_json)
+            if active_entry:
+                # Check platform filter (normalize to underscore form to match normalize_platform)
+                if platform:
+                    entry_platform = (
+                        active_entry.get("platform", "").lower().replace(" ", "_").replace("-", "_")
+                    )
+                    if entry_platform != platform:
+                        continue
+                session_data.append(active_entry)
+
+    # Add completed sessions
     for session_path in sessions:
         try:
             # Extract platform from path structure: sessions/{platform}/{date}/{session}.json
@@ -4529,6 +4591,7 @@ def _cmd_sessions_list(args: argparse.Namespace, storage: Any) -> int:
                 "platform": platform_name,
                 "date": session_path.parent.name,  # date directory
                 "path": str(session_path),
+                "is_active": False,  # Completed session
             }
 
             if verbose or use_json:
@@ -4565,16 +4628,35 @@ def _cmd_sessions_list(args: argparse.Namespace, storage: Any) -> int:
             entry["parse_error"] = str(e)
             session_data.append(entry)
 
+    # Check if any sessions found (active or completed)
+    if not session_data:
+        if use_json:
+            print(json.dumps({"sessions": [], "total": 0}))
+        else:
+            print("No sessions found.")
+            print()
+            print("Start tracking with: token-audit collect")
+        return 0
+
     if use_json:
         output = {"sessions": session_data, "total": len(session_data)}
         print(json.dumps(output, indent=2))
         return 0
 
     # Print human-readable list
-    print(f"Sessions ({len(session_data)}):")
+    # Count active sessions for header
+    active_count = sum(1 for e in session_data if e.get("is_active"))
+    if active_count:
+        print(f"Sessions ({len(session_data)}, {active_count} active):")
+    else:
+        print(f"Sessions ({len(session_data)}):")
     print()
 
     for entry in session_data:
+        # Add [ACTIVE] indicator for active sessions
+        active_marker = " [ACTIVE]" if entry.get("is_active") else ""
+        session_id_display = entry["id"][:36]
+
         if verbose:
             tokens = entry.get("total_tokens", 0)
             duration = entry.get("duration_seconds", 0)
@@ -4583,10 +4665,12 @@ def _cmd_sessions_list(args: argparse.Namespace, storage: Any) -> int:
             project = entry.get("project", "")[:20]
 
             print(
-                f"  {entry['id'][:36]:36}  {entry['platform']:12} {entry['date']}  {project:20}  {tokens_str:>10}  {duration_str:>8}"
+                f"  {session_id_display:36}{active_marker:9}  {entry['platform']:12} {entry['date']}  {project:20}  {tokens_str:>10}  {duration_str:>8}"
             )
         else:
-            print(f"  {entry['id'][:36]:36}  {entry['platform']:12}  {entry['date']}")
+            print(
+                f"  {session_id_display:36}{active_marker:9}  {entry['platform']:12}  {entry['date']}"
+            )
 
     print()
     print("Show details: token-audit sessions show <session-id>")
@@ -5169,7 +5253,10 @@ def cmd_bucket(args: argparse.Namespace) -> int:
 
     from .buckets import BucketClassifier
     from .session_manager import SessionManager
-    from .storage import StorageManager
+    from .storage import StorageManager, StreamingStorage
+
+    storage = StorageManager()
+    platform = normalize_platform(args.platform)
 
     # Determine session to analyze
     session_path = args.session
@@ -5177,8 +5264,6 @@ def cmd_bucket(args: argparse.Namespace) -> int:
 
     if session_path is None:
         # Find latest session
-        storage = StorageManager()
-        platform = normalize_platform(args.platform)
         sessions = storage.list_sessions(platform=platform, limit=1)
 
         if not sessions:
@@ -5190,11 +5275,49 @@ def cmd_bucket(args: argparse.Namespace) -> int:
 
     # Load session
     manager = SessionManager()
-    if session_path.is_file() or session_path.is_dir():
+
+    # Resolve session_path: could be a file path, directory, or session ID
+    if isinstance(session_path, str):
+        # First, check if it's a literal path that exists
+        literal_path = Path(session_path).expanduser()
+        if literal_path.exists():
+            session = manager.load_session(literal_path)
+        else:
+            # Try to resolve as session ID (Bug #4 fix - GH#128)
+            resolved_path = None
+
+            # Check active sessions first
+            streaming = StreamingStorage()
+            active_sessions = streaming.get_active_sessions()
+            for active_id in active_sessions:
+                if session_path in active_id:
+                    print(f"Note: Session '{active_id}' is active (collecting data).")
+                    print("Bucket analysis requires finalized sessions.")
+                    return 1
+
+            # Check completed sessions by partial ID match
+            sessions = storage.list_sessions(platform=platform, limit=100)
+            matches = [s for s in sessions if session_path in s.stem]
+            if len(matches) == 1:
+                resolved_path = matches[0]
+            elif len(matches) > 1:
+                print(f"Multiple sessions match '{session_path}':", file=sys.stderr)
+                for m in matches[:10]:
+                    print(f"  {m.stem}", file=sys.stderr)
+                if len(matches) > 10:
+                    print(f"  ... and {len(matches) - 10} more", file=sys.stderr)
+                return 1
+
+            if resolved_path:
+                session_path = resolved_path
+                session = manager.load_session(session_path)
+    elif hasattr(session_path, "is_file"):
+        # Already a Path object (from list_sessions)
         session = manager.load_session(session_path)
 
     if not session:
         print(f"Error: Failed to load session from: {session_path}")
+        print("Hint: Use session ID (e.g., 'wpnav-2025-12-30T12') or full path.")
         return 1
 
     # Check for --by-task flag (v1.0.4 - task-247.9)
@@ -5431,8 +5554,15 @@ def _resolve_session_for_task(
 
     # 1. Explicit session ID
     if session_id:
+        # Check active sessions first (Bug #3 fix)
+        streaming = StreamingStorage()
+        active_sessions = streaming.get_active_sessions()
+        for active_session_id in active_sessions:
+            if session_id in active_session_id:
+                return active_session_id, streaming.get_active_session_path(active_session_id)
+
+        # Then check completed sessions
         storage = StorageManager()
-        # Try to find session file by ID
         sessions = storage.list_sessions(platform=norm_platform, limit=100)
         for session_path in sessions:
             if session_id in session_path.stem:
@@ -5605,9 +5735,18 @@ def _cmd_task_list(args: argparse.Namespace) -> int:
             print("No tasks found in session.")
             print("Start a task: token-audit task start <name>")
             return 0
-        # Can't compute full summaries without session data
-        print(f"Found {len(markers)} task markers, but session file not found.")
-        print("Cannot compute task summaries without session data.")
+
+        # Check if this is an active session (can't compute summaries yet)
+        is_active_session = session_path and "active" in str(session_path)
+        if is_active_session:
+            print(f"Session '{session_id}' is still active (collecting data).")
+            print(f"Found {len(markers)} task markers.")
+            print()
+            print("Task summaries are computed when the session is finalized.")
+            print("Stop the collector to finalize: Ctrl+C in the collector terminal")
+        else:
+            print(f"Found {len(markers)} task markers, but session file not found.")
+            print("Cannot compute task summaries without session data.")
         return 1
 
     if not summaries:
